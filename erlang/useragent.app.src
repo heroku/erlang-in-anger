@@ -1,0 +1,7 @@
+{application, useragent, [
+  {description, "Identify browsers & OSes from useragent strings"},
+  {vsn, "0.1.2"},
+  {registered, []},
+  {applications, [kernel, stdlib]},
+  {modules, [useragent]}
+]}.
