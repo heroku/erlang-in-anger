@@ -506,7 +506,7 @@ However, all kinds of OTP-compliant systems end up having processes that may not
 
 \section{Generally Restricting Input}
 
-Restricting input is the simplest way to manage message queue growth in Erlang systems. It's the simplest approach because it basically means you're slowing the user down (applying \emph{back-pressure}, which instantly fixes the problem without any further optimization required. On the other hand, it's the one that can end up giving the user a really crappy experience.
+Restricting input is the simplest way to manage message queue growth in Erlang systems. It's the simplest approach because it basically means you're slowing the user down (applying \emph{back-pressure}), which instantly fixes the problem without any further optimization required. On the other hand, it's the one that can end up giving the user a really crappy experience.
 
 The most common way to restrict data input is to make calls to a process whose queue would grow in uncontrollable ways synchronously. By requiring a response before moving on to the next request, you will generally ensure that the direct source of the problem will be slowed down.
 
@@ -788,6 +788,7 @@ For this chapter (and most of those that follow), most of the concepts or featur
 However, to make the text lighter, common operations have been regrouped in the \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/}} library, and are generally production-safe.
 
 \section{Global View}
+\label{sec:global-view}
 
 For a view of the VM in the large, it's useful to track statistics and metrics general to the VM, regardless of the code running on it. Moreover, you should aim for a solution that allows long-term views of each metric -- some problems show up as a very long accumulation over weeks that couldn't be detected over small time windows, but will show up over time.
 
@@ -851,7 +852,7 @@ Unfortunately for Erlang developers, CPU is very hard to profile for. There are 
 	\item To avoid going to sleep when work is low, the threads that control the Erlang schedulers will do busy looping. This insures that the lowest latency possible will be used. The flag \command{+sbwt none|very\_short|short|medium|long|very\_long} can be used to change this value
 \end{itemize*}
 
-These all play together to mean it's fairly hard to find a good absolute measure of how busy your CPU is actually running Erlang code. It will be common for Erlang nodes in production to do a moderate amount of work and use a lot of CPU, but to actually fit a lot of work in the remaining place when load gets higher.
+These all play together to mean it's fairly hard to find a good absolute measure of how busy your CPU actually running Erlang code is. It will be common for Erlang nodes in production to do a moderate amount of work and use a lot of CPU, but to actually fit a lot of work in the remaining place when load gets higher.
 
 The most accurate representation for this data is the scheduler wall time. It's an optional metric that needs to be turned on by hand on a node, and polled at regular intervals. It will reveal the time percentage a scheduler has been running processes and normal Erlang code, NIFs, BIFs, garbage collection, and so on, versus the amount of time it has spent idling or trying to schedule processes.
 
@@ -859,12 +860,67 @@ The value here represents \emph{scheduler utilization} rather than CPU utilizati
 
 While the basic usage is explained in the Erlang/OTP reference manual\footnote{\href{http://www.erlang.org/doc/man/erlang.html\#statistics\_scheduler\_wall\_time}{http://www.erlang.org/doc/man/erlang.html\#statistics\_scheduler\_wall\_time}}, the value can be obtained by calling recon:
 
+\begin{VerbatimEshell}
+1> recon:scheduler_usage(1000).
+[{1,0.9919596133421669},
+ {2,0.9369579039389054},
+ {3,1.9294092120138725e-5},
+ {4,1.2087551402238991e-5}]
+\end{VerbatimEshell}
+
+The function \function{recon:scheduler\_usage/1} will poll for \var{N} milliseconds (here, 1 second) and output the values of each scheduler. In this case, the VM has two very loaded schedulers (at 99.2\% and 93.7\% repectively), and two mostly unused ones at far below 1\%. Yet, a tool like \app{htop} would report something closer to this for each core:
+
+\begin{VerbatimText}
+[|||||||||||||||||||||||||     70.4%]
+[|||||||                       20.6%]
+[|||||||||||||||||||||||||||||100.0%]
+[||||||||||||||||              40.2%]
+\end{VerbatimText}
+
+The result being that there is a decent chunk of CPU usage that would be mostly free to schedule actual Erlang work on (assuming the schedulers are busy waiting more than trying to select tasks to run), but is being reported as busy by the OS.
+
+This may especially be important to consider when doing capacity planning.
+
 %% 08:37 #erlounge: <+garazdawi> MononcQc: There is a cost when not doing work. The way it works is that when starting/stopping to do work it checks the time, but if the
 %%                              scheduler has something to do the entire time then there is no overhead. So you might see a slight cpu increase if the schedulers run out of
 %%                              work often, but it will (should) not affect the maximum possible throughput of the system.
 
 \subsection{Processes}
+
+Trying to get a global view of processes is helpful when trying to assess how much work is being done in the VM in terms of \emph{tasks}. A general good practice of Erlang is to use processes for truly concurrent activities -- on web servers, you will usually get one process per request or connection, and on stateful systems, you may add one process per-user for example -- and therefore the number of processes on a node can be used as a metric.
+
+Most tools mentioned is section \ref{sec:global-view} will track them in one way or another, but if the process count needs to be done manually, calling the following expression is enough:
+
+\begin{VerbatimEshell}
+1> length(processes()).
+56535
+\end{VerbatimEshell}
+
+Tracking this value over time can be extremely helpful to try and characterize load or detect process leaks, along with other metrics you may have around.
+
 \subsection{Ports}
+
+In a manner similar to processes, \emph{Ports} should be considered. Ports are a datatype that encompasses all kinds of connections and sockets opened to the outside world: TCP sockets, UDP sockets, SCTP sockets, file descriptors, and so on.
+
+There is a general function (again, similar to processes) to count them: \expression{length(erlang:ports())}. However, this function merges in all kinds of ports into a single entity. Instead, one can use recon to get them sorted by type:
+
+\begin{VerbatimEshell}
+1> recon:port_types().
+[{"tcp_inet",21480},
+ {"efile",2},
+ {"udp_inet",2},
+ {"0/1",1},
+ {"2/2",1},
+ {"inet_gethost 4 ",1}]
+ \end{VerbatimEshell}
+
+This list contains the types and the count for each type of port. The type name is a string and is defined by the Erlang VM itself.
+
+All the \expression{*\_inet} ports are usually TCP/IP ports, where the prefix is the protocol used. The \expression{efile} type is for files, while \expression{"0/1"} and \expression{"2/2"} are file descriptors for standard I/O channels (\emph{stdin} and \emph{stdout}) and standard error channels (\emph{stderr}), respectively.
+
+Most other types will be given names of the driver they're talking to, and will be examples of \emph{port programs}\footnote{\href{http://www.erlang.org/doc/tutorial/c\_port.html}{http://www.erlang.org/doc/tutorial/c\_port.html}} or \emph{port drivers}\footnote{\href{http://www.erlang.org/doc/tutorial/c\_portdriver.html}{http://www.erlang.org/doc/tutorial/c\_portdriver.html}}.
+
+Again, tracking these can be useful to assess load or usage of a system, detect leaks, and so on.
 
 \section{Digging In}
 \subsection{Processes}
