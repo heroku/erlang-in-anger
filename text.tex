@@ -229,7 +229,7 @@ All applications have dependencies (at the very least on the \module{kernel} and
 \begin{figure}
   \includegraphics{app-deps-riak-cs.pdf}%
   \caption{Dependency graph of riak\_cs, Basho's open source cloud library.
-  The graph has been generated with app\_deps, shown in \ref{ch:app-deps}}%
+  The graph has been generated with app\_deps, shown in \ref{chap:app-deps}}%
   \label{fig:app-deps}%
 \end{figure}
 
@@ -240,7 +240,7 @@ Using such a hierarchy and looking at each application's short description might
 
 OTP releases are not a lot harder to understand than most OTP Applications in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to release than that, but generally, the same discovery process used for individual OTP Applications will be applicable here.
 
-You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}.
+You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that recently appeared.
 
 %%%
 %%%
@@ -753,7 +753,7 @@ Eshell Vx.x.x  (abort with ^G)
 1> 
 \end{VerbatimEshell}
 
-And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. Avoid running functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.
+And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. \emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.
 
 \section{Named Pipes}
 
@@ -779,7 +779,7 @@ And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect
 
 One of the best selling point of the Erlang VM for production use is how transparent it can be for all kinds of introspection, debugging, profiling, and analysis at run time.
 
-The advantage of having them all accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watch dogs is as simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
+The advantage of having them all accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is as simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
 
 A practical approach to growing a system and keeping it healthy in production should be ready to attack all angles: in the large, and in the small.
 
@@ -827,7 +827,7 @@ This requires some explaining.
 
 First of all, all the values returned are in bytes, and they represent memory \emph{allocated} (memory actively used to store Erlang terms from the internal Erlang memory allocators, not the memory set aside by the operating system for the Erlang VM). It will sooner or later look much smaller than what the operating system reports.
 
-The \expression{total} field contains the sum of the memory used for \expression{processes} and \expression{system} (which is incomplete, unless the VM is instrumented!). \expression{processes} is the memory used by Erlang processes, their stacks and heaps. \expression{system} is the rest: memory used by ETS tables, atoms in the VM, refc binaries\footnote{see Section  \ref{}}, and some of the hidden data I mentioned was missing.
+The \expression{total} field contains the sum of the memory used for \expression{processes} and \expression{system} (which is incomplete, unless the VM is instrumented!). \expression{processes} is the memory used by Erlang processes, their stacks and heaps. \expression{system} is the rest: memory used by ETS tables, atoms in the VM, refc binaries\footnote{see Section \ref{sec:binaries}}, and some of the hidden data I mentioned was missing.
 
 If you want the total amount of memory owned by the virtual machine, as in the amount that will trip system's limits (\app{ulimit}), this amount is more difficult to get from within the VM. If you want the data without calling \app{top} or \app{htop}, you have to dig down into the VM's memory allocators to find things out.
 
@@ -923,9 +923,71 @@ Most other types will be given names of the driver they're talking to, and will 
 Again, tracking these can be useful to assess load or usage of a system, detect leaks, and so on.
 
 \section{Digging In}
+
+Whenever some 'in the large' view (or logging, maybe) has pointed you towards a potential cause for an issue you're having, it starts being interesting to dig around with a purpose. Is a process having a weird state? Maybe it needs tracing\footnote{See Chapter \ref{chap:tracing}}! Tracing is great whenever you have a specific function call or input or output to watch for, but often, before getting there, a lot more digging is required.
+
+Outside of memory leaks, which often need their own specific techniques and are discussed in Chapter \ref{chap:memory-leaks}, the most common tasks are related to processes and ports (file descriptors and sockets).
+
 \subsection{Processes}
+
+By all means, processes are an important part of a running Erlang system. And because they're so central to everything that goes on, there's a lot to want to know about them. Fortunately, the VM makes a lot of information available, some of which is safe to use, and some of which is unsafe to use in production (because they can return data sets large enough that the amount of memory copied to the shell process and used to print it can kill the node).
+
+All the values can be obtained by calling \expression{process\_info(Pid, Key)} or \expression{process\_info(Pid, [Keys])}
+
+Here are the possible values of keys, or at least commonly used ones:
+
+\begin{description*}
+	\item[Meta] \hfill
+		\begin{description}		
+			\item[\expression{dictionary}] returns all the entries in the process dictionary\footnote{See \href{http://www.erlang.org/course/advanced.html\#dict}{http://www.erlang.org/course/advanced.html\#dict} and \href{http://ferd.ca/on-the-use-of-the-process-dictionary-in-erlang.html}{http://ferd.ca/on-the-use-of-the-process-dictionary-in-erlang.html}}. Generally safe to use, because people shouldn't be storing gigabytes of arbitrary data in there.
+			
+			\item[\expression{registered\_name}] if the process has a name (as registered with \function{erlang:register/2}), it is given here.
+		\end{description}
+	\item[Signals] \hfill
+		\begin{description}
+			\item[\expression{links}] will show a list of all the links a process has towards other processes and also ports (sockets, file descriptors). Generally safe to call, but to be used with care on large supervisors that may return thousands and thousands of entries.
+			
+			\item[\expression{monitored\_by}] gives a list of processes that are monitoring the current process (through the use of \function{erlang:monitor/2}).
+			
+			\item[\expression{monitors}] kind of the opposite of \expression{monitored\_by}; it gives a list of all the processes being monitored by the one polled here.
+		\end{description}
+	\item[Location] \hfill
+		\begin{description}
+			\item[\expression{current\_function}] displays the current function as a tuple of the form \expression{\{Mod, Fun, Arity\}}.
+			
+			\item[\expression{current\_location}] displays the current location within a module, as a tuple of the form \expression{\{Mod, Fun, Arity, [\{File, FileName\}, \{line, Num\}]\}}.
+			
+			\item[\expression{current\_stacktrace}] most verbose form of the two preceding options; displays the current stacktrace as a list of 'current locations'.
+			
+			\item[\expression{initial\_call}] shows the function that the process was running when spawned, of the form \expression{\{Mod, Fun, Arity\}}. This may help identify what the process was spawned as, rather than what it's running right now.
+			
+		\end{description}
+	\item[Memory] \hfill
+		\begin{description}
+			\item[\expression{binary}] Displays the all the references to refc binaries\footnote{see Section \ref{sec:binaries}} along with their size. Can be unsafe to use if a process has a lot of them allocated.
+			
+			\item[\expression{garbage\_collection}] contains information regarding garbage collection in the process. The content is documented as 'subject to change' and should be treated as such. The information tends to contains entries such as the number of garbage collections the process has went through, options for full-sweep garbage collections, and heap sizes.
+			
+			\item[\expression{heap\_size}] A typical Erlang process contains an 'old' heap and a 'new' heap, and goes through generational garbage collection. This entry shows the process' heap size for the newest generation, and it usually includes the stack size. The value returned is in \emph{words}.
+			
+			\item[\expression{memory}] Returns, in \emph{bytes}, the size of the process, including the call stack, the heaps, and internal structures used by the VM that are part of a process.
+			
+			\item[\expression{message\_queue\_len}] Tells you how many messages are waiting in the mailbox of a process.
+			
+			\item[\expression{messages}] Returns all of the messages in a process' mailbox. This attribute is \emph{extremely} dangerous to request in production because mailboxes can hold millions of messages if you're debugging a process that managed to get locked up. \emph{Always} call for the \expression{message\_queue\_len} first to make sure it's safe to use.
+			
+			\item[\expression{min\_heap\_size}] Returns the smallest heap size a process can have according to the current configuration.
+			
+			\item[\expression{min\_bin\_vheap\_size}] Each Erlang process has to track reference-counted binaries \footnote{see Section \ref{sec:binaries}} to know when to trigger a garbage collection that may help reduce global memory usage. This is done in a virtual heap for binaries. This attribute refers to the minimal size this heap can have.
+		\end{description}
+	\item[Workload] \hfill
+		\begin{description}
+			\item[\expression{reductions}] The Erlang VM does scheduling based on \emph{reductions}, an arbitrary unit of work that allows rather portable implementations of scheduling (time-based scheduling is usually hard to make work efficiently on as many OSes as Erlang runs on). The higher the reductions, the more work, in terms of CPU and function calls, a process is doing. 
+		\end{description}
+\end{description*}
+
+
 \subsection{Ports}
-\subsection{Code} % ???
 
 \chapter{Reading Crash Dumps}
 
@@ -933,6 +995,7 @@ Again, tracking these can be useful to assess load or usage of a system, detect 
 \label{chap:memory-leaks}
 
 \section{Binaries}
+\label{sec:binaries}
 
 %\section{Process Leaks}
 
@@ -945,5 +1008,6 @@ Again, tracking these can be useful to assess load or usage of a system, detect 
 %% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
 
 \chapter{Tracing}
+\label{chap:tracing}
 
 \end{document}  
