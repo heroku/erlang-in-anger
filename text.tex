@@ -934,14 +934,27 @@ By all means, processes are an important part of a running Erlang system. And be
 
 All the values can be obtained by calling \expression{process\_info(Pid, Key)} or \expression{process\_info(Pid, [Keys])}
 
-Here are the possible values of keys, or at least commonly used ones:
+Here are the commonly used values for keys\footnote{for \emph{all} options, look at \href{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}}:
 
 \begin{description*}
 	\item[Meta] \hfill
 		\begin{description}		
 			\item[\expression{dictionary}] returns all the entries in the process dictionary\footnote{See \href{http://www.erlang.org/course/advanced.html\#dict}{http://www.erlang.org/course/advanced.html\#dict} and \href{http://ferd.ca/on-the-use-of-the-process-dictionary-in-erlang.html}{http://ferd.ca/on-the-use-of-the-process-dictionary-in-erlang.html}}. Generally safe to use, because people shouldn't be storing gigabytes of arbitrary data in there.
 			
+			\item[\expression{group\_leader}] the group leader of a process defines where IO (files, output of \function{io:format/1-3}) goes.\footnote{See \href{http://learnyousomeerlang.com/building-otp-applications\#the-application-behaviour}{http://learnyousomeerlang.com/building-otp-applications\#the-application-behaviour} and \href{http://erlang.org/doc/apps/stdlib/io\_protocol.html}{http://erlang.org/doc/apps/stdlib/io\_protocol.html} for more details.}
+			
 			\item[\expression{registered\_name}] if the process has a name (as registered with \function{erlang:register/2}), it is given here.
+			
+			\item[\expression{status}] the nature of the process as seen by the scheduler. The possible values are:
+				\begin{description*}
+					\item[\expression{exiting}] the process is done, but not fully cleared yet;
+					\item[\expression{waiting}] the process is waiting in a \expression{receive ... end};
+					\item[\expression{running}] self-descriptive;
+					\item[\expression{runnable}] ready to run, but not scheduled yet because another process is running;
+					\item[\expression{garbage\_collecting}] self-descriptive;
+					\item[\expression{suspended}] whenever it is suspended by a BIF, or as a back-pressure mechanism because a socket or port buffer is full. The process only becomes runnable again once the port is no longer busy.
+				\end{description*}
+			
 		\end{description}
 	\item[Signals] \hfill
 		\begin{description}
@@ -950,19 +963,20 @@ Here are the possible values of keys, or at least commonly used ones:
 			\item[\expression{monitored\_by}] gives a list of processes that are monitoring the current process (through the use of \function{erlang:monitor/2}).
 			
 			\item[\expression{monitors}] kind of the opposite of \expression{monitored\_by}; it gives a list of all the processes being monitored by the one polled here.
-		\end{description}
+					
+			\item[\expression{trap\_exit}] has the value \expression{true} if the process is trapping exits, \expression{false} otherwise.
+		\end{description}		
+		
 	\item[Location] \hfill
 		\begin{description}
-			\item[\expression{current\_function}] displays the current function as a tuple of the form \expression{\{Mod, Fun, Arity\}}.
-			
 			\item[\expression{current\_location}] displays the current location within a module, as a tuple of the form \expression{\{Mod, Fun, Arity, [\{File, FileName\}, \{line, Num\}]\}}.
 			
-			\item[\expression{current\_stacktrace}] most verbose form of the two preceding options; displays the current stacktrace as a list of 'current locations'.
+			\item[\expression{current\_stacktrace}] more verbose form of the preceding option; displays the current stacktrace as a list of 'current locations'.
 			
 			\item[\expression{initial\_call}] shows the function that the process was running when spawned, of the form \expression{\{Mod, Fun, Arity\}}. This may help identify what the process was spawned as, rather than what it's running right now.
 			
 		\end{description}
-	\item[Memory] \hfill
+	\item[Memory Used] \hfill
 		\begin{description}
 			\item[\expression{binary}] Displays the all the references to refc binaries\footnote{see Section \ref{sec:binaries}} along with their size. Can be unsafe to use if a process has a lot of them allocated.
 			
@@ -976,16 +990,65 @@ Here are the possible values of keys, or at least commonly used ones:
 			
 			\item[\expression{messages}] Returns all of the messages in a process' mailbox. This attribute is \emph{extremely} dangerous to request in production because mailboxes can hold millions of messages if you're debugging a process that managed to get locked up. \emph{Always} call for the \expression{message\_queue\_len} first to make sure it's safe to use.
 			
-			\item[\expression{min\_heap\_size}] Returns the smallest heap size a process can have according to the current configuration.
+			\item[\expression{total\_heap\_size}] Similar to \expression{heap\_size}, but also contains all other fragments of the heap, including the old one. The value returned is in \emph{words}.
 			
-			\item[\expression{min\_bin\_vheap\_size}] Each Erlang process has to track reference-counted binaries \footnote{see Section \ref{sec:binaries}} to know when to trigger a garbage collection that may help reduce global memory usage. This is done in a virtual heap for binaries. This attribute refers to the minimal size this heap can have.
-		\end{description}
-	\item[Workload] \hfill
+			\end{description}
+	\item[Work] \hfill
 		\begin{description}
 			\item[\expression{reductions}] The Erlang VM does scheduling based on \emph{reductions}, an arbitrary unit of work that allows rather portable implementations of scheduling (time-based scheduling is usually hard to make work efficiently on as many OSes as Erlang runs on). The higher the reductions, the more work, in terms of CPU and function calls, a process is doing. 
 		\end{description}
 \end{description*}
 
+Fortunately, for all the common ones that are also safe, recon contains the \expression{recon:info/1} function to help:
+
+\begin{VerbatimEshell}
+1> recon:info("<0.12.0>").
+[{meta,[{registered_name,rex},
+        {dictionary,[{'$ancestors',[kernel_sup,<0.10.0>]},
+                     {'$initial_call',{rpc,init,1}}]},
+        {group_leader,<0.9.0>},
+        {status,waiting}]},
+ {signals,[{links,[<0.11.0>]},
+           {monitors,[]},
+           {monitored_by,[]},
+           {trap_exit,true}]},
+ {location,[{initial_call,{proc_lib,init_p,5}},
+            {current_stacktrace,[{gen_server,loop,6,
+                                  [{file,"gen_server.erl"},{line,358}]},
+                                 {proc_lib,init_p_do_apply,3,
+                                  [{file,"proc_lib.erl"},{line,239}]}]}]},
+ {memory_used,[{memory,2808},
+               {message_queue_len,0},
+               {heap_size,233},
+               {total_heap_size,233},
+               {garbage_collection,[{min_bin_vheap_size,46422},
+                                    {min_heap_size,233},
+                                    {fullsweep_after,65535},
+                                    {minor_gcs,0}]}]},
+ {work,[{reductions,35}]}]
+\end{VerbatimEshell}
+
+For convenience's sake, \expression{recon:info/1} will accept any pid-like first argument and handle it: literal pids, strings (\expression{"<0.12.0>"}), registered atoms, global names (\expression{\{global, Atom\}}), names registered with a third-party registry (e.g. with \otpapp{gproc}: \expression{\{via, gproc, Name\}}), or tuples (\expression{\{0,12,0\}}). 
+
+If only a category of information is wanted, the category can be used directly:
+
+\begin{VerbatimEshell}
+2> recon:info(self(), work).
+{work,[{reductions,11035}]}
+\end{VerbatimEshell}
+
+or can be used in exactly the same way as \function{process\_info/2}:
+
+\begin{VerbatimEshell}
+3> recon:info(self(), [memory, status]).
+[{memory,10600},{status,running}]
+\end{VerbatimEshell}
+
+This latter form can be used to fetch unsafe information.
+
+With all this data, it's possible to find out all we need to debug a system. The issue then is often figuring out, between this per-process data, and the global one, which process should be targeted.
+
+%% proc_count + proc_window
 
 \subsection{Ports}
 
