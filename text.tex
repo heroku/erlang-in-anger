@@ -969,6 +969,8 @@ Here are the commonly used values for keys\footnote{for \emph{all} options, look
 		
 	\item[Location] \hfill
 		\begin{description}
+			\item[\expression{current\_function}] displays the current running function, as a tuple of the form \expression{\{Mod, Fun, Arity\}}.
+
 			\item[\expression{current\_location}] displays the current location within a module, as a tuple of the form \expression{\{Mod, Fun, Arity, [\{File, FileName\}, \{line, Num\}]\}}.
 			
 			\item[\expression{current\_stacktrace}] more verbose form of the preceding option; displays the current stacktrace as a list of 'current locations'.
@@ -1048,9 +1050,148 @@ This latter form can be used to fetch unsafe information.
 
 With all this data, it's possible to find out all we need to debug a system. The issue then is often figuring out, between this per-process data, and the global one, which process should be targeted.
 
-%% proc_count + proc_window
+When looking for high memory usage, for example it's interesting to be able to list all of a node's processes and find the top \var{N} consumers. Using the attributes above and the \function{recon:proc\_count(Attribute, N)} function, we can get these results:
+
+\begin{VerbatimEshell}
+4> recon:proc_count(memory, 3).
+[{<0.26.0>,831448,
+  [{current_function,{group,server_loop,3}},
+   {initial_call,{group,server,3}}]},
+ {<0.25.0>,372440,
+  [user,
+   {current_function,{group,server_loop,3}},
+   {initial_call,{group,server,3}}]},
+ {<0.20.0>,372312,
+  [code_server,
+   {current_function,{code_server,loop,1}},
+   {initial_call,{erlang,apply,2}}]}]
+\end{VerbatimEshell}
+
+Any of the attributes mentioned earlier can work, and for nodes with long-lived processes that can cause problems, it's a fairly useful function.
+
+There is however a problem when most processes are short-lived, or that a moving window is what we need (for example, what processes are busy accumulating memory or running code \emph{right now}).
+
+Recon has the \function{recon:proc\_window(Attribute, Num, Milliseconds)} function. It's particularly useful when processes on the node are mostly short-lived, usually too short to inspect through other tools, in order to figure out what kind of processes are eating through a lot resources on a given node.
+
+It is important to see this function as a snapshot over a sliding window. A program's timeline during sampling might look like this:
+
+\begin{Verbatim}
+--w---- [Sample1] ---x-------------y----- [Sample2] ---z--->
+\end{Verbatim}
+
+The function will allow to take two samples at an interval defined by \var{Milliseconds}.
+
+Some processes will live between \var{w} and die at \var{x}, some between \var{y} and \var{z}, and some between \var{x} and \var{y}. These samples will not be too significant as they're incomplete.
+
+If the majority of your processes run between a time interval \var{x} to \var{y} (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of \var{w} and \var{z}. Not doing this can skew the results: long-lived processes, that have 10 times the time to accumulate data (say reductions) will look like bottlenecks when they're not one.\footnote{Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many dozens of thousands of processes.}
+
+The function, once running gives results like follows:
+
+\begin{VerbatimEshell}
+5> recon:proc_window(reductions, 3, 500).
+[{<0.46.0>,51728,
+  [{current_function,{queue,in,2}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.49.0>,5728,
+  [{current_function,{dict,new,0}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.43.0>,650,
+  [{current_function,{timer,sleep,1}},
+   {initial_call,{erlang,apply,2}}]}]
+\end{VerbatimEshell}
+
+With these two functions, it becomes possible to home in on a specific process that is causing issues or misbehaving.
+
+
+\subsection{OTP Processes}
+
+When processes in question are OTP processes (most of the processes in a production system should definitely be OTP processes), you instantly win more tools to inspect them.
+
+In general the \module{sys} module\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} is what you want to look into. Read the documentation on it and you'll get why it's so useful. It contains the following feature for any OTP process:
+
+\begin{itemize*}
+	\item logging of all messages and state transitions, both to the shell or to a file, or even in an internal buffer to be queried;
+	\item statistics (reductions, message counts, time, and so on);
+	\item fetching the status of a process (metadata including the state);
+	\item fetching the state of a process (as in the \expression{\#state\{\}} record);
+	\item replacing that state
+	\item custom debugging functions to be used as callbacks
+\end{itemize*}
+
+On top of functionality to suspend or resume process execution.
+
+I won't go into a lot of details about these functions, but be aware that they exist.
 
 \subsection{Ports}
+
+Similarly to processes, Erlang ports allow a lot of introspection. The info can be accessed by calling \function{erlang:port\_info(Port, Key)}, and some more of it is located within the \module{inet} module. Most of it has been regrouped by the \function{recon:port\_info/1-2} functions, which work using a somewhat similar interface to their process-related counterpart. 
+
+\begin{description*}
+	\item[Meta] \hfill
+		\begin{description}		
+			\item[\expression{id}] internal index of a port. Of no particular use except to differentiate ports.
+			
+			\item[\expression{name}] type of the port -- with names such as \expression{"tcp\_inet"}, \expression{"udp\_inet"}, or \expression{"efile"}, for example.
+			
+			\item[\expression{os\_pid}] if the port is not an inet socket, but rather represents an external process or program, this value contains the os pid related to the said external program.
+		\end{description}
+
+	\item[Signals] \hfill
+		\begin{description}		
+			\item[\expression{connected}] Each port has a controlling process in charge of it, and this process' pid is the \expression{connected} one.
+			
+			\item[\expression{links}] ports can be linked with processes, much like other processes can be. The list of linked processes is contained here. Unless the process has been owned by or manually linked to a lot of processes, this should be safe to use.
+			
+			\item[\expression{monitors}] ports that represent external programs can have these programs end up monitoring Erlang processes. These processes are listed here.
+		\end{description}
+		
+	\item[IO] \hfill
+		\begin{description}		
+			\item[\expression{input}] the number of bytes read from the port.
+			
+			\item[\expression{output}] the number of bytes written to the port.
+		\end{description}
+
+	\item[Memory Used] \hfill
+		\begin{description}		
+			\item[\expression{memory}] this is the memory (in bytes) allocated by the runtime system for the port. This number tends to be small-ish and excludes space allocated by the port itself.
+			
+			\item[\expression{queue\_size}] Port programs have a specific queue, called the driver queue\footnote{The driver queue is available to queue output from the emulator to the driver (data from the driver to the emulator is queued by the emulator in normal Erlang message queues). This can be useful if the driver has to wait for slow devices etc, and wants to yield back to the emulator.}. This return the size of this queue, in bytes.
+		\end{description}
+		
+	\item[Type-Specific] \hfill
+		\begin{description}		
+			\item[Inet Ports] Returns inet-specific data, including statistics\footnote{\href{http://www.erlang.org/doc/man/inet.html\#getstat-1}{http://www.erlang.org/doc/man/inet.html\#getstat-1}}, the local address and port number for the socket (\expression{sockname}), and the inet options used\footnote{\href{http://www.erlang.org/doc/man/inet.html\#setopts-2}{http://www.erlang.org/doc/man/inet.html\#setopts-2}}
+			\item[Others] currently no other form than inet ports are supported in recon, and an empty list is returned.
+		\end{description}
+\end{description*}
+		
+The list can be obtained as follows:
+
+\begin{VerbatimEshell}
+1> recon:port_info("#Port<0.818>").
+[{meta,[{id,6544},{name,"tcp_inet"},{os_pid,undefined}]},
+ {signals,[{connected,<0.56.0>},
+           {links,[<0.56.0>]},
+           {monitors,[]}]},
+ {io,[{input,0},{output,0}]},
+ {memory_used,[{memory,40},{queue_size,0}]},
+ {type,[{statistics,[{recv_oct,0},
+                     {recv_cnt,0},
+                     {recv_max,0},
+                     {recv_avg,0},
+                     {recv_dvi,...},
+                     {...}|...]},
+        {peername,{{50,19,218,110},80}},
+        {sockname,{{97,107,140,172},39337}},
+        {options,[{active,true},
+                  {broadcast,false},
+                  {buffer,1460},
+                  {delay_send,...},
+                  {...}|...]}]}]
+\end{VerbatimEshell}
+		
+On top of this, functions to %% inet_count, inet_window		
 
 \chapter{Reading Crash Dumps}
 
