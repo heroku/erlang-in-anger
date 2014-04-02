@@ -800,6 +800,7 @@ For these cases, using existing metrics applications is useful. Common options a
 	\item \otpapp{folsom}\footnote{\href{https://github.com/boundary/folsom}{https://github.com/boundary/folsom}} to aggregate logs. they can then be stored wherever you feel like.
 	\item \otpapp{vmstats}\footnote{\href{https://github.com/ferd/vmstats}{https://github.com/ferd/vmstats}} and \otpapp{statsderl}\footnote{\href{https://github.com/lpgauth/statsderl}{https://github.com/lpgauth/statsderl}}, sending node metrics over to graphite through \app{statsd}\footnote{\href{https://github.com/etsy/statsd/}{https://github.com/etsy/statsd/}}.
 	\item \otpapp{exometer}\footnote{\href{https://github.com/Feuerlabs/exometer}{https://github.com/Feuerlabs/exometer}}, a fancy-pants metrics system that can integrate with \otpapp{folsom} (among other things),  and a variety of back-ends (graphite, collectd, \app{statsd}, Riak, SNMP, etc.). It's the newest player in town
+	\item \otpapp{ehmon}\footnote{\href{https://github.com/heroku/ehmon}{https://github.com/heroku/ehmon}} for output done directly to standard output, to be grabbed later through specific agents, splunk, and so on.
 	\item custom hand-rolled solutions, generally using ETS tables and processes periodically dumping the data.
 	\item or if you have nothing and are in trouble, a function printing stuff in a loop in a shell\footnote{the \otpapp{recon} application has the function \function{\href{http://ferd.github.io/recon/recon.html\#node\_stats\_print-2}{recon:node\_stats\_print/2}} to do this if you're in a pinch}.
 \end{itemize*}
@@ -1191,7 +1192,35 @@ The list can be obtained as follows:
                   {...}|...]}]}]
 \end{VerbatimEshell}
 		
-On top of this, functions to %% inet_count, inet_window		
+On top of this, functions to find out specific problematic ports exist the way they do for processes. The gotcha is that so far, recon only supports them for inet ports and with restricted attributes: the number of octets (bytes) sent, received, or both (\expression{send\_oct}, \expression{recv\_oct}, \expression{oct}, respectively), or the number of packets sent, received, or both (\expression{send\_cnt}, \expression{recv\_cnt}, \expression{cnt}, respectively).
+
+So for the cumulative total, which can help find out who is slowly but surely eating up all your bandwidth:
+
+\begin{VerbatimEshell}
+2> recon:inet_count(oct, 3).
+[{#Port<0.6821166>,15828716661,
+  [{recv_oct,15828716661},{send_oct,0}]},
+ {#Port<0.6757848>,15762095249,
+  [{recv_oct,15762095249},{send_oct,0}]},
+ {#Port<0.6718690>,15630954707,
+  [{recv_oct,15630954707},{send_oct,0}]}]
+\end{VerbatimEshell}
+
+Which suggest some ports are doing only input and eating lots of bytes. You can then use \function{recon:port\_info("\#Port<0.6821166>")} to dig in and fine who owns that socket, and what is going on with it.
+
+Or in any other case, we can look at what is sending the most data within any time window\footnote{see the explanations for the \function{recon:proc\_window/3} in the preceding subsection} with the \function{recon:inet\_window(Attribute, Count, Milliseconds)} function:
+
+\begin{VerbatimEshell}
+3> recon:inet_window(send_oct, 3, 5000).
+[{#Port<0.11976746>,2986216,[{send_oct,4421857688}]},
+ {#Port<0.11704865>,1881957,[{send_oct,1476456967}]},
+ {#Port<0.12518151>,1214051,[{send_oct,600070031}]}]
+\end{VerbatimEshell}
+
+For this one, the value in the middle of the tuple is what \expression{send\_oct} was worth (or any chosen attribute for each call!) during the specific time interval chosen (5 seconds here).
+
+There is still some manual work involved into properly linking a misbehaving port to a process (and then possibly to a specific user or customer), but all the tools are in place. 
+
 
 \chapter{Reading Crash Dumps}
 
