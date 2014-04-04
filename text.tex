@@ -1224,6 +1224,24 @@ There is still some manual work involved into properly linking a misbehaving por
 
 \chapter{Reading Crash Dumps}
 
+Whenever an Erlang node crashes, it will generate a crash dump\footnote{If it isn't killed by the OS for violating ulimits while dumping or didn't segfault.}.
+
+The format is mostly documented in Erlang's official documentation\footnote{\href{http://www.erlang.org/doc/apps/erts/crash\_dump.html}{http://www.erlang.org/doc/apps/erts/crash\_dump.html}}, and anyone willing to dig deeper inside of it will likely be able to figure out what data means by looking at that documentation. There will be specific data that is hard to understand without understanding the part of the VM they refer to, but that might be too complex for this document.
+
+The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{The Heroku routing and Telemetry teams by use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app, that can be added to a project to automatically name the dumps by boot time and put them in a pre-set location}.
+
+Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
+
+%% Show debugging here with output
+
+%% Add content about common causes for issues:
+%% - full mailboxes
+%% - too many procs
+%% - too many ports
+%% - silencey crashes that denote an OTP failure
+%% - too many atoms? maybe.
+%% - Regular OOM and pointing to \ref{chap:memory-leaks}
+
 \chapter{Memory Leaks}
 \label{chap:memory-leaks}
 
