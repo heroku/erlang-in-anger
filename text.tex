@@ -448,6 +448,7 @@ Nothing in there says "OTP shuts down the node all the time" nearly as much as t
 %%%
 
 \chapter{Planning for Overload}
+\label{chap:overload}
 
 By far the most common cause of failure I've encountered in real-world scenarios were about the node going out of memory, and usually having this related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in INSERT REFERENCE HERE} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
 
@@ -663,6 +664,7 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 %%%
 
 \chapter{Connecting to Remote Nodes}
+\label{chap:connecting}
 
 Interacting with a running server program is traditionally done in one of two ways. One is to do it through an interactive shell kept available by using a \app{screen} or \app{tmux} session that runs in the background, and letting someone connect to it. The other is to program management functions or comprehensive configuration files that can be dynamically reloaded.
 
@@ -776,6 +778,7 @@ Attaching to /tmp/erl_pipe (^D to exit)
 And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
 
 \chapter{Runtime Metrics}
+\label{chap:runtime-metrics}
 
 One of the best selling point of the Erlang VM for production use is how transparent it can be for all kinds of introspection, debugging, profiling, and analysis at run time.
 
@@ -1225,6 +1228,7 @@ There is still some manual work involved into properly linking a misbehaving por
 
 
 \chapter{Reading Crash Dumps}
+\label{chap:crash-dumps}
 
 Whenever an Erlang node crashes, it will generate a crash dump\footnote{If it isn't killed by the OS for violating ulimits while dumping or didn't segfault.}.
 
@@ -1360,7 +1364,7 @@ A high count may be the result of overload, Denial of Service attacks, or plain 
 
 \section{Can't Allocate Memory}
 
-This is by far the most common type of crashes you are likely to see. There's so much about them that Chapter \ref{chap:memory-leaks} is dedicated to understanding them and doing the required debugging.
+This is by far the most common type of crashes you are likely to see. There's so much about them that Chapter \ref{chap:memory-leaks} is dedicated to understanding them and doing the required debugging on live systems.
 
 In any case, the crash dump will help figure out what the problem was after the fact. The process mailboxes and individual heaps are usually good indicators of issues. If you're running out of memory without any mailbox being outrageously large, look at the processes heap and stack sizes as returned by the recon script.
 
@@ -1371,26 +1375,108 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 \chapter{Memory Leaks}
 \label{chap:memory-leaks}
 
+There is a truckload of ways for an Erlang node to bleed memory. They go from extremely simple to astonishingly hard to figure out (fortunately, the latter type is also rarer), and it's possible you'll never encounter any problem with them.
+
+You will find about memory leaks in two ways:
+
+\begin{enumerate*}
+	\item A crash dump (see Chapter \ref{chap:crash-dumps});
+	\item By finding a worrisome trend in the data you are monitoring. 
+\end{enumerate*}
+
+This chapter will mostly focus on the latter kind of leak, because they're easier to investigate and see grow in real time. We will focus on finding what is growing on the node and common remediation options, handling binary leaks (they're a special case),  and detecting memory fragmentation. 
+
+
+\section{Common Sources of Leaks}
+
+Whenever some calls for help saying "oh no, my nodes are crashing", the first step is always to ask for data. Interesting questions to ask and pieces of data to consider are:
+
+\begin{itemize*}
+	\item Do you have a crash dump and is it complaining about memory specifically? If not, the issue may be unrelated. If so, go dig into it, it's full of data.
+	\item Are the crashes cyclical? How predictable are they? What else tends to happen at around the same time and could it be related?
+	\item Do crashes coincide with peaks in load on your systems, or do they seem to happen at more or less any time? Crashes that happen especially \emph{during} peak times are often due to bad overload management (see Chapter \ref{chap:overload}). Crashes that happen at any time, even when load goes down following a peak are more likely to be actual memory issues.
+\end{itemize*}
+
+If all of this seems to point towards a memory leak, install one of the metrics libraries mentioned in Chapter \ref{chap:runtime-metrics} and/or \otpapp{recon} and get ready to dive in.\footnote{See Chapter \ref{chap:connecting} if you need help to connect to a running node}
+
+The first thing to look at in any of these cases is trends. Check for all types of memory using \expression{erlang:memory()} or some variant of it you have in a library or metrics system. Check for the following points:
+
+\begin{itemize*}
+	\item Is any type of memory growing faster than others?
+	\item Is there any type of memory that's taking the majority of the space available?
+	\item Is there any type of memory that never seems to go down, and always up?\footnote{Other than atoms. Atoms are never deallocated and not expected to shrink down. Do note that they shouldn't be allocated dynamically, because you will sooner or later hit the atom table's max size, or a memory limit, and crash}
+\end{itemize*}
+
+Many options are available depending on the type of memory that's growing.
+
+\subsection{Atom}
+
+Don't use dynamic atoms! Atoms go in a global table and are cached forever. Look for places where you call \function{erlang:binary\_to\_term/1} and \function{erlang:list\_to\_atom/1}, and consider switching to safer variants (\expression{erlang:binary\_to\_term(Bin, [safe]} and \function{erlang:list\_to\_existing\_atom/1}).
+
+If you use the \otpapp{xmerl} library that ships with Erlang, consider open source alternatives\footnote{I don't dislike \href{https://github.com/paulgray/exml}{exml} or \href{https://github.com/willemdj/erlsom}{erlsom}} or figuring the way to add your own SAX parser that can be safe\footnote{see Ulf Wiger at \href{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}}. 
+
+If you do none of this, consider what you do to interact with the node. One specific case that bit me in production was that some of our common tools used random names to connect to nodes remotely, or generated nodes with random names that connected to each other from a central server\footnote{This is a common approach to figuring out how to connect nodes together: have one or two central nodes with fixed names, and have every other one log to them. Connections will then propagate automatically}. Erlang node names are converted to atoms, so just having this was enough to slowly but surely exhaust space on atom tables. Make sure you generate them from a fixed set, or slowly enough that it won't be a problem in the long run.
+
+\subsection{Binary}
+
+See Section \ref{sec:binaries}.
+
+\subsection{Code}
+
+The code on an Erlang node is loaded in memory in its own area, and sits there until it is garbage collected. Only two copies of a module can coexist at one time, so looking for very large modules should be easy-ish.
+
+If none of them stand out, look for code compiled with HiPE\footnote{\href{http://www.erlang.org/doc/man/HiPE\_app.html}{http://www.erlang.org/doc/man/HiPE\_app.html}}. HiPE code, unlike regular BEAM code, is native code and cannot be garbage collected from the VM. Memory can accumulate, usually very slowly, if many or large modules are native-compiled and loaded at run time.
+
+Alternatively, you may look for weird modules you didn't load yourself on the node and panic if someone got access to your system!
+
+\subsection{ETS}
+
+ETS tables are never garbage collected, and will maintain their memory usage as long as records will be left undeleted in a table (or that the table holding them won't be deleted).
+
+In the rare cases you're actually leaking ETS data, call the undocumented \function{ets:i()} function in the shell. It will print out information regarding number of entries (\expression{size}) and how much memory they take (\expression{mem}). Figure out if anything is bad.
+
+It's entirely possible all the data there is legit, and you're facing the difficult problem of needing to shard your data set and distribute it over many nodes. This is out of scope for this book, so best of luck to you. You can look into compression your tables if you need to buy time, however.\footnote{See the \href{http://www.erlang.org/doc/man/ets.html\#new-2}{\expression{compressed} option for \function{ets:new/2}}}
+
+\subsection{Processes}
+
+There is a lot of different ways in which process memory can grow. Most interesting cases will be
+
+% stack / heap / oldheap / total
+% count
+% GCs ?
+
+\subsection{Nothing in Particular}
+
 \section{Binaries}
 \label{sec:binaries}
 
 % how binaries work
-% common sources or causes of leaks
 % per-process binaries (biggest leakers, biggest active holders)
 
+\section{Memory Fragmentation}
 %% Fragmentation ??
+
+
 
 \chapter{CPU Hogs}
 
+%% Hard to do without profiling in dev
+
+\chapter{Tracing}
+\label{chap:tracing}
+
 \chapter{Tuning the VM}
-% locks!
+\label{chap:tuning}
+%% locks!
+
 %% you usually want the lmbcs to be at least a 5 times (if not more) bigger than the perc95
 
 %% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
 
 %% Cache hits
 
-\chapter{Tracing}
-\label{chap:tracing}
+%% Kernel Polling
+
+%% 
 
 \end{document}  
