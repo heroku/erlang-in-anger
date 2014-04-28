@@ -1439,13 +1439,38 @@ It's entirely possible all the data there is legit, and you're facing the diffic
 
 \subsection{Processes}
 
-There is a lot of different ways in which process memory can grow. Most interesting cases will be
+There is a lot of different ways in which process memory can grow. Most interesting cases will be related to a few common cases: process leaks (as in, you're leaking processes), specific processes leaking their memory, and so on. It's possible there's more than one cause, so multiple metrics are worth investigating. Note that the process count itself is skipped and has been covered before.
 
-% stack / heap / oldheap / total
-% count
-% GCs ?
+\subsubsection{Links and Monitors}
+
+globally available metrics: is the process count indicative of a leak? If so, you may need to investigate unlinked process, or peek inside supervisors' children lists to see what may be weird-looking.
+
+Finding unlinked (and unmonitored) processes is easy to do with a few basic commands:
+
+\begin{VerbatimEshell}
+1> [P || P <- processes(),
+         [{_,Ls},{_,Ms}] <- [process_info(P, [links,monitors])],
+         []==Ls, []==Ms].
+\end{VerbatimEshell}
+
+This will return a list of processes with neither. For supervisors, just fetching \expression{supervisor:count\_children(SupervisorPidOrName)} and seeing what looks normal can be a good pointer.
+
+
+\subsubsection{Memory Used}
+
+Erlang's memory model for a process is divided
+% stack / old heap / total heap
+
+
+\subsubsection{Garbage Collections}
+
+It is very well possible that a process uses lots of memory, but only for short periods of time. For long-lived nodes with a large overhead for operations, this is usually not a problem, but whenever memory starts being scarce, such spiky behaviour might be something you want to get rid of.
+
+Monitoring all garbage collections in real-time from the shell would be costly. Instead, looking at Erlang's system monitor...
 
 \subsection{Nothing in Particular}
+
+
 
 \section{Binaries}
 \label{sec:binaries}
@@ -1458,9 +1483,11 @@ There is a lot of different ways in which process memory can grow. Most interest
 
 
 
-\chapter{CPU Hogs}
+\chapter{CPU and Scheduler Hogs}
 
 %% Hard to do without profiling in dev
+%% system monitor!
+%% suspended ports?
 
 \chapter{Tracing}
 \label{chap:tracing}
