@@ -930,12 +930,14 @@ Most other types will be given names of the driver they're talking to, and will 
 Again, tracking these can be useful to assess load or usage of a system, detect leaks, and so on.
 
 \section{Digging In}
+\label{sec:digging-in}
 
 Whenever some 'in the large' view (or logging, maybe) has pointed you towards a potential cause for an issue you're having, it starts being interesting to dig around with a purpose. Is a process having a weird state? Maybe it needs tracing\footnote{See Chapter \ref{chap:tracing}}! Tracing is great whenever you have a specific function call or input or output to watch for, but often, before getting there, a lot more digging is required.
 
 Outside of memory leaks, which often need their own specific techniques and are discussed in Chapter \ref{chap:memory-leaks}, the most common tasks are related to processes and ports (file descriptors and sockets).
 
 \subsection{Processes}
+\label{subsec:digging-procs}
 
 By all means, processes are an important part of a running Erlang system. And because they're so central to everything that goes on, there's a lot to want to know about them. Fortunately, the VM makes a lot of information available, some of which is safe to use, and some of which is unsafe to use in production (because they can return data sets large enough that the amount of memory copied to the shell process and used to print it can kill the node).
 
@@ -1457,16 +1459,64 @@ This will return a list of processes with neither. For supervisors, just fetchin
 
 \subsubsection{Memory Used}
 
-The per-process memory model is briefly described in Subsection \ref{subsec:memory-process-level}
-% Ref to memory model
-% stack / old heap / total heap
+The per-process memory model is briefly described in Subsection \ref{subsec:memory-process-level}, but generally speaking, you can find which individual processes use the most memory by looking for their \term{memory} attribute. You can look things up either as absolute terms or as a sliding window.
 
+For memory leaks, unless you're in a predictable fast increase, absolute values are usually those worth digging in first:
+
+\begin{VerbatimEshell}
+1> recon:proc_count(memory, 3).
+[{<0.175.0>,325276504,
+  [myapp_stats,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.169.0>,73521608,
+  [myapp_giant_sup,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.72.0>,4193496,
+  [gproc,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]}]
+\end{VerbatimEshell}
+
+Attributes that may be interesting to check other than \term{memory} may be any other fields in Subsection \ref{subsec:digging-procs}, including \term{message\_queue\_len}, but \term{memory} will usually encompass all other types.
 
 \subsubsection{Garbage Collections}
 
 It is very well possible that a process uses lots of memory, but only for short periods of time. For long-lived nodes with a large overhead for operations, this is usually not a problem, but whenever memory starts being scarce, such spiky behaviour might be something you want to get rid of.
 
-Monitoring all garbage collections in real-time from the shell would be costly. Instead, looking at Erlang's system monitor...
+Monitoring all garbage collections in real-time from the shell would be costly. Instead, setting up Erlang's system monitor\footnote{\href{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}} might be the best way to go at it.
+
+Erlang's system monitor will allow to track information such as long garbage collection periods and large process heaps, among other things. A monitor can temporarily be set up as follows:
+
+\begin{VerbatimEshell}
+1> erlang:system_monitor().
+undefined
+2> erlang:system_monitor(self(), [{long_gc, 500}]).
+undefined
+3> flush().
+Shell got {monitor,<4683.31798.0>,long_gc,
+                   [{timeout,515},
+                    {old_heap_block_size,0},
+                    {heap_block_size,75113},
+                    {mbuf_size,0},
+                    {stack_size,19},
+                    {old_heap_size,0},
+                    {heap_size,33878}]}
+5> erlang:system_monitor(undefined).
+{<0.26706.4961>,[{long_gc,500}]}
+6> erlang:system_monitor().
+undefined
+\end{VerbatimEshell}
+
+The first command checks that nothing (or nobody else) is using a system monitor yet -- you don't want to take this away from an existing application or coworker.
+
+The second command will be notified every time a garbage collection takes over 500 milliseconds. The result is flushed in the third command. Feel free to also check for \expression{\{large\_heap, NumWords\}} if you want to monitor such sizes.
+Be careful to start with large values at first if you're unsure. You don't want to flood your process' mailbox with a bunch of heaps that are 1-word large or more, for example.
+
+Commands 5 unsets the system monitor (exiting or killing the monitor process also frees it up), and command 6 validates that everything worked.
+
+You can then find out if such monitoring messages tend to coincide with the memory increases that seem to result in leaks or overuses, and try to catch culprits before things are too bad. Quickly reacting and digging into the process (possibly with \function{recon:info/1}) may help find out what's wrong with the application.
 
 \subsection{Nothing in Particular}
 
@@ -1590,6 +1640,10 @@ For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the
 
 Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
 
+Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on each scheduler has what is called a \emph{\term{mbcs} pool}. The \term{mbcs} pool is a feature used to fight against memory fragmentation on the VM. When an allocator gets to have one of its multiblock carriers become mostly empty,\footnote{The threshold is configurable through \href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}} the carrier becomes \emph{abandoned}. 
+
+This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory. It also enables the migration of memory blocks across schedulers when they contain little data, according to their needs.
+
 \subsection{The Process Level}
 \label{subsec:memory-process-level}
 
@@ -1617,5 +1671,13 @@ After a given number of minor GCs and/or reallocations, a full-sweep GC is perfo
 
 When that happens, over 80\% of the time, the only thing that happens is that the memory is marked as available in the sub-allocator and can be taken back by new processes or other ones that may need to be resized. Only after having this memory unused -- and the multiblock carrier unused also -- is it returned to \term{mseg\_alloc} or \term{sys\_alloc}, which may or may not keep it for a while longer.
 
+%% Lukas:
+%So you have a "classic" memory fragmentation problem. The reason why you are seeing it in 17.0 and not in R16 is probably because we have changed the default allocation strategy from "best fit" to "address order first fit carrier best fit".
+%
+%To fix this I would first try to change the allocation strategy for binaries to "address order first fit carrier address order best fit" (+MBasaoffcaobf) and see if that helps.
+%
+% If that does not work you could always disable the mbcs pool (+MBacul 0), which would make the allocators run very similar to how they worked in R16. But you loose the nice mbcs pool :(
+%
+% One thing to keep in mind here is that maybe you don't have to fix it at all? The memory is not lost, it just not used at the moment and cannot be released to the OS because some binaries are still present in them. So unless you crash with out of memory I would not change anything.
 
 \end{document}  
