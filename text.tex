@@ -1386,47 +1386,6 @@ You will find about memory leaks in two ways:
 \end{enumerate*}
 
 This chapter will mostly focus on the latter kind of leak, because they're easier to investigate and see grow in real time. We will focus on finding what is growing on the node and common remediation options, handling binary leaks (they're a special case),  and detecting memory fragmentation. 
-
-\section{Background: Erlang's Memory Model}
-\label{sec:erlang-memory-model}
-
-To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
-
-
-\begin{figure}
-  \includegraphics{memory-allocs.pdf}%
-  \caption{Erlang's Memory allocators and their hierarchy. Not shown is the special \emph{super carrier}, optionally allowing to pre-allocate (and limit) all memory available to the Erlang VM since R16B03.}%
-   \label{fig:allocators}
-\end{figure}
-
-\begin{enumerate*}
-    \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
-    \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
-    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is).
-    \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
-    \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
-    \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
-    \item \term{ll\_alloc}: long-lived allocations will be in there. Examples include Erlang code itself and the atom table, which stay there.
-    \item \term{fix\_alloc}: allocator used for frequently used fixed-size blocks of memory. One example of data used there is the internal processes' C struct, used internally by the VM.
-    \item \term{std\_alloc}: catch-all allocator for whatever didn't fit the previous categories. The process registry for named process is there.
-\end{enumerate*}
-
-By default, there will be one instance of each allocator per scheduler (and you should have one scheduler per core), plus one instance to be used by linked-in drivers using async threads. This ends up giving you a structure a bit like in Figure \ref{fig:allocators}, but split it in \var{N} parts at each leaf.
-
-Each of these sub-allocators will request memory from \term{mseg\_alloc} and \term{sys\_alloc} depending on the use case, and in two possible ways. The first way is to act as a multiblock carrier (\term{mbcs}), which will fetch chunks of memory that will be used for many Erlang terms at once. For each \term{mbc}, the VM will set aside a given amount of memory (about 8MB by default in our case, which can be configured by tweaking VM options), and each term allocated will be free to go look into the many multiblock carriers to find some decent space in which to reside.
-
-Whenever the item to be allocated is greater than the single block carrier threshold (\term{sbct})\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}}, the allocator switches this allocation into a single block carrier (\term{sbcs}). A single block carrier will request memory directly from \term{mseg\_alloc} for the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} entries, and then switch over to \term{sys\_alloc} and store the term there until it's deallocated.
-
-So looking at something such as the binary allocator, we may end up with something similar to Figure \ref{fig:allocation-1-normal}
-
-\begin{figure}
-  \includegraphics{allocation-1-normal.pdf}%
-  \caption{Example memory allocated in a specific sub-allocator}%
-   \label{fig:allocation-1-normal}
-\end{figure}
-
-%% keep adding content from https://blog.heroku.com/archives/2013/11/7/logplex-down-the-rabbit-hole
-
 \section{Common Sources of Leaks}
 
 Whenever some calls for help saying "oh no, my nodes are crashing", the first step is always to ask for data. Interesting questions to ask and pieces of data to consider are:
@@ -1499,6 +1458,7 @@ This will return a list of processes with neither. For supervisors, just fetchin
 \subsubsection{Memory Used}
 
 Erlang's memory is based 
+% Ref to memory model
 % stack / old heap / total heap
 
 
@@ -1545,5 +1505,48 @@ Monitoring all garbage collections in real-time from the shell would be costly. 
 %% Kernel Polling
 
 %% 
+
+
+\section{Erlang's Memory Model}
+\label{sec:erlang-memory-model}
+
+To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
+
+
+\begin{figure}
+  \includegraphics{memory-allocs.pdf}%
+  \caption{Erlang's Memory allocators and their hierarchy. Not shown is the special \emph{super carrier}, optionally allowing to pre-allocate (and limit) all memory available to the Erlang VM since R16B03.}%
+   \label{fig:allocators}
+\end{figure}
+
+\begin{enumerate*}
+    \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
+    \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
+    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is).
+    \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
+    \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
+    \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
+    \item \term{ll\_alloc}: long-lived allocations will be in there. Examples include Erlang code itself and the atom table, which stay there.
+    \item \term{fix\_alloc}: allocator used for frequently used fixed-size blocks of memory. One example of data used there is the internal processes' C struct, used internally by the VM.
+    \item \term{std\_alloc}: catch-all allocator for whatever didn't fit the previous categories. The process registry for named process is there.
+\end{enumerate*}
+
+By default, there will be one instance of each allocator per scheduler (and you should have one scheduler per core), plus one instance to be used by linked-in drivers using async threads. This ends up giving you a structure a bit like in Figure \ref{fig:allocators}, but split it in \var{N} parts at each leaf.
+
+Each of these sub-allocators will request memory from \term{mseg\_alloc} and \term{sys\_alloc} depending on the use case, and in two possible ways. The first way is to act as a multiblock carrier (\term{mbcs}), which will fetch chunks of memory that will be used for many Erlang terms at once. For each \term{mbc}, the VM will set aside a given amount of memory (about 8MB by default in our case, which can be configured by tweaking VM options), and each term allocated will be free to go look into the many multiblock carriers to find some decent space in which to reside.
+
+Whenever the item to be allocated is greater than the single block carrier threshold (\term{sbct})\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}}, the allocator switches this allocation into a single block carrier (\term{sbcs}). A single block carrier will request memory directly from \term{mseg\_alloc} for the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} entries, and then switch over to \term{sys\_alloc} and store the term there until it's deallocated.
+
+So looking at something such as the binary allocator, we may end up with something similar to Figure \ref{fig:allocation-1-normal}
+
+\begin{figure}
+  \includegraphics{allocation-1-normal.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-1-normal}
+\end{figure}
+
+%% keep adding content from https://blog.heroku.com/archives/2013/11/7/logplex-down-the-rabbit-hole
+
+
 
 \end{document}  
