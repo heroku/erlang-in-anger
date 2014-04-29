@@ -1457,7 +1457,7 @@ This will return a list of processes with neither. For supervisors, just fetchin
 
 \subsubsection{Memory Used}
 
-Erlang's memory is based 
+The per-process memory model is briefly described in Subsection \ref{subsec:memory-process-level}
 % Ref to memory model
 % stack / old heap / total heap
 
@@ -1510,6 +1510,9 @@ Monitoring all garbage collections in real-time from the shell would be costly. 
 \section{Erlang's Memory Model}
 \label{sec:erlang-memory-model}
 
+\subsection{The Global Level}
+\label{subsec:memory-global-level}
+
 To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
 
 
@@ -1545,8 +1548,74 @@ So looking at something such as the binary allocator, we may end up with somethi
    \label{fig:allocation-1-normal}
 \end{figure}
 
-%% keep adding content from https://blog.heroku.com/archives/2013/11/7/logplex-down-the-rabbit-hole
+Whenever a multiblock carrier (or the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} single block carriers) can be reclaimed, \term{mseg\_alloc} will try to keep it in memory for a while so that the next allocation spike that hits your VM can use pre-allocated memory rather than needing to ask the system for more each time.
 
+You then need to know the different memory allocation strategies of the Erlang virtual machine:
+
+\begin{enumerate*}
+    \item Best fit (\term{bf})
+    \item Address order best fit (\term{aobf})
+    \item Address order first fit (\term{aoff})
+    \item Address order first fit carrier best fit (\term{aoffcbf})
+    \item Address order first fit carrier address order best fit (\term{aoffcaobf})
+    \item Good fit (\term{gf})
+    \item A fit (\term{af})
+\end{enumerate*}
+
+\begin{figure}
+  \includegraphics{allocation-strategy-1.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-1}
+\end{figure}
+
+For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the free blocks' sizes, and will try to find the smallest one that will accommodate the piece of data and allocate it there. In Figure \ref{fig:allocation-strategy-1}, having a piece of data that requires three blocks would likely end in area 3.
+
+\emph{Address order best fit} (\term{aobf}) will work similarly, but the tree instead is based on the addresses of the blocks. So the VM will look for the smallest block available that can accommodate the data, but if many of the same size exist, it will favor picking one that has a lower address. If I have a piece of data that requires three blocks, I'll still likely end up in area 3, but if I need two blocks, this strategy will favor the first \term{mbcs} in Figure \ref{fig:allocation-strategy-1} with area 1 (instead of area 5). This could make the VM have a tendency to favor the same carriers for many allocations.
+
+\emph{Address order first fit} (\term{aoff}) will favor the address order for its search, and as soon as a block fits, \term{aoff} uses it. Where \term{aobf} and bf would both have picked area 3 to allocate four blocks in Figure \ref{fig:allocation-strategy-1}, this one will get area 2 as a first priority given its address is lowest. In Figure \ref{fig:allocation-strategy-2}, if we were to allocate four blocks, we'd favor block 1 to block 3 because its address is lower, whereas \term{bf} would have picked either 3 or 4, and \term{aobf} would have picked 3.
+
+\begin{figure}
+  \includegraphics{allocation-strategy-2.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-2}
+\end{figure}
+
+\emph{Address order first fit carrier best fit} (\term{aoffcbf}) is a strategy that will first favor a carrier that can accommodate the size and then look for the best fit within that one. So if we were to allocate two blocks in Figure \ref{fig:allocation-strategy-2}, \term{bf} and \term{aobf} would both favor block 5, \term{aoff} would pick block 1. \term{aoffcbf} would pick area 2, because the first \term{mbcs} can accommodate it fine, and area 2 fits it better than area 1.
+
+\emph{Address order first fit carrier address order best fit} (\term{aoffcaobf}) will be similar to \term{aoffcbf}, but if multiple areas within a carrier have the same size, it will favor the one with the smallest address between the two rather than leaving it unspecified.
+
+\emph{Good fit} (\term{gf}) is a different kind of allocator; it will try to work like best fit (\term{bf}), but will only search for a limited amount of time. If it doesn't find a perfect fit there and then, it will pick the best one encountered so far. The value is configurable through the \term{mbsd}\footnote{\href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}} VM argument.
+
+\emph{A fit} (\term{af}), finally, is an allocator behavior for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
+
+Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
+
+\subsection{The Process Level}
+\label{subsec:memory-process-level}
+
+On a smaller scale, for each Erlang process, the layout still is a bit different. It basically has this piece of memory that can be imagine as one box:
+
+\begin{VerbatimText}
+[                  ]
+\end{VerbatimText}
+
+On one end you have the heap, and on the other, you have the stack:
+
+\begin{VerbatimText}
+[heap |     | stack]
+\end{VerbatimText}
+
+In practice there's more data (you have an old heap and a new heap, for generational GC, and also a virtual binary heap, to account for the space of reference-counted binaries on a specific sub-allocator not used by the process -- \term{binary\_alloc} vs. \term{eheap\_alloc}):
+
+\begin{VerbatimText}
+[heap   ||    stack]
+\end{VerbatimText}
+
+The space is allocated more and more up until either the stack or the heap can't fit in anymore. This triggers a minor GC. The minor GC moves the data that can be kept into the old heap, GCs the rest, may end up reallocating for more space.
+
+After a given number of minor GCs and/or reallocations, a full-sweep GC is performed, which inspects both the new and old heaps, frees up more space, and so on. When a process dies, both the stack and heap are taken out at once. reference-counted binaries are decreased, and if the counter is at 0, they vanish.
+
+When that happens, over 80\% of the time, the only thing that happens is that the memory is marked as available in the sub-allocator and can be taken back by new processes or other ones that may need to be resized. Only after having this memory unused -- and the multiblock carrier unused also -- is it returned to \term{mseg\_alloc} or \term{sys\_alloc}, which may or may not keep it for a while longer.
 
 
 \end{document}  
