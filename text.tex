@@ -1520,7 +1520,7 @@ You can then find out if such monitoring messages tend to coincide with the memo
 
 \subsection{Nothing in Particular}
 
-If nothing seems to stand out in the preceding material, binary leaks (Section \ref{sec:binaries}) and memory fragmentation (Section \ref{sec:memory-fragmentation}). Of course, a possible scenario is that load on the node and memory usage were proportional, and nothing specifically ended up being leaky or modified. The system just needs more resources or nodes.
+If nothing seems to stand out in the preceding material, binary leaks (Section \ref{sec:binaries}) and memory fragmentation (Section \ref{sec:memory-fragmentation}). If nothing fits, it's possible a C driver, NIF, or even the VM itself is leaking. Of course, a possible scenario is that load on the node and memory usage were proportional, and nothing specifically ended up being leaky or modified. The system just needs more resources or nodes.
 
 \section{Binaries}
 \label{sec:binaries}
@@ -1589,9 +1589,43 @@ The solution to this pattern is to have the router process return the pid to rou
 
 \section{Memory Fragmentation}
 \label{sec:memory-fragmentation}
-%% Fragmentation ??
 
+Memory fragmentation issues are intimately related to Erlang's memory model, as described in Section \ref{sec:erlang-memory-model}. It is by far one of the trickiest issues of running long-lived Erlang nodes (often when individual node uptime reaches many months), and will show up relatively rarely.
 
+The general symptoms of memory fragmentation are large amounts of memory being allocated during peak load, and that memory not going away after the fact. The damning factor will be that the node will internally report much lower usage (through \function{erlang:memory()}) than what is reported by the operating system.
+
+\subsection{Finding Fragmentation}
+
+The \module{recon\_alloc} module was developed specifically to detect and help point towards the resolution of such issues.
+
+Given how rare this type of issue has been so far over the community (or happened without the developers knowing what they were), only broad steps to detect things are defined. They're all vague and require the operator's judgement.
+
+\subsubsection{Check Allocated Memory}
+
+Calling \function{recon\_alloc:memory/1} will report various memory metrics with more flexibility than \function{erlang:memory/0}. Here are the possible arguments:
+
+\begin{enumerate}
+	\item call \expression{recon\_alloc:memory(usage)}. This will return a value between 0 and 1 representing a percentage of memory that is being actively used by Erlang terms versus the memory that the Erlang VM has obtained from the OS for such purposes. If the usage is close to 100\%, you likely do not have memory fragmentation issues. You're just using a lot of it.
+	\item check if \expression{recon\_alloc:memory(allocated)} matches what the OS reports.\footnote{you can call \expression{recon\_alloc:set\_unit(Type)} to set the values reported by \module{recon\_alloc} in bytes, kilobytes, megabytes, or gigabytes} It should match it fairly closely if the problem is really about fragmentation or a memory leak from Erlang terms.
+\end{enumerate}
+
+That should confirm if memory seems to be fragmented or not.
+
+\subsubsection{Find the Guilty Allocator}
+
+Call \expression{recon\_alloc:memory(allocated\_types)} to see which type of util allocator (see Section \ref{sec:erlang-memory-model}) is allocating the most memory. See if one looks like an obvious culprit when you compare the results with \expression{erlang:memory()}.
+
+Try \expression{recon\_alloc:fragmentation(current)}. The resulting data dump will show different allocators on the node with various usage ratios.\footnote{More information is available at \href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}}
+
+If you see very low ratios, see if they differ when calling \expression{recon\_alloc:fragmentation(max)}, which should show what the usage patterns were like under your max memory load.
+
+If there is a big difference, you are likely having issues with memory fragmentation for a few specific allocator types.
+
+\subsubsection{Fixing the Issue}
+
+Tweaking your VM's options for memory allocation may help. Ultimately, picking a different allocation strategy requires a more in-depth understanding of Erlang's memory model. See Chapter \ref{chap:tuning}, more specifically Sections \ref{sec:erlang-memory-model} and \ref{sec:choosing-alloc-strategy} to find guidance there.
+
+You will also likely need to have a good understanding of what your type of memory load and usage is, and be ready to do a lot of in-depth testing. The \module{recon\_alloc} module contains a few helper functions to provide guidance, and the module's documentation\footnote{\href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}} should be read at this point.
 
 \chapter{CPU and Scheduler Hogs}
 
@@ -1604,18 +1638,6 @@ The solution to this pattern is to have the router process return the pid to rou
 
 \chapter{Tuning the VM}
 \label{chap:tuning}
-%% locks!
-
-%% you usually want the lmbcs to be at least a 5 times (if not more) bigger than the perc95
-
-%% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
-
-%% Cache hits
-
-%% Kernel Polling
-
-%% 
-
 
 \section{Erlang's Memory Model}
 \label{sec:erlang-memory-model}
@@ -1671,6 +1693,8 @@ You then need to know the different memory allocation strategies of the Erlang v
     \item Good fit (\term{gf})
     \item A fit (\term{af})
 \end{enumerate*}
+
+Each of these strategies can be configured individually for each \term{alloc\_util} allocator\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}}
 
 \begin{figure}
   \includegraphics{allocation-strategy-1.pdf}%
@@ -1739,5 +1763,22 @@ When that happens, over 80\% of the time, the only thing that happens is that th
 % If that does not work you could always disable the mbcs pool (+MBacul 0), which would make the allocators run very similar to how they worked in R16. But you loose the nice mbcs pool :(
 %
 % One thing to keep in mind here is that maybe you don't have to fix it at all? The memory is not lost, it just not used at the moment and cannot be released to the OS because some binaries are still present in them. So unless you crash with out of memory I would not change anything.
+
+\section{Choosing an Allocation Strategy}
+\label{sec:choosing-alloc-strategy}
+
+%% locks!
+
+%% you usually want the lmbcs to be at least a 5 times (if not more) bigger than the perc95
+
+%% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
+
+%% Cache hits
+
+%% Kernel Polling
+
+%% 
+
+
 
 \end{document}  
