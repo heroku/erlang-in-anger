@@ -1520,15 +1520,75 @@ You can then find out if such monitoring messages tend to coincide with the memo
 
 \subsection{Nothing in Particular}
 
-
+If nothing seems to stand out in the preceding material, binary leaks (Section \ref{sec:binaries}) and memory fragmentation (Section \ref{sec:memory-fragmentation}). Of course, a possible scenario is that load on the node and memory usage were proportional, and nothing specifically ended up being leaky or modified. The system just needs more resources or nodes.
 
 \section{Binaries}
 \label{sec:binaries}
 
-% how binaries work
-% per-process binaries (biggest leakers, biggest active holders)
+Erlang's binaries are of two main types: ProcBins and Refc binaries\footnote{\href{http://www.erlang.org/doc/efficiency\_guide/binaryhandling.html\#id65798}{http://www.erlang.org/doc/efficiency\_guide/binaryhandling.html\#id65798}}. Binaries up to 64 bytes are allocated directly on the process's heap, and their entire life cycle is spent in there. Binaries bigger than that get allocated in a global heap for binaries only, and each process to use one holds a local reference to it in its local heap. These binaries are reference-counted, and the deallocation will occur only once all references are garbage-collected from all processes that pointed to a specific binary.
+
+In 99\% of the cases, this mechanism works entirely fine. In some cases, however, the process will either:
+
+\begin{enumerate*}
+	\item do too little work to warrant allocations and garbage collection;
+         \item eventually grow a large stack or heap with various data structures, collect them, then get to work with a lot of refc binaries. Filling the heap again with binaries (even though a virtual heap is used to account for the refc binaries' real size) may take a lot of time, giving long delays between garbage collections.
+\end{enumerate*}
+
+\subsection{Detecting Leaks}
+
+Detecting leaks for reference-counted binaries is easy enough: take a measure of all of each process' list of binary references (using the \expression{binary} attribute), force a global garbage collection, take another snapshot, and calculate the difference.
+
+This can be done directly with \function{recon:bin\_leak(Max)} and looking at the node's total memory before and after the call:
+
+\begin{VerbatimEshell}
+1> recon:bin_leak(5).
+[{<0.4612.0>,-5580,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.17479.0>,-3724,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.31798.0>,-3648,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.31797.0>,-3266,
+  [{current_function,{gen,do_call,4}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.22711.1>,-2532,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]}]
+\end{VerbatimEshell}
+
+This will show how many individual binaries were held and freed by each process as a delta. The value \expression{-5580} means there were 5580 fewer refc binaries after the call than before.
+
+It is normal to have a given amount of them stored at any point in time, and not all numbers are a sign that something is bad. If you see the memory used by the VM go down drastically after running this call, you may have had a lot of idling refc binaries.
+
+Similarly, if you instead see some processes hold impressively large numbers of them\footnote{we've seen some processes hold hundreds of thousands of them during leak investigations at Heroku}, that might be a good sign you have a problem.
+
+\subsection{Fixing Leaks}
+
+Once you've established you've got a binary memory leak using \function{recon:bin\_leak(Max)}, it should be simple enough to look at the top processes and see what they are and what kind of work they do.
+
+Generally, refc binaries memory leaks can be solved in a few different ways, depending on the source:
+
+\begin{itemize*}
+	\item call garbage collection manually at given intervals (icky, but somewhat efficient);
+	\item stop using binaries (not always desirable);
+	\item use \function{binary:copy/1-2}\footnote{\href{http://www.erlang.org/doc/man/binary.html\#copy-1}{http://www.erlang.org/doc/man/binary.html\#copy-1}} if keeping only a small fragment (usually less than 64 bytes) of a larger binary;\footnote{it might be worth copying even a larger fragment of a refc binary. For example, copying 10 megabytes of a 2 gigabytes binary should be worth the short-term overhead if it allows the 2 gigabytes binary to be garbage-collected while keeping the smaller fragment longer}
+	\item move work that involves larger binaries to temporary one-off processes that will die when they're done (a lesser form of manual GC!);
+	\item or add hibernation calls when appropriate (possibly the cleanest solution for inactive processes).
+\end{itemize*}
+
+The first two options are frankly not agreeable and should not be attempted before all else failed. The last three options are usually the best ones to be used.
+
+\subsubsection{Routing Binaries}
+
+There's a specific solution for a specific use case some Erlang users have reported. The problematic use case is usually having one process routing binaries from one process to another one. That middleman process will therefore acquire a reference to every binary passing through it and will be a common major source of refc binaries leak.
+
+The solution to this pattern is to have the router process return the pid to route to and let the original caller move the binary around. This will make it so that only processes that do \emph{need} to touch the binary will do so.
 
 \section{Memory Fragmentation}
+\label{sec:memory-fragmentation}
 %% Fragmentation ??
 
 
