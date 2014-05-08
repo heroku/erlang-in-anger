@@ -856,6 +856,7 @@ Fortunately, recon has the function \function{recon\_alloc:memory/1} to figure i
 There's further memory inspection available, but you'll likely only need it when digging it further to figure out memory leaks in chapter \ref{chap:memory-leaks}
 
 \subsection{CPU}
+\label{subsec:global-cpu}
 
 Unfortunately for Erlang developers, CPU is very hard to profile. There are a few reasons for this:
 
@@ -1495,6 +1496,7 @@ For memory leaks, unless you're in a predictable fast increase, absolute values 
 Attributes that may be interesting to check other than \term{memory} may be any other fields in Subsection \ref{subsec:digging-procs}, including \term{message\_queue\_len}, but \term{memory} will usually encompass all other types.
 
 \subsubsection{Garbage Collections}
+\label{subsubsec:leak-gc}
 
 It is very well possible that a process uses lots of memory, but only for short periods of time. For long-lived nodes with a large overhead for operations, this is usually not a problem, but whenever memory starts being scarce, such spiky behaviour might be something you want to get rid of.
 
@@ -1660,10 +1662,58 @@ Tweaking your VM's options for memory allocation may help. Ultimately, picking a
 
 You will also likely need to have a good understanding of what your type of memory load and usage is, and be ready to do a lot of in-depth testing. The \module{recon\_alloc} module contains a few helper functions to provide guidance, and the module's documentation\footnote{\href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}} should be read at this point.
 
+%%%
+%%%
+%%%
+
+
 \chapter{CPU and Scheduler Hogs}
 \label{chap:cpu-hogs}
-%% Hard to do without profiling in dev
-%% system monitor!
+
+While memory leaks tend to absolutely kill your system, CPU exhaustion tends to act like a bottleneck and limit the maximal work you can get out of a node. Erlang developers will have a tendency to scale horizontally when they face such issues. It is often an easy enough job for the more basic pieces of code out there, and only readily global state (process registries, ETS tables, and so on) need to be modified.\footnote{Usually this takes the form of sharding or finding a state-replication scheme that's suitable, and little more. It's still a decent piece of work, but nothing compared to finding out most of your program's semantics aren't applicable to distributed systems given Erlang usually forces your hand there in the first place.}
+
+It is generally difficult to properly analyze the CPU usage of a node and to pin problems to a specific piece of code. With everything concurrent and in a virtual machine, there is no guarantee you will find out if a specific process, driver, your own Erlang code, NIFs you may have installed, or some third-party library is eating up all your processing power.
+
+\section{Profiling and Reduction Counts}
+\label{sec:cpu-profiling}
+
+There will be two main approaches to find issues. One will be to do the old standard profiling routing, likely using one of the following applications:\footnote{All of these profilers work using Erlang tracing functionality. They will have an impact on the run-time performance of the application, and shouldn't be used in production.}
+
+\begin{itemize*}
+	\item \otpapp{eprof},\footnote{\href{http://www.erlang.org/doc/man/eprof.html}{http://www.erlang.org/doc/man/eprof.html}} the oldest Erlang profiler around. It will give general percentage values and will mostly report in terms of time taken.
+	\item \otpapp{fprof},\footnote{\href{http://www.erlang.org/doc/man/fprof.html}{http://www.erlang.org/doc/man/fprof.html}} a more powerful replacement of eprof. It will support full concurrency and generate in-depth reports. In fact, the reports are so deep that they are usually considered opaque and hard to read. 
+	\item \otpapp{eflame},\footnote{\href{https://github.com/proger/eflame}{https://github.com/proger/eflame}} the newest kid on the block. It generates flame graphs to show deep call sequences and hot-spots in usage on a given piece of code. It allows to quickly find issues with a single look at the final result.
+\end{itemize*}
+
+Which will be left to the reader to do through reading each of these application's documentation.
+
+The other approach will be to run \function{recon:proc\_window/3} as introduced in Subsection \ref{subsec:digging-procs}:
+
+\begin{VerbatimEshell}
+1> recon:proc_window(reductions, 3, 500).
+[{<0.46.0>,51728,
+  [{current_function,{queue,in,2}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.49.0>,5728,
+  [{current_function,{dict,new,0}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.43.0>,650,
+  [{current_function,{timer,sleep,1}},
+   {initial_call,{erlang,apply,2}}]}]
+\end{VerbatimEshell}
+
+The reduction count has a direct link to function calls in Erlang, and a high count is usually the synonym of a high amount of CPU usage. 
+
+What's interesting with this function is to try it while a system is already rather busy,\footnote{See Subsection \ref{subsec:global-cpu}} with a relatively short interval. Repeat it many times, and you should hopefully see a pattern emerge where the same processes (or the same \emph{kind} of processes) tend to always come up on top.
+
+Using the code locations\footnote{Call \expression{recon:info(PidTerm, location)} or \expression{process\_info(Pid, current\_stacktrace)} to get this information} and current functions being run, you should be able to identify what kind of code hogs all your schedulers.
+
+\section{System Monitors}
+
+If nothing seems to stand out through either profiling or checking reduction counts, it's possible some of your work ends up being done by NIFs, garbage collections, and so on. To find about such cases, the best way around is to use \function{erlang:system\_monitor/2}, and look for \term{long\_gc} and \term{long\_schedule}. The former will show whenever garbage collection ends up doing a lot of work (it takes time!), and the latter will likely catch issues with busy processes, either through NIFs or some other means, that end up making them hard to de-schedule.\footnote{long garbage collections count towards scheduling time. It is very possible that a lot of your long schedules will be tied to garbage collections depending on your system.}
+
+%% We've seen how to In Garbage Collection in \ref{subsubsec:leak-gc}
+
 %% suspended ports?
 
 \chapter{Tracing}
