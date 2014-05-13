@@ -1760,8 +1760,59 @@ If you find out you're having problems with these, try replacing your sending fu
 \chapter{Tracing}
 \label{chap:tracing}
 
-%% function calls
-%% messages?
+One of the lesser known and absolutely under-used features of Erlang and the BEAM virtual machine is just about how much tracing you can do on there.
+
+Forget your debuggers, their use is too limited.\footnote{One common issue with debuggers that let you insert break points and step through a program is that they are incompatible with many Erlang programs: put a break point in one process and the ones around keep going. In practice, this turns debugging into a very limited activity because as soon as a process needs to interact with the one you're debugging, its calls start timing out and crashing, possibly taking down the entire node with it. Tracing, on the other hand, doesn't interfere with program execution, but still gives you all the data you need.} Tracing makes sense in Erlang at all steps of your system's life cycle, whether it's for development or for diagnosing a running production system. 
+
+There are a few options available to trace Erlang programs:
+
+\begin{itemize}
+	\item \module{sys}\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} comes standard with OTP and allows to set custom tracing functions, log all kinds of events, and so on. It's generally complete and fine to use for development. It suffers a bit in production because it doesn't redirect IO to remote shells, and doesn't have rate-limiting capabilities for trace messages. It is still recommended to read the documentation for the module.
+	
+	\item \otpapp{dbg}\footnote{\href{http://www.erlang.org/doc/man/dbg.html}{http://www.erlang.org/doc/man/dbg.html}} also comes standard with Erlang/OTP. Its interface is a bit clunky in terms of usability, but it's entirely good enough to do what you need. The problem with it is that you \emph{have to know what you're doing}, because \otpapp{dbg} can log absolutely everything on the node and kill one in under two seconds.
+	
+	\item \emph{tracing BIFs} are available as part of the \module{erlang} module. They're mostly the raw blocks used by all the applications mentioned in this list, but their lower level of abstraction makes them rather difficult to use.
+	
+	\item \otpapp{redbug}\footnote{\href{https://github.com/massemanet/eper/blob/master/doc/redbug.txt}{https://github.com/massemanet/eper/blob/master/doc/redbug.txt}} is a production-safe tracing library, part of the \otpapp{eper}\footnote{\href{https://github.com/massemanet/eper}{https://github.com/massemanet/eper}} suite. It has an internal rate-limiter, and a nice usable interface. To use it, you must however be willing to add in all of \otpapp{eper}'s dependencies. The toolkit is fairly comprehensive and can be a very interesting install.
+	
+	\item \module{recon\_trace}\footnote{\href{http://ferd.github.io/recon/recon\_trace.html}{http://ferd.github.io/recon/recon\_trace.html}} is \otpapp{recon}'s take on tracing. The objective was to allow the same levels of safety as with \otpapp{redbug}, but without the dependencies. The interface is different, and the rate-limiting options aren't entirely identical. It can also only trace function calls, and not messages.\footnote{Messages may be supported in future iterations of the library. In practice, the author hasn't found the need when using OTP, given behaviours and matching on specific arguments allows to get something roughly equivalent.}
+\end{itemize}
+
+This chapter will focus on tracing with \module{recon\_trace}, but the terminology and the concepts used mostly carry over to any other Erlang tracing tool that can be used.
+
+\section{Tracing Principles}
+\label{sec:tracing-princples}
+
+The Erlang Trace BIFs allow to trace any Erlang code at all. They work in two parts: \emph{pid specifications}, and \emph{trace patterns}.
+
+Pid specifications lets the user decide which processes to target. They can be specific pids, \expression{all} pids, \expression{existing} pids, or \expression{new} pids (those not spawned at the time of the function call).
+
+The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
+
+What defines whether a specific function call gets traced or not is the intersection of both:
+
+\begin{VerbatimText}
+        _,--------,_      _,--------,_
+     ,-'            `-,,-'            `-,
+  ,-'              ,-'  '-,              `-,
+ |   Matching    -'        '-   Matching    |
+ |     Pids     |  Getting   |    Trace     |
+ |              |   Traced   |  Patterns    |
+ |               -,        ,-               |
+  '-,              '-,  ,-'              ,-'
+     '-,_          _,-''-,_          _,-'
+         '--------'        '--------'·
+\end{VerbatimText}
+\footnote{replace by actual venn diagram not in ASCII}
+
+If either the pid specification excludes a process or a trace pattern excludes a given call, no trace will be received.
+
+Tools like \otpapp{dbg} (and trace BIFs) force you to work with this Venn diagram in mind. You specify sets of matching pids and sets of trace patterns independently, and whatever happens to be at the intersection of both sets gets to be displayed.
+
+Tools like \otpapp{redbug} and \module{recon\_trace}, on the other hand, abstract this away.
+
+\section{Tracing Basics with Recon}
+\section{Tracing Deeper}
 
 %%%
 %%%
