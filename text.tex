@@ -122,7 +122,7 @@ The book is divided in two parts.
 
 Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive in a code base (Chapter \ref{chap:how-to-dive-in-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), what are the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system through its crash dumps (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). It finally adds instructions on how to trace Erlang function calls in production nodes to help debugging (Chapter \ref{chap:tracing}), and how to tune your VM for better production performance (Chapter \ref{chap:tuning}).
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), what are the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system through its crash dumps (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). It finally adds instructions on how to trace Erlang function calls in production nodes to help debugging and understanding issues before they even bring the system down (Chapter \ref{chap:tracing}).
 
 For this part of the book, common operations have been regrouped in the \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/}} library to make the text lighter, and are generally production-safe. You will likely need to download it and add it to your project.
 
@@ -549,7 +549,19 @@ The advantage of proceeding that way is that you may just avoid all the tricky s
 
 \subsection{What Users See}
  
-FILL THIS IN
+The tricky part about back-pressure is reporting it. Implicit back-pressure done through synchronous calls, the only way to know back-pressure is at work is that the system becomes slower and less usable. Sadly, this is also going to be a potential symptom of bad hardware, bad network, unrelated overload, and possibly a slow client.
+
+Trying to figure out that a system is applying back-pressure through how responsive it is is equivalent to trying to diagnose which illness someone has through seeing that person has a fever. It tells you something is wrong, but not what.
+
+Asking for permission, as a mechanism, will generally allow you to define your interface in such a way that you can explicitly report what is going on: the system as a whole is overloaded, or you're hitting a limit into the rate at which you can perform an operation and adjust accordingly.
+
+There is a choice to be made there when designing the system. Are your users going to have per-account limits, or are the limits going to be global to the system?
+
+System-global or node-global limits are usually easy to implement, but will have the downside that they may be unfair. A user doing 90\% of all your requests may end up making the platform unusable for the vast majority of the other users.
+
+Per-account limits, on the other hand, tend to be very fair, and allow fancy schemes such as having premium users who can go above the usual limits. This is extremely nice, but has the downside that the more users use your system, the higher the global system limit tends to move. Starting with 100 users that can do 100 requests a minute gives you a global 10000 requests per minute. Add 20 new users with that same rate allowed, and suddenly you may crash a lot more often.
+
+The safe margin of error you established when designing the system slowly erodes as more people use it. It's important to consider the tradeoffs your business can tolerate from that point of view, because users will tend not to appreciate seeing their allowed usage go down all the time, possibly even more so than seeing the system go down entirely from time to time.
 
 
 \section{Generally Discarding Data}
@@ -842,7 +854,7 @@ First of all, all the values returned are in bytes, and they represent memory \e
 
 The \expression{total} field contains the sum of the memory used for \expression{processes} and \expression{system} (which is incomplete, unless the VM is instrumented!). \expression{processes} is the memory used by Erlang processes, their stacks and heaps. \expression{system} is the rest: memory used by ETS tables, atoms in the VM, refc binaries\footnote{see Section \ref{sec:binaries}}, and some of the hidden data I mentioned was missing.
 
-If you want the total amount of memory owned by the virtual machine, as in the amount that will trip system's limits (\app{ulimit}), this amount is more difficult to get from within the VM. If you want the data without calling \app{top} or \app{htop}, you have to dig down into the VM's memory allocators to find things out.\footnote{See Section \ref{sec:erlang-memory-model}}
+If you want the total amount of memory owned by the virtual machine, as in the amount that will trip system's limits (\app{ulimit}), this amount is more difficult to get from within the VM. If you want the data without calling \app{top} or \app{htop}, you have to dig down into the VM's memory allocators to find things out.\footnote{See Section \ref{subsec:erlang-memory-model}}
 
 Fortunately, recon has the function \function{recon\_alloc:memory/1} to figure it out, where the argument is:
 
@@ -1625,7 +1637,7 @@ A fix for this can be implemented transparently in the router's API functions, w
 \section{Memory Fragmentation}
 \label{sec:memory-fragmentation}
 
-Memory fragmentation issues are intimately related to Erlang's memory model, as described in Section \ref{sec:erlang-memory-model}. It is by far one of the trickiest issues of running long-lived Erlang nodes (often when individual node uptime reaches many months), and will show up relatively rarely.
+Memory fragmentation issues are intimately related to Erlang's memory model, as described in Section \ref{subsec:erlang-memory-model}. It is by far one of the trickiest issues of running long-lived Erlang nodes (often when individual node uptime reaches many months), and will show up relatively rarely.
 
 The general symptoms of memory fragmentation are large amounts of memory being allocated during peak load, and that memory not going away after the fact. The damning factor will be that the node will internally report much lower usage (through \function{erlang:memory()}) than what is reported by the operating system.
 
@@ -1648,7 +1660,7 @@ That should confirm if memory seems to be fragmented or not.
 
 \subsubsection{Find the Guilty Allocator}
 
-Call \expression{recon\_alloc:memory(allocated\_types)} to see which type of util allocator (see Section \ref{sec:erlang-memory-model}) is allocating the most memory. See if one looks like an obvious culprit when you compare the results with \expression{erlang:memory()}.
+Call \expression{recon\_alloc:memory(allocated\_types)} to see which type of util allocator (see Section \ref{subsec:erlang-memory-model}) is allocating the most memory. See if one looks like an obvious culprit when you compare the results with \expression{erlang:memory()}.
 
 Try \expression{recon\_alloc:fragmentation(current)}. The resulting data dump will show different allocators on the node with various usage ratios.\footnote{More information is available at \href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}}
 
@@ -1656,11 +1668,129 @@ If you see very low ratios, check if they differ when calling \expression{recon\
 
 If there is a big difference, you are likely having issues with memory fragmentation for a few specific allocator types following usage spikes.
 
-\subsubsection{Fixing the Issue}
+\subsection{Erlang's Memory Model}
+\label{subsec:erlang-memory-model}
 
-Tweaking your VM's options for memory allocation may help. Ultimately, picking a different allocation strategy requires a more in-depth understanding of Erlang's memory model. See Chapter \ref{chap:tuning}, more specifically Sections \ref{sec:erlang-memory-model} and \ref{sec:choosing-alloc-strategy} to find guidance there.
+\subsubsection{The Global Level}
 
-You will also likely need to have a good understanding of what your type of memory load and usage is, and be ready to do a lot of in-depth testing. The \module{recon\_alloc} module contains a few helper functions to provide guidance, and the module's documentation\footnote{\href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}} should be read at this point.
+To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
+
+
+\begin{figure}
+  \includegraphics{memory-allocs.pdf}%
+  \caption{Erlang's Memory allocators and their hierarchy. Not shown is the special \emph{super carrier}, optionally allowing to pre-allocate (and limit) all memory available to the Erlang VM since R16B03.}%
+   \label{fig:allocators}
+\end{figure}
+
+\begin{enumerate*}
+    \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
+    \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
+    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is).
+    \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
+    \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
+    \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
+    \item \term{ll\_alloc}: long-lived allocations will be in there. Examples include Erlang code itself and the atom table, which stay there.
+    \item \term{fix\_alloc}: allocator used for frequently used fixed-size blocks of memory. One example of data used there is the internal processes' C struct, used internally by the VM.
+    \item \term{std\_alloc}: catch-all allocator for whatever didn't fit the previous categories. The process registry for named process is there.
+\end{enumerate*}
+
+By default, there will be one instance of each allocator per scheduler (and you should have one scheduler per core), plus one instance to be used by linked-in drivers using async threads. This ends up giving you a structure a bit like in Figure \ref{fig:allocators}, but split it in \var{N} parts at each leaf.
+
+Each of these sub-allocators will request memory from \term{mseg\_alloc} and \term{sys\_alloc} depending on the use case, and in two possible ways. The first way is to act as a multiblock carrier (\term{mbcs}), which will fetch chunks of memory that will be used for many Erlang terms at once. For each \term{mbc}, the VM will set aside a given amount of memory (about 8MB by default in our case, which can be configured by tweaking VM options), and each term allocated will be free to go look into the many multiblock carriers to find some decent space in which to reside.
+
+Whenever the item to be allocated is greater than the single block carrier threshold (\term{sbct})\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}}, the allocator switches this allocation into a single block carrier (\term{sbcs}). A single block carrier will request memory directly from \term{mseg\_alloc} for the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} entries, and then switch over to \term{sys\_alloc} and store the term there until it's deallocated.
+
+So looking at something such as the binary allocator, we may end up with something similar to Figure \ref{fig:allocation-1-normal}
+
+\begin{figure}
+  \includegraphics{allocation-1-normal.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-1-normal}
+\end{figure}
+
+Whenever a multiblock carrier (or the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} single block carriers) can be reclaimed, \term{mseg\_alloc} will try to keep it in memory for a while so that the next allocation spike that hits your VM can use pre-allocated memory rather than needing to ask the system for more each time.
+
+You then need to know the different memory allocation strategies of the Erlang virtual machine:
+
+\begin{enumerate*}
+    \item Best fit (\term{bf})
+    \item Address order best fit (\term{aobf})
+    \item Address order first fit (\term{aoff})
+    \item Address order first fit carrier best fit (\term{aoffcbf})
+    \item Address order first fit carrier address order best fit (\term{aoffcaobf})
+    \item Good fit (\term{gf})
+    \item A fit (\term{af})
+\end{enumerate*}
+
+Each of these strategies can be configured individually for each \term{alloc\_util} allocator\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}}
+
+\begin{figure}
+  \includegraphics{allocation-strategy-1.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-1}
+\end{figure}
+
+For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the free blocks' sizes, and will try to find the smallest one that will accommodate the piece of data and allocate it there. In Figure \ref{fig:allocation-strategy-1}, having a piece of data that requires three blocks would likely end in area 3.
+
+\emph{Address order best fit} (\term{aobf}) will work similarly, but the tree instead is based on the addresses of the blocks. So the VM will look for the smallest block available that can accommodate the data, but if many of the same size exist, it will favor picking one that has a lower address. If I have a piece of data that requires three blocks, I'll still likely end up in area 3, but if I need two blocks, this strategy will favor the first \term{mbcs} in Figure \ref{fig:allocation-strategy-1} with area 1 (instead of area 5). This could make the VM have a tendency to favor the same carriers for many allocations.
+
+\emph{Address order first fit} (\term{aoff}) will favor the address order for its search, and as soon as a block fits, \term{aoff} uses it. Where \term{aobf} and bf would both have picked area 3 to allocate four blocks in Figure \ref{fig:allocation-strategy-1}, this one will get area 2 as a first priority given its address is lowest. In Figure \ref{fig:allocation-strategy-2}, if we were to allocate four blocks, we'd favor block 1 to block 3 because its address is lower, whereas \term{bf} would have picked either 3 or 4, and \term{aobf} would have picked 3.
+
+\begin{figure}
+  \includegraphics{allocation-strategy-2.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-2}
+\end{figure}
+
+\emph{Address order first fit carrier best fit} (\term{aoffcbf}) is a strategy that will first favor a carrier that can accommodate the size and then look for the best fit within that one. So if we were to allocate two blocks in Figure \ref{fig:allocation-strategy-2}, \term{bf} and \term{aobf} would both favor block 5, \term{aoff} would pick block 1. \term{aoffcbf} would pick area 2, because the first \term{mbcs} can accommodate it fine, and area 2 fits it better than area 1.
+
+\emph{Address order first fit carrier address order best fit} (\term{aoffcaobf}) will be similar to \term{aoffcbf}, but if multiple areas within a carrier have the same size, it will favor the one with the smallest address between the two rather than leaving it unspecified.
+
+\emph{Good fit} (\term{gf}) is a different kind of allocator; it will try to work like best fit (\term{bf}), but will only search for a limited amount of time. If it doesn't find a perfect fit there and then, it will pick the best one encountered so far. The value is configurable through the \term{mbsd}\footnote{\href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}} VM argument.
+
+\emph{A fit} (\term{af}), finally, is an allocator behavior for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
+
+Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
+
+Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on each scheduler has what is called a \emph{\term{mbcs} pool}. The \term{mbcs} pool is a feature used to fight against memory fragmentation on the VM. When an allocator gets to have one of its multiblock carriers become mostly empty,\footnote{The threshold is configurable through \href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}} the carrier becomes \emph{abandoned}. 
+
+This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory.\footnote{in cases this consumes too much memory, the feature can be disabled with the options \term{+MBacul 0}.} It also enables the migration of memory blocks across schedulers when they contain little data, according to their needs.
+
+\subsubsection{The Process Level}
+
+On a smaller scale, for each Erlang process, the layout still is a bit different. It basically has this piece of memory that can be imagine as one box:
+
+\begin{VerbatimText}
+[                  ]
+\end{VerbatimText}
+
+On one end you have the heap, and on the other, you have the stack:
+
+\begin{VerbatimText}
+[heap |     | stack]
+\end{VerbatimText}
+
+In practice there's more data (you have an old heap and a new heap, for generational GC, and also a virtual binary heap, to account for the space of reference-counted binaries on a specific sub-allocator not used by the process — \term{binary\_alloc} vs. \term{eheap\_alloc}):
+
+\begin{VerbatimText}
+[heap   ||    stack]
+\end{VerbatimText}
+
+The space is allocated more and more up until either the stack or the heap can't fit in anymore. This triggers a minor GC. The minor GC moves the data that can be kept into the old heap, GCs the rest, may end up reallocating for more space.
+
+After a given number of minor GCs and/or reallocations, a full-sweep GC is performed, which inspects both the new and old heaps, frees up more space, and so on. When a process dies, both the stack and heap are taken out at once. reference-counted binaries are decreased, and if the counter is at 0, they vanish.
+
+When that happens, over 80\% of the time, the only thing that happens is that the memory is marked as available in the sub-allocator and can be taken back by new processes or other ones that may need to be resized. Only after having this memory unused — and the multiblock carrier unused also — is it returned to \term{mseg\_alloc} or \term{sys\_alloc}, which may or may not keep it for a while longer.
+
+\subsection{Fixing Memory Fragmentation with a Different Allocation Strategy}
+
+Tweaking your VM's options for memory allocation may help.
+
+You will likely need to have a good understanding of what your type of memory load and usage is, and be ready to do a lot of in-depth testing. The \module{recon\_alloc} module contains a few helper functions to provide guidance, and the module's documentation\footnote{\href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}} should be read at this point.
+
+You will need to figure out what the average data size is, the frequency of allocation and deallocation, whether the data fits in \term{mbcs} or \term{sbcs},  and you will then need to try playing with a bunch of the options mentioned in \module{recon\_alloc}, try the different strategies, deploy them, and see if things improve or if they impact times negatively.
+
+This is a very long process for which there is no shortcut, and if issues happen only every few months per node, you may be in for the long haul. 
 
 %%%
 %%%
@@ -1958,139 +2088,9 @@ In doubt, start with the most restrictive tracing possible, with low limits, and
 
 
 %%%
+%%% Tuning the VM: not a chapter yet.
 %%%
-%%%
 
-\chapter{Tuning the VM}
-\label{chap:tuning}
-
-\section{Erlang's Memory Model}
-\label{sec:erlang-memory-model}
-
-\subsection{The Global Level}
-\label{subsec:memory-global-level}
-
-To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
-
-
-\begin{figure}
-  \includegraphics{memory-allocs.pdf}%
-  \caption{Erlang's Memory allocators and their hierarchy. Not shown is the special \emph{super carrier}, optionally allowing to pre-allocate (and limit) all memory available to the Erlang VM since R16B03.}%
-   \label{fig:allocators}
-\end{figure}
-
-\begin{enumerate*}
-    \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
-    \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
-    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is).
-    \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
-    \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
-    \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
-    \item \term{ll\_alloc}: long-lived allocations will be in there. Examples include Erlang code itself and the atom table, which stay there.
-    \item \term{fix\_alloc}: allocator used for frequently used fixed-size blocks of memory. One example of data used there is the internal processes' C struct, used internally by the VM.
-    \item \term{std\_alloc}: catch-all allocator for whatever didn't fit the previous categories. The process registry for named process is there.
-\end{enumerate*}
-
-By default, there will be one instance of each allocator per scheduler (and you should have one scheduler per core), plus one instance to be used by linked-in drivers using async threads. This ends up giving you a structure a bit like in Figure \ref{fig:allocators}, but split it in \var{N} parts at each leaf.
-
-Each of these sub-allocators will request memory from \term{mseg\_alloc} and \term{sys\_alloc} depending on the use case, and in two possible ways. The first way is to act as a multiblock carrier (\term{mbcs}), which will fetch chunks of memory that will be used for many Erlang terms at once. For each \term{mbc}, the VM will set aside a given amount of memory (about 8MB by default in our case, which can be configured by tweaking VM options), and each term allocated will be free to go look into the many multiblock carriers to find some decent space in which to reside.
-
-Whenever the item to be allocated is greater than the single block carrier threshold (\term{sbct})\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}}, the allocator switches this allocation into a single block carrier (\term{sbcs}). A single block carrier will request memory directly from \term{mseg\_alloc} for the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} entries, and then switch over to \term{sys\_alloc} and store the term there until it's deallocated.
-
-So looking at something such as the binary allocator, we may end up with something similar to Figure \ref{fig:allocation-1-normal}
-
-\begin{figure}
-  \includegraphics{allocation-1-normal.pdf}%
-  \caption{Example memory allocated in a specific sub-allocator}%
-   \label{fig:allocation-1-normal}
-\end{figure}
-
-Whenever a multiblock carrier (or the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} single block carriers) can be reclaimed, \term{mseg\_alloc} will try to keep it in memory for a while so that the next allocation spike that hits your VM can use pre-allocated memory rather than needing to ask the system for more each time.
-
-You then need to know the different memory allocation strategies of the Erlang virtual machine:
-
-\begin{enumerate*}
-    \item Best fit (\term{bf})
-    \item Address order best fit (\term{aobf})
-    \item Address order first fit (\term{aoff})
-    \item Address order first fit carrier best fit (\term{aoffcbf})
-    \item Address order first fit carrier address order best fit (\term{aoffcaobf})
-    \item Good fit (\term{gf})
-    \item A fit (\term{af})
-\end{enumerate*}
-
-Each of these strategies can be configured individually for each \term{alloc\_util} allocator\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}}
-
-\begin{figure}
-  \includegraphics{allocation-strategy-1.pdf}%
-  \caption{Example memory allocated in a specific sub-allocator}%
-   \label{fig:allocation-strategy-1}
-\end{figure}
-
-For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the free blocks' sizes, and will try to find the smallest one that will accommodate the piece of data and allocate it there. In Figure \ref{fig:allocation-strategy-1}, having a piece of data that requires three blocks would likely end in area 3.
-
-\emph{Address order best fit} (\term{aobf}) will work similarly, but the tree instead is based on the addresses of the blocks. So the VM will look for the smallest block available that can accommodate the data, but if many of the same size exist, it will favor picking one that has a lower address. If I have a piece of data that requires three blocks, I'll still likely end up in area 3, but if I need two blocks, this strategy will favor the first \term{mbcs} in Figure \ref{fig:allocation-strategy-1} with area 1 (instead of area 5). This could make the VM have a tendency to favor the same carriers for many allocations.
-
-\emph{Address order first fit} (\term{aoff}) will favor the address order for its search, and as soon as a block fits, \term{aoff} uses it. Where \term{aobf} and bf would both have picked area 3 to allocate four blocks in Figure \ref{fig:allocation-strategy-1}, this one will get area 2 as a first priority given its address is lowest. In Figure \ref{fig:allocation-strategy-2}, if we were to allocate four blocks, we'd favor block 1 to block 3 because its address is lower, whereas \term{bf} would have picked either 3 or 4, and \term{aobf} would have picked 3.
-
-\begin{figure}
-  \includegraphics{allocation-strategy-2.pdf}%
-  \caption{Example memory allocated in a specific sub-allocator}%
-   \label{fig:allocation-strategy-2}
-\end{figure}
-
-\emph{Address order first fit carrier best fit} (\term{aoffcbf}) is a strategy that will first favor a carrier that can accommodate the size and then look for the best fit within that one. So if we were to allocate two blocks in Figure \ref{fig:allocation-strategy-2}, \term{bf} and \term{aobf} would both favor block 5, \term{aoff} would pick block 1. \term{aoffcbf} would pick area 2, because the first \term{mbcs} can accommodate it fine, and area 2 fits it better than area 1.
-
-\emph{Address order first fit carrier address order best fit} (\term{aoffcaobf}) will be similar to \term{aoffcbf}, but if multiple areas within a carrier have the same size, it will favor the one with the smallest address between the two rather than leaving it unspecified.
-
-\emph{Good fit} (\term{gf}) is a different kind of allocator; it will try to work like best fit (\term{bf}), but will only search for a limited amount of time. If it doesn't find a perfect fit there and then, it will pick the best one encountered so far. The value is configurable through the \term{mbsd}\footnote{\href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}} VM argument.
-
-\emph{A fit} (\term{af}), finally, is an allocator behavior for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
-
-Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
-
-Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on each scheduler has what is called a \emph{\term{mbcs} pool}. The \term{mbcs} pool is a feature used to fight against memory fragmentation on the VM. When an allocator gets to have one of its multiblock carriers become mostly empty,\footnote{The threshold is configurable through \href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}} the carrier becomes \emph{abandoned}. 
-
-This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory. It also enables the migration of memory blocks across schedulers when they contain little data, according to their needs.
-
-\subsection{The Process Level}
-\label{subsec:memory-process-level}
-
-On a smaller scale, for each Erlang process, the layout still is a bit different. It basically has this piece of memory that can be imagine as one box:
-
-\begin{VerbatimText}
-[                  ]
-\end{VerbatimText}
-
-On one end you have the heap, and on the other, you have the stack:
-
-\begin{VerbatimText}
-[heap |     | stack]
-\end{VerbatimText}
-
-In practice there's more data (you have an old heap and a new heap, for generational GC, and also a virtual binary heap, to account for the space of reference-counted binaries on a specific sub-allocator not used by the process — \term{binary\_alloc} vs. \term{eheap\_alloc}):
-
-\begin{VerbatimText}
-[heap   ||    stack]
-\end{VerbatimText}
-
-The space is allocated more and more up until either the stack or the heap can't fit in anymore. This triggers a minor GC. The minor GC moves the data that can be kept into the old heap, GCs the rest, may end up reallocating for more space.
-
-After a given number of minor GCs and/or reallocations, a full-sweep GC is performed, which inspects both the new and old heaps, frees up more space, and so on. When a process dies, both the stack and heap are taken out at once. reference-counted binaries are decreased, and if the counter is at 0, they vanish.
-
-When that happens, over 80\% of the time, the only thing that happens is that the memory is marked as available in the sub-allocator and can be taken back by new processes or other ones that may need to be resized. Only after having this memory unused — and the multiblock carrier unused also — is it returned to \term{mseg\_alloc} or \term{sys\_alloc}, which may or may not keep it for a while longer.
-
-%% Lukas:
-%So you have a "classic" memory fragmentation problem. The reason why you are seeing it in 17.0 and not in R16 is probably because we have changed the default allocation strategy from "best fit" to "address order first fit carrier best fit".
-%
-%To fix this I would first try to change the allocation strategy for binaries to "address order first fit carrier address order best fit" (+MBasaoffcaobf) and see if that helps.
-%
-% If that does not work you could always disable the mbcs pool (+MBacul 0), which would make the allocators run very similar to how they worked in R16. But you loose the nice mbcs pool :(
-%
-% One thing to keep in mind here is that maybe you don't have to fix it at all? The memory is not lost, it just not used at the moment and cannot be released to the OS because some binaries are still present in them. So unless you crash with out of memory I would not change anything.
-
-\section{Choosing an Allocation Strategy}
-\label{sec:choosing-alloc-strategy}
 
 %% locks!
 
