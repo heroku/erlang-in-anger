@@ -94,13 +94,13 @@ There's something rather unique in Erlang in how it approaches failure compared 
 
 The program is written once, and after that, it's off to production, whatever may happen there. If there are errors, new versions will need to be shipped.
 
-Erlang, on the other hand, takes the approach that failures will happen no matter what, whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category, but some cases still happen.} The idea quickly becomes that if you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
+Erlang, on the other hand, takes the approach that failures will happen no matter what, whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category, but some cases still happen.} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
 
 This is where the "Let it Crash"\footnote{Erlang people now seem to favour "let it fail", given it makes people far less nervous.} idea comes from: Because you can now deal with failure, and because the cost of weeding out all of the complex bugs from a system before it hits production is often prohibitive, the programmer should only deal with the errors he or she knows how to handle, and leave the rest for another process (a supervisor) or the virtual machine to deal with.
 
-Given most bugs are transient\footnote{131 out 132 bugs are transient bugs (they're caused by circumstances, and trying again may solve the problem entirely), according to Jim Gray in \href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}}, just restarting faulty processes from a state known to be stable will be surprisingly good at dealing with errors.
+Given that most bugs are transient\footnote{131 out 132 bugs are transient bugs (they're caused by circumstances, and trying again may solve the problem entirely), according to Jim Gray in \href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}}, simply restarting processes back to a state known to be stable when encountering an error can be a surprisingly good strategy.
 
-If I'm allowed an analogy, Erlang is a programming environment where what you have is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Pretty much every environment offers the hygiene, to varying degrees. Nearly no other environment offers the immune system.
+Erlang is a programming environment where what you have is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Pretty much every environment offers the hygiene, to varying degrees. Nearly no other environment offers the immune system where errors at run time can be dealt with and seen as survivable.
 
 Because the system doesn't collapse the first time something bad touches it, Erlang/OTP also allows you to be a doctor. You can go in the system, pry it open, carefully observe everything inside as it runs, and even try to fix it interactively. To continue with the analogy, Erlang allows you to perform extensive tests to diagnose the problem and various degrees of surgery (even very invasive surgery), without the patient needing to sit down or interrupt his daily activities.
 
@@ -109,22 +109,20 @@ This book intends to be a little guide about how to be the Erlang medic in a tim
 \section{Who is this for?}
 \label{sec:who-is-this-for}
 
-This book is not for absolute beginners. There is usually a gap left between most tutorials, books, training sessions, and actually being able to deliver a product that works. There's a fumbling phase implicit to a programmer's learning of a new language and environment, where you just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
+This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment, where you just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
 
-This book thus assumes that the reader is somewhat proficient in basic Erlang and the OTP framework, but doesn't make an assumption to what extent. Erlang/OTP features are explained as I see fit — usually when I consider them tricky — and it is expected that a reader who feels confused by usual Erlang/OTP material will have an idea of where to look for explanations if necessary\footnote{I do recommend visiting \href{http://learnyousomeerlang.com}{Learn You Some Erlang} or the regular \href{http://www.erlang.org/erldoc}{Erlang Documentation} if a free resource is required}.
+This book assumes that the reader is proficient in basic Erlang and the OTP framework. Erlang/OTP features are explained as I see fit — usually when I consider them tricky — and it is expected that a reader who feels confused by usual Erlang/OTP material will have an idea of where to look for explanations if necessary\footnote{I do recommend visiting \href{http://learnyousomeerlang.com}{Learn You Some Erlang} or the regular \href{http://www.erlang.org/erldoc}{Erlang Documentation} if a free resource is required}.
 
-What is not assumed is that the reader necessarily knows how to debug Erlang software, dive in an existing code base, diagnose issues, or has an idea of some of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
+What is not assumed is that the reader necessarily knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of some of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
 
 \section{How To Read This Book}
 \label{sec:how-to-read-this-book}
 
 The book is divided in two parts. 
 
-Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive in a code base (Chapter \ref{chap:how-to-dive-in-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
+Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), what are the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system through its crash dumps (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). It finally adds instructions on how to trace Erlang function calls in production nodes to help debugging and understanding issues before they even bring the system down (Chapter \ref{chap:tracing}).
-
-For this part of the book, common operations have been regrouped in the \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/}} library to make the text lighter, and are generally production-safe. You will likely need to download it and add it to your project.
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), what are the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} in production to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
 %%%
 %%%
@@ -133,10 +131,10 @@ For this part of the book, common operations have been regrouped in the \otpapp{
 \part{Writing Applications}
 \label{part:writing-applications}
 
-\chapter{How to Dive in a Code Base}
-\label{chap:how-to-dive-in-a-code-base}
+\chapter{How to Dive into a Code Base}
+\label{chap:how-to-dive-into-a-code-base}
 
-"Read the source" is one of the most annoying thing to be told, but dealing with Erlang programmers, you'll have to do it plenty of times. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems, and not really test or try them in other circumstances, leaving it for you to extend or fix issues that arise in new contexts.
+"Read the source" is one of the most annoying thing to be told, but dealing with Erlang programmers, you'll have to do it often. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems, and not really test or try them in other circumstances, leaving it for you to extend or fix issues that arise in new contexts.
 
 It's thus pretty much guaranteed you'll have to go dive in some code base you know nothing about, either because you inherited it at work, or because you need to fix it or understand it to be able to move forward with your own system. This is in fact true of most languages whenever the project you work on is not one you architected yourself.
 
@@ -149,7 +147,7 @@ If you encounter a raw Erlang code base, you're pretty much on your own. These r
 
 This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
 
-Fortunately, you should rarely encounter raw Erlang in the wild, and you will know early on they are often beginner projects, or awesome projects that were once built by Erlang beginners and now would need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even where not appropriate.
+Fortunately, you should rarely encounter raw Erlang in the wild, and you will know early on they are often beginner projects, or awesome projects that were once built by Erlang beginners and now would need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} -- a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
 
 \section{OTP Applications}
 \label{sec:dive-otp-applications}
@@ -181,9 +179,9 @@ This first case is called a \emph{library application}, while the latter case is
 \subsection{Library Applications}
 \label{subsec:dive-library-applications}
 
-Library applications will usually tend to have a bunch of modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality to be provided.
+Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality to be provided.
 
-By looking at the source of the module, you can figure out how it works with little effort: If there's any given behaviour in there (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If there isn't, then you probably have a functional, stateless library on your hands.
+By looking at the source of the module, you can figure out how it works with little effort: If there's any given behaviour in there (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If there isn't, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purposes.
 
 \subsection{Regular Applications}
 \label{subsec:dive-regular-applications}
@@ -203,12 +201,12 @@ The application will necessarily start a top-level supervisor and return its \em
 
 The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on ones that were started earlier.
 
-Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate with both processes rather trying to figure out how to recuperate when one or the other loses or corrupts its state.
+Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate with both processes rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
 
 The supervisor restart strategy will usually determine how these go together:
 
 \begin{itemize*}
-	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not depending on each other directly, although their failures will collectively counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They will require the order to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
+	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not depending on each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They will require the order to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
 	\item \expression{rest\_for\_one} will be used to represent processes that depend on each other in a linear manner.
 	\item \expression{one\_for\_all} is used for processes that entirely depend on each other.
 \end{itemize*}
@@ -247,7 +245,7 @@ Using such a hierarchy and looking at each application's short description might
 
 OTP releases are not a lot harder to understand than most OTP Applications in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to releases than that, but generally, the same discovery process used for individual OTP Applications will be applicable here.
 
-You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that  appeared more recently.
+You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that was officially released in early 2014.
 
 %%%
 %%%
@@ -285,7 +283,7 @@ README.md
 rebar.config
 \end{VerbatimText}
 
-What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally and your system and use that, if you want to.} if necessary. That's because there is no canonical package management in Erlang. People instead use whatever \app{rebar} decided, which was that you fetch dependencies locally. This is fine and removes a truckload of conflicts, but means that each project you have may have its own set of dependencies.
+What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally and your system and use that, if you want to, or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
 
 This is decided in \app{rebar} by adding a few config lines to \filename{rebar.config}:
 
@@ -312,7 +310,7 @@ When making your application public to the world, distribute it \emph{without} t
 \subsection{OTP Releases}
 \label{subsec:building-otp-releases}
 
-For releases, the structure should be a bit different\footnote{I say \emph{should} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies (in \filename{deps}), which is less than ideal for distribution purposes. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Because releases are collections of applications, their structure should reflect that.
+For releases, the structure should be a bit different\footnote{I say \emph{should} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies (in \filename{deps}), which is less than ideal for distribution purposes and conflicts with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Because releases are collections of applications, their structure should reflect that.
 
 Instead of having a top-level app, most applications should be equal. Then, a useful distinction to have is to have a directory for the applications' source code currently being contained within the existing repository (say, internal business code), and another one for dependencies (which are managed independently).
 
@@ -380,7 +378,7 @@ If you expect failure to happen on an external service, do not make its presence
 \subsection{Side Effects}
 \label{subsec:start-link-side-effects}
 
-Of course, the libraries and processes that call such a client will then error out if they didn't expect to work without a database. That's an entirely different issue in a different problem space, but not one that is always impossible to work around. For example, let's pretend the client is to a service that stores metrics for Ops people — then the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
+Of course, the libraries and processes that call such a client will then error out if they didn't expect to work without a database. That's an entirely different issue in a different problem space, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — then the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
 
 The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
 
@@ -430,7 +428,7 @@ And allow initializations with fewer guarantees: they went from \emph{the connec
 
 Production systems I end up working with often end up being a mix of both approaches.
 
-Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll readily put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minutes boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minutes boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
 
 On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations,
 then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
@@ -446,8 +444,7 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 	\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
 \end{itemize*}
 
-It is also possible to start an applications as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it. Nothing in there says "OTP shuts down the node all the time" nearly as much as the configuration given to it.
-
+It is also possible to start an applications as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
 
 %%%
 %%% PLEASE REPLACE THIS TOILET ANALOGY WITH A KITCHEN SINK
@@ -459,7 +456,7 @@ It is also possible to start an applications as an \emph{included application}, 
 
 By far, the most common cause of failure I've encountered in real-world scenarios were about the node going out of memory, and usually having this related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
 
-To oversimplify things, most of the projects I end up working on can be visualized as a very large toilet. User and data input are how much stuff goes in the toilet. The Erlang system itself is the pipe, and wherever the output goes is the sewer system.
+To oversimplify things, most of the projects I end up working on can be visualized as a very large toilet. User and data input are how much stuff goes in the toilet. The Erlang system itself is the pipe, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
 
 When an Erlang node dies because of a queue going out, figuring out who to blame is crucial. Did someone put too much stuff in the toilet? Are the sewer systems backing up? Did you just design too small a pipe?
 
@@ -481,14 +478,14 @@ This is especially true of user-generated log messages (not for errors), and for
 
 The best solution for this at the time of writing is to use \href{https://github.com/basho/lager}{\module{lager}} as a substitute logging library.
 
-While Lager will not solve all your problems, it will truncate voluminous log messages, optionally drop off OTP-generated error messages when they go over a certain threshold, and will automatically switch between asynchronous and synchronous modes for user-submitted messages in order to self-regulate.
+While Lager will not solve all your problems, it will truncate voluminous log messages, optionally drop OTP-generated error messages when they go over a certain threshold, and will automatically switch between asynchronous and synchronous modes for user-submitted messages in order to self-regulate.
 
 It won't be able to deal with very specific cases, such as when user-submitted messages are in very large volume and all coming from one-off processes. This is, however, a much rarer occurrence than everything else, and one where the programmer tends to have more control.
 
 
 \section{Locks and Blocking Operations}
 
-Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly being piled on by tasks.
+Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
 
 One of the most common example I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
 
