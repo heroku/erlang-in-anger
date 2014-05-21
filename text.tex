@@ -197,16 +197,16 @@ The first file should be similar in use to what we had in a library application 
 
 If you plan on using the application, look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
 
-The application will necessarily start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications to all the children it will start on its own\footnote{In some cases, the supervisor specifies no child: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
+The application will necessarily start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
 
-The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on ones that were started earlier.
+The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on processes that were started earlier.
 
-Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate with both processes rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
+Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate, restarting both processes, rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
 
-The supervisor restart strategy will usually determine how these go together:
+The supervisor restart strategy defines how supervisors will behave when a child process dies:
 
 \begin{itemize*}
-	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not depending on each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They will require the order to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
+	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not dependent upon each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They require strict ordering to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
 	\item \expression{rest\_for\_one} will be used to represent processes that depend on each other in a linear manner.
 	\item \expression{one\_for\_all} is used for processes that entirely depend on each other.
 \end{itemize*}
@@ -223,7 +223,7 @@ For each worker process supervised, the behaviour it implements will give a good
 
 All of these modules will contain the same kind of structure: exported functions that represent the user-facing interface, exported functions for the callback module, and private functions, usually in that order.
 
-Based on their supervision relationship and the typical role of each behaviour, looking at the interface to be used by other modules and the behaviours implemented should reveal a lot of information about the program you're diving in.
+Based on their supervision relationship and the typical role of each behaviour, looking at the interface to be used by other modules and the behaviours implemented should reveal a lot of information about the program you're diving into.
 
 \subsection{Dependencies}
 \label{subsec:dive-dependencies}
@@ -243,7 +243,7 @@ Using such a hierarchy and looking at each application's short description might
 \section{OTP Releases}
 \label{sec:dive-otp-releases}
 
-OTP releases are not a lot harder to understand than most OTP Applications in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to releases than that, but generally, the same discovery process used for individual OTP Applications will be applicable here.
+OTP releases are not a lot harder to understand than most OTP applications in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to releases than that, but generally, the same discovery process used for individual OTP applications will be applicable here.
 
 You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that was officially released in early 2014.
 
@@ -256,16 +256,16 @@ You'll usually have a file similar to the configuration files used by \module{sy
 
 Most Erlang books tend to explain how to build Erlang and OTP applications, but few of them go very much in depth about how to integrate with the Erlang community doing Open Source work. Some of them even avoid the topic on purpose. This chapter dedicates itself to doing a quick tour of the state of affairs in Erlang.
 
-OTP Applications are the vast majority of the open source code people will encounter. In fact, many people who would need to build an OTP release would do so as one umbrella OTP Application. 
+OTP applications are the vast majority of the open source code people will encounter. In fact, many people who would need to build an OTP release would do so as one umbrella OTP application. 
 
-If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP Application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build and OTP Application or release is left up to the Erlang introduction book you have at hand.}
+If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build and OTP application or release is left up to the Erlang introduction book you have at hand.}
 
 The main build tools supported are \app{rebar} and \app{erlang.mk}. The former is a portable Erlang script that will be used to wrap around a lot of standard functionality and add its own, while the latter is a very fancy makefile that does a bit less, but tends to be faster when it comes to compiling. In this chapter, I'll mostly focus on using \app{rebar}\footnote{\href{https://github.com/rebar/rebar}{https://github.com/rebar/rebar}} to build things, given it's the ad-hoc standard, is well-established, and \app{erlang.mk} applications tend to also be supported by \app{rebar} as dependencies.
 
 \section{Project Structure}
 \label{sec:project-structure}
 
-The structure of OTP applications and of OTP releases are different. An OTP application can be expected to have one top-level supervisor (if any) and possibly a bunch of dependencies that sit below it. An OTP release will usually be composed of multiple OTP applications, which may or may not depend on each other. This will lead to two major ways to lay out applications.
+The structures of OTP applications and of OTP releases are different. An OTP application can be expected to have one top-level supervisor (if any) and possibly a bunch of dependencies that sit below it. An OTP release will usually be composed of multiple OTP applications, which may or may not depend on each other. This will lead to two major ways to lay out applications.
 
 \subsection{OTP Applications}
 \label{subsec:building-otp-applications}
@@ -283,9 +283,9 @@ README.md
 rebar.config
 \end{VerbatimText}
 
-What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally and your system and use that, if you want to, or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
+What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
 
-This is decided in \app{rebar} by adding a few config lines to \filename{rebar.config}:
+This is accomplished with \app{rebar} by adding a few config lines to \filename{rebar.config}:
 
 \begin{VerbatimText}
 {deps,
@@ -301,9 +301,9 @@ This is decided in \app{rebar} by adding a few config lines to \filename{rebar.c
 
 Applications are fetched directly from a \app{git} (or \app{hg}, or \app{svn}) source, recursively. They can then be compiled, and specific compile options can be added with the \expression{\{erl\_opts, List\}.} option in the config file\footnote{More details by calling \command{rebar help compile}}. 
 
-Within these directories, you can do your regular development of an OTP Application. To compile them, calling \command{rebar get-deps compile} will go download all dependencies, and then build them and your app at once.
+Within these directories, you can do your regular development of an OTP application. To compile them, call \command{rebar get-deps compile}, which will download all dependencies, and then build them and your app at once.
 
-When making your application public to the world, distribute it \emph{without} the dependencies. It's quite possible other developers' own applications have dependencies on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar}) should be able to figure out duplicated entries and fetch everything necessary only once.
+When making your application public to the world, distribute it \emph{without} the dependencies. It's quite possible that other developers' applications depend on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar}) should be able to figure out duplicated entries and fetch everything necessary only once.
 
 %% erlang.mk downloads relx for releases, and runs it iff there's a relx file there
 
