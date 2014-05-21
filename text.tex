@@ -122,7 +122,7 @@ The book is divided in two parts.
 
 Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), what are the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} in production to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}) and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
 %%%
 %%%
@@ -134,7 +134,7 @@ Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and conc
 \chapter{How to Dive into a Code Base}
 \label{chap:how-to-dive-into-a-code-base}
 
-"Read the source" is one of the most annoying thing to be told, but dealing with Erlang programmers, you'll have to do it often. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems, and not really test or try them in other circumstances, leaving it for you to extend or fix issues that arise in new contexts.
+"Read the source" is one of the most annoying things to be told, but dealing with Erlang programmers, you'll have to do it often. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems, and not really test or try them in other circumstances, leaving it to you to extend or fix issues that arise in new contexts.
 
 It's thus pretty much guaranteed you'll have to go dive in some code base you know nothing about, either because you inherited it at work, or because you need to fix it or understand it to be able to move forward with your own system. This is in fact true of most languages whenever the project you work on is not one you architected yourself.
 
@@ -147,7 +147,7 @@ If you encounter a raw Erlang code base, you're pretty much on your own. These r
 
 This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
 
-Fortunately, you should rarely encounter raw Erlang in the wild, and you will know early on they are often beginner projects, or awesome projects that were once built by Erlang beginners and now would need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} -- a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
+Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} -- a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
 
 \section{OTP Applications}
 \label{sec:dive-otp-applications}
@@ -166,7 +166,7 @@ rebar.config
 
 There might be slight differences, but the general structure will be the same.
 
-Each OTP application should contain an \emph{app file}, either \filename{ebin/<AppName>.app} or more often, \filename{src/<AppName>.app.src}\footnote{a build system generates the final file that goes in \filename{ebin}. Note that in these cases, many  \filename{src/<AppName>.app.src} files do not specify modules and let the build system take care about it.}. There are two main varieties of app files:
+Each OTP application should contain an \emph{app file}, either \filename{ebin/<AppName>.app} or more often, \filename{src/<AppName>.app.src}\footnote{a build system generates the final file that goes in \filename{ebin}. Note that in these cases, many  \filename{src/<AppName>.app.src} files do not specify modules and let the build system take care of it.}. There are two main varieties of app files:
 
 \includecode[erlang]{useragent.app.src}
 
@@ -174,14 +174,14 @@ And:
 
 \includecode[erlang]{dispcount.app}
 
-This first case is called a \emph{library application}, while the latter case is a regular \emph{application}.
+This first case is called a \emph{library application}, while the second case is a regular \emph{application}.
 
 \subsection{Library Applications}
 \label{subsec:dive-library-applications}
 
-Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality to be provided.
+Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality provided.
 
-By looking at the source of the module, you can figure out how it works with little effort: If there's any given behaviour in there (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If there isn't, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purposes.
+By looking at the source of the module, you can figure out how it works with little effort: If the module adheres to any given behaviour (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If no behavior is included, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purpose.
 
 \subsection{Regular Applications}
 \label{subsec:dive-regular-applications}
