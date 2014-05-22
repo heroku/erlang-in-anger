@@ -122,7 +122,7 @@ The book is divided in two parts.
 
 Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}) and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
 %%%
 %%%
@@ -181,7 +181,7 @@ This first case is called a \emph{library application}, while the second case is
 
 Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality provided.
 
-By looking at the source of the module, you can figure out how it works with little effort: If the module adheres to any given behaviour (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If no behavior is included, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purpose.
+By looking at the source of the module, you can figure out how it works with little effort: If the module adheres to any given behaviour (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If no behaviour is included, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purpose.
 
 \subsection{Regular Applications}
 \label{subsec:dive-regular-applications}
@@ -203,7 +203,7 @@ The higher a process resides in the tree, the more likely it is to be vital to t
 
 Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate, restarting both processes, rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
 
-The supervisor restart strategy defines how supervisors will behave when a child process dies:
+The supervisor restart strategy reflects the relationship between processes under a supervisor:
 
 \begin{itemize*}
 	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not dependent upon each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They require strict ordering to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
@@ -283,7 +283,7 @@ README.md
 rebar.config
 \end{VerbatimText}
 
-What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
+What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system, or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
 
 This is accomplished with \app{rebar} by adding a few config lines to \filename{rebar.config}:
 
@@ -1745,7 +1745,7 @@ For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the
 
 \emph{Good fit} (\term{gf}) is a different kind of allocator; it will try to work like best fit (\term{bf}), but will only search for a limited amount of time. If it doesn't find a perfect fit there and then, it will pick the best one encountered so far. The value is configurable through the \term{mbsd}\footnote{\href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}} VM argument.
 
-\emph{A fit} (\term{af}), finally, is an allocator behavior for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
+\emph{A fit} (\term{af}), finally, is an allocator behaviour for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
 
 Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
 
