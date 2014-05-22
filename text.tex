@@ -195,7 +195,7 @@ For a regular OTP application, there are two potential modules that act as the e
 
 The first file should be similar in use to what we had in a library application (an entry point), while the second one will implement the \module{application} behaviour, and will represent the top of the application's process hierarchy. In some cases the first file will play both roles at once.
 
-If you plan on using the application, look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
+If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
 
 The application will necessarily start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
 
@@ -310,9 +310,9 @@ When making your application public to the world, distribute it \emph{without} t
 \subsection{OTP Releases}
 \label{subsec:building-otp-releases}
 
-For releases, the structure should be a bit different\footnote{I say \emph{should} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies (in \filename{deps}), which is less than ideal for distribution purposes and conflicts with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Because releases are collections of applications, their structure should reflect that.
+For releases, the structure should be a bit different\footnote{I say \emph{should} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies (in \filename{deps}), which is less than ideal for distribution purposes and conflicts with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Releases are collections of applications, and their structures should reflect that.
 
-Instead of having a top-level app, most applications should be equal. Then, a useful distinction to have is to have a directory for the applications' source code currently being contained within the existing repository (say, internal business code), and another one for dependencies (which are managed independently).
+Instead of having a top-level app, applications should be nested one level deeper and divided into two categories: apps and deps. The apps directory contains the applications' source code (say, internal business code), and the deps directory contains independently managed dependency applications.
 
 \begin{VerbatimText}
 apps/
@@ -323,7 +323,7 @@ README.md
 rebar.config
 \end{VerbatimText}
 
-This structure will allow to then generate releases. Tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power. An easier tool that recently appeared is \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}.
+This structure lends itself to generating releases. Tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power. An easier tool that recently appeared is \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}.
 
 A  \app{relx} configuration file for the directory structure above would look like:
 
@@ -339,7 +339,7 @@ A  \app{relx} configuration file for the directory structure above would look li
      recon]}.
 \end{VerbatimText}
 
-Calling \command{./relx} (if the executable is in the current directory) will build a release, to be found in the \filename{\_rel/} directory. If you really like using \app{rebar}, you can make release building a part of the project's compilation by using a rebar hook in \filename{rebar.config}:
+Calling \command{./relx} (if the executable is in the current directory) will build a release, to be found in the \filename{\_rel/} directory. If you really like using \app{rebar}, you can build a release as part of the project's compilation by using a rebar hook in \filename{rebar.config}:
 
 \begin{VerbatimText}
 {post_hooks,[{compile, "./relx"}]}.
@@ -350,11 +350,11 @@ And every time \command{rebar compile} will be called, the release will be gener
 \section{Supervisors and start\_link Semantics}
 \label{sec:supervisors-and-start-link-semantics}
 
-In complex production systems, most faults and errors are going to be transient, and retrying an operation will be a good way to do things — Jim Gray's paper\footnote{\href{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}} quotes \emph{Mean Times Between Failures} (MTBF) of systems handling transient bugs being better by a factor of 4 when doing this. Still, supervisors aren't just about restarting.
+In complex production systems, most faults and errors are transient, and retrying an operation is a good way to do things — Jim Gray's paper\footnote{\href{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}} quotes \emph{Mean Times Between Failures} (MTBF) of systems handling transient bugs being better by a factor of 4 when doing this. Still, supervisors aren't just about restarting.
 
-One very important part of Erlang supervisors and their supervision trees is that \emph{their start phase is synchronous}. Each OTP Process started has a period during which it can do its own thing, preventing the entire boot sequence of its siblings and cousins to come. If the process dies there, it's retried again, and again, until it works, or fails too often.
+One very important part of Erlang supervisors and their supervision trees is that \emph{their start phases are synchronous}. Each OTP process has the potential to prevent its siblings and cousins from booting. If the process dies, it's retried again, and again, until it works, or fails too often.
 
-That's where people make a very common mistake. There isn't a backoff or cooldown period before a supervisor restarts a crashed child. When people write a network-based application and try to set up a connection in this initialization phase, and that the remote service is down, the application fails to boot after too many fruitless restarts. Then the system may shut down.
+That's where people make a very common mistake. There isn't a backoff or cooldown period before a supervisor restarts a crashed child. When a network-based application tries to setup a connection during its initialization phase, and the remote service is down, the application fails to boot after too many fruitless restarts. Then the system may shut down.
 
 Many Erlang developers end up arguing in favor of a supervisor that has a cooldown period. I strongly oppose the sentiment for one simple reason: \emph{it's all about the guarantees}.
 
@@ -378,14 +378,14 @@ If you expect failure to happen on an external service, do not make its presence
 \subsection{Side Effects}
 \label{subsec:start-link-side-effects}
 
-Of course, the libraries and processes that call such a client will then error out if they didn't expect to work without a database. That's an entirely different issue in a different problem space, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — then the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
+Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
 
 The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
 
 \subsection{Example: Initializing without guaranteeing connections}
 \label{subsec:start-link-initializing-without-guaranteeing-connections}
 
-So instead of doing:
+The following code attempts to guarantee a connection as part of the process' state:
 
 \begin{VerbatimText}
 init(Args) ->
@@ -402,7 +402,7 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
     end;
 \end{VerbatimText}
 
-Which would guarantee a given connection as part of the process' state. The function could be rewritten as:
+Instead, consider rewriting as:
 
 \begin{VerbatimText}
 init(Args) ->
@@ -421,12 +421,12 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
     end;
 \end{VerbatimText}
 
-And allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
+Now you allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
 
 \subsection{In a nutshell}
 \label{subsec:start-link-in-a-nutshell}
 
-Production systems I end up working with often end up being a mix of both approaches.
+Production systems I have worked with end up being a mix of both approaches.
 
 Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minutes boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
 
