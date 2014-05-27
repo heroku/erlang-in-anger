@@ -487,17 +487,17 @@ It won't be able to deal with very specific cases, such as when user-submitted m
 
 Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
 
-One of the most common example I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
+One of the most common examples I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
 
-One particular bad example I've seen was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. It had a few weeks of perfect uptime when it suddenly got to be very bad and killed a node or degraded performance in unacceptable ways.
+One particularly bad example was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. After a few weeks of perfect uptime, the HTTP client pool caused an outage when one the remote servers went down.
 
 The reason behind this degradation was that when the remote server would go down, all of a sudden, all connecting operations would take at least 10 milliseconds, the time before which the connection attempt is given up on. With around 9,000 messages per second to the central process, each usually taking under 5 milliseconds, the impact became similar to roughly 18,000 messages a second and things got out of hand.
 
 The solution we came up with was to leave the task of connecting to the caller process, and enforce the limits as if the manager had done it on its own. All of a sudden, the blocking operations were distributed to all users of the library, and even less work was required to be done by the manager, now free to accept more requests.
 
-The general lesson in such cases is that when there is \emph{any} point of your program that ends up being a central hub for receiving messages, any lengthy task should be moved out of there if possible. Tutorials tend to tell new Erlang programmers to use processes only for truly concurrent tasks and to not put them everywhere just for the sake of it. Handling predictable overload\footnote{Something you know for a fact gets overloaded in production} situations by adding more processes — which either handle the blocking operations or instead act as a buffer while the "main" process blocks — is often a good idea.
+When there is \emph{any} point of your program that ends up being a central hub for receiving messages, lengthy tasks should be moved out of there if possible. Handling predictable overload\footnote{Something you know for a fact gets overloaded in production} situations by adding more processes — which either handle the blocking operations or instead act as a buffer while the "main" process blocks — is often a good idea.
 
-There will be an increased complexity in managing more processes for activities that aren't technically concurrent, so make sure you really need them before programming defensively.
+There will be increased complexity in managing more processes for activities that aren't technically concurrent, so make sure you need them before programming defensively.
 
 Another option is to transform the blocking task into an asynchronous one. If the type of work allows it, start the long-running job and keep a token that identifies it uniquely, along with the original requester you're doing work for. When the resource is available, have it send a message back to the server with the aforementioned token. The server will eventually get the message, match the token to the requester, and answer back, without being blocked by other requests in the mean time.\footnote{The \otpapp{redo} application is an example of a library doing this, in its \href{https://github.com/heroku/redo/blob/master/src/redo\_block.erl}{redo\_block} module. The [under-documented] module turns a pipelined connection into a blocking one, but does so while maintaining pipeline aspects to the caller — this allows the caller to know that only one call failed when a timeout occurs, not all of the in-transit ones, without having the server stop accepting requests.}
 
@@ -515,24 +515,24 @@ Restricting input is the simplest way to manage message queue growth in Erlang s
 
 The most common way to restrict data input is to make calls to a process whose queue would grow in uncontrollable ways synchronously. By requiring a response before moving on to the next request, you will generally ensure that the direct source of the problem will be slowed down.
 
-The difficult part for this approach is that the bottleneck causing the queue to grow is usually not at the edge of the system, but deep inside it, which you find after optimizing nearly everything that came before. Such bottlenecks will often be database operations, disk operations, some service over the network, and so on. 
+The difficult part for this approach is that the bottleneck causing the queue to grow is usually not at the edge of the system, but deep inside it, which you find after optimizing nearly everything that came before. Such bottlenecks will often be database operations, disk operations, or some service over the network. 
 
-This means that when you start going synchronous deep into the system, you'll possibly need to go back up, level by level, up until you end up to the system's edges and tell the user "please slow down."
-Developers that see this pattern happen can often try to put API limits per user\footnote{There's a tradeoff between slowing down all requests equally or using rate-limiting, both of which are valid. Rate-limiting per user would mean you'd still need to increase capacity or lower the limits of all users when more new users hammer your system, whereas a synchronous system that indiscriminately blocks should adapt to any load with more ease, but possibly unfairly.} on the system entry points. This is a valid approach, especially since it can guarantee a basic quality of service (QoS) to the system and allow to allocate resources as fairly (or unfairly) as desired.
+This means that when you start going synchronous deep into the system, you'll possibly need to go back up, level by level, until you end up at the system's edges and tell the user "please slow down."
+Developers that see this pattern happen often try to put API limits per user\footnote{There's a tradeoff between slowing down all requests equally or using rate-limiting, both of which are valid. Rate-limiting per user would mean you'd still need to increase capacity or lower the limits of all users when more new users hammer your system, whereas a synchronous system that indiscriminately blocks should adapt to any load with more ease, but possibly unfairly.} on the system entry points. This is a valid approach, especially since it can guarantee a basic quality of service (QoS) to the system and allows one to allocate resources as fairly (or unfairly) as desired.
   
 \subsection{How Long Should a Time Out Be}
 
-What's particularly tricky about going the synchronous way is being able to determine what the typical operation should be taking in terms of time, or rather, figuring out how to time out.
+What's particularly tricky about applying back-pressure to handle overload via synchronous calls is having to determine what the typical operation should be taking in terms of time, or rather, at what point the system should time out.
 
 The best way to express the problem is that the first timer to be started will be at the edge of the system, but the critical operations will be happening deep within it. This means that the edge of the system's timers will need to have longer timers, unless you plan on having operations time out even though they succeeded.
 
-An easy way out for this is to go for infinite timeouts. To which, for which Pat Helland\footnote{\href{http://queue.acm.org/detail.cfm?id=2187821}{Idempotence is Not a Medical Condition}, April 14, 2012} has an interesting answer:
+An easy way out for this is to go for infinite timeouts. Pat Helland\footnote{\href{http://queue.acm.org/detail.cfm?id=2187821}{Idempotence is Not a Medical Condition}, April 14, 2012} has an interesting answer to this:
 
 \begin{quote}
 Some application developers may push for no timeout and argue it is OK to wait indefinitely. I typically propose they set the timeout to 30 years. That, in turn, generates a response that I need to be reasonable and not silly. \emph{Why is 30 years silly but infinity is reasonable?} I have yet to see a messaging application that really wants to wait for an unbounded period of time…
 \end{quote}
 
-This is, ultimately, a case-by-case issue. In many cases, it may be interesting to use a different mechanism for that flow control.
+This is, ultimately, a case-by-case issue. In many cases, it may be interesting to use a different mechanism for that flow control.\footnote{In Erlang, using the value \term{infinity} will avoid creating a timer, avoiding some resources. If you do use this, remember to at least have a well-defined timeout somewhere in the sequence of calls.}
 
 \subsection{Asking For Permission}
 
@@ -548,11 +548,11 @@ The advantage of proceeding that way is that you may just avoid all the tricky s
  
 The tricky part about back-pressure is reporting it. Implicit back-pressure done through synchronous calls, the only way to know back-pressure is at work is that the system becomes slower and less usable. Sadly, this is also going to be a potential symptom of bad hardware, bad network, unrelated overload, and possibly a slow client.
 
-Trying to figure out that a system is applying back-pressure through how responsive it is is equivalent to trying to diagnose which illness someone has through seeing that person has a fever. It tells you something is wrong, but not what.
+Trying to figure out that a system is applying back-pressure through how responsive it is is equivalent to trying to diagnose which illness someone has by observing that person has a fever. It tells you something is wrong, but not what.
 
 Asking for permission, as a mechanism, will generally allow you to define your interface in such a way that you can explicitly report what is going on: the system as a whole is overloaded, or you're hitting a limit into the rate at which you can perform an operation and adjust accordingly.
 
-There is a choice to be made there when designing the system. Are your users going to have per-account limits, or are the limits going to be global to the system?
+There is a choice to be made when designing the system. Are your users going to have per-account limits, or are the limits going to be global to the system?
 
 System-global or node-global limits are usually easy to implement, but will have the downside that they may be unfair. A user doing 90\% of all your requests may end up making the platform unusable for the vast majority of the other users.
 
@@ -563,13 +563,13 @@ The safe margin of error you established when designing the system slowly erodes
 
 \section{Generally Discarding Data}
 
-When nothing can slow down outside of your Erlang system and that things can't be scaled up more with ease, you must either drop data or crash (which drops data that was in flight, for most cases, but with more violence).
+When nothing can slow down outside of your Erlang system and things can't be scaled up, you must either drop data or crash (which drops data that was in flight, for most cases, but with more violence).
 
 It's a sad reality that nobody really wants to deal with. Programmers, software engineers, and computer scientists are trained to purge the useless data, and keep everything that's useful. Success goes through optimization, not giving up.
 
-However, there's a point that can be reached where the garbage that comes in does so at a rate faster than the garbage that comes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks up.
+However, there's a point that can be reached where the data that comes in does so at a rate faster than tit comes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks up.
 
-Given you may just not have the choice to limit how much data you receive, you then have to drop messages.
+If you don't have the option of limiting how much data you receive, you then have to drop messages to avoid crashing.
 
 \subsection{Random Drop}
 
@@ -587,13 +587,13 @@ There is one 'gotcha' to this method, though: the random drop must ideally be do
 
 On the other hand, dropping at the producer level ensures that the dropping work is distributed equally across all processes.
 
-This can give place to interesting optimizations where the working process or a given monitor process\footnote{any process tasked with checking the load of specific processes using heuristics such as \expression{process\_info(Pid, message\_queue\_len)} could be a monitor} uses values in an ETS table or \function{application:set\_env/3} to dynamically increase and decrease the threshold to be used with the random number. This allows to control how many messages are dropped based on overload, and fetched by all by using \function{application:get\_env/2} rather efficiently.
+This can give place to interesting optimizations where the working process or a given monitor process\footnote{any process tasked with checking the load of specific processes using heuristics such as \expression{process\_info(Pid, message\_queue\_len)} could be a monitor} uses values in an ETS table or \function{application:set\_env/3} to dynamically increase and decrease the threshold to be used with the random number. This allows control over how many messages are dropped based on overload, and fetched by all by using \function{application:get\_env/2} rather efficiently.
 
 Similar techniques could also be used to implement different drop ratios for different message priorities, rather than trying to sort it all out in the end. 
 
 \subsection{Queue Buffers}
 
-Queue buffers will generally be a good alternative when you want more control over the messages you get rid of than with random drops, particularly when you expect overload to be coming in bursts rather than being a constant stream to make thinner.
+Queue buffers will be a good alternative when you want more control over the messages you get rid of than with random drops, particularly when you expect overload to be coming in bursts rather than being a constant stream to make thinner.
 
 Even though the regular mailbox for a process has the form a queue, you'll generally want to pull \emph{all} the messages out of it as soon as possible. A queue buffer will need two processes to be safe:
 
@@ -605,7 +605,7 @@ Even though the regular mailbox for a process has the form a queue, you'll gener
 To make things work, the buffer process only has to remove all the messages it can from its mail box and put them in a queue data structure\footnote{the \module{queue} module in Erlang provides a purely functional queue data structure that can work fine for such a buffer.}. Whenever the server is ready to do more work, it can ask the buffer to send it a given number of messages that it can work on. The buffer sends them, and goes back to accumulating data.
 
 
-Whenever the queue grows beyond a certain size\footnote{To calculate the length of a queue, it is preferable to use a counter than gets incremented and decremented on each message sent or received, rather than iterating over the queue every time. It takes slightly more memory, but will tend to distribute the load of counting more evenly, helping predictability and avoiding more sudden build-ups in the buffer's mailbox} and you receive a new message, you can then pop the oldest one and push the new one in there, dropping the oldest elements as you go.\footnote{You can alternatively make a queue that pops the newest message and queues up the oldest ones if you feel previous data is more important to keep.}
+Whenever the queue grows beyond a certain size\footnote{To calculate the length of a queue, it is preferable to use a counter that gets incremented and decremented on each message sent or received, rather than iterating over the queue every time. It takes slightly more memory, but will tend to distribute the load of counting more evenly, helping predictability and avoiding more sudden build-ups in the buffer's mailbox} and you receive a new message, you can then pop the oldest one and push the new one in there, dropping the oldest elements as you go.\footnote{You can alternatively make a queue that pops the newest message and queues up the oldest ones if you feel previous data is more important to keep.}
 
 This should keep the entire number of messages received to a rather stable size and provide a good amount of resistance to overload, somewhat similar to the functional version of a ring buffer.
 
@@ -615,7 +615,7 @@ The \emph{PO Box}\footnote{Available at: \href{https://github.com/ferd/pobox}{ht
 
 Stack buffers are ideal when you want the amount of control offered by queue buffers, but you have an important requirement for low latency.
 
-To use a stack as a buffer, you'll need two processes, just like you would with queue buffers, but a list\footnote{Erlang lists \emph{are} stacks. For all we care, the provide push and pop operations that take O(1) complexity and are very fast} will be used instead of a queue data structure.
+To use a stack as a buffer, you'll need two processes, just like you would with queue buffers, but a list\footnote{Erlang lists \emph{are} stacks. For all we care, they provide push and pop operations that take O(1) complexity and are very fast} will be used instead of a queue data structure.
 
 The reason the stack buffer is particularly good for low latency is related to issues similar to bufferbloat\footnote{\href{http://queue.acm.org/detail.cfm?id=2071893}{http://queue.acm.org/detail.cfm?id=2071893 }}. If you get behind on a few messages being buffered in a queue, all the messages in the queue get to be slowed down and acquire milliseconds of wait time. Eventually, they all get to be too old and the entire buffer needs to be discarded.
 
@@ -694,7 +694,7 @@ Most common usages will depend on a cookie being present on the two nodes you wa
 
 \section{Job Control Mode}
 
-The Job Control Mode (JCL mode) is that menu you get when you press \command{\^{}G} in the Erlang shell. From that menu, there is an option allowing to connect to a remote shell:
+The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. From that menu, there is an option allowing to connect to a remote shell:
 
 \begin{VerbatimEshell}
 (somenode@ferdmbp.local)1>
@@ -728,7 +728,7 @@ You may choose to start the initial shell in hidden mode (with the argument \com
 
 \section{Remsh}
 
-There's a mechanism entirely similar to the available through the JCL mode, although invoked in a different manner. The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
+There's a mechanism entirely similar to the one available through the JCL mode, although invoked in a different manner. The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
 
 \begin{VerbatimText}
 erl -name local@domain.name -remsh remote@domain.name
@@ -740,7 +740,7 @@ And as follows for short names:
 erl -sname local@domain -remsh remote@domain
 \end{VerbatimText}
 
-All other Erlang arguments (such as \command{-hidden}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
+All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
 
 \section{SSH Daemon}
 
@@ -771,7 +771,7 @@ Eshell Vx.x.x  (abort with ^G)
 1> 
 \end{VerbatimEshell}
 
-And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. \emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.
+And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. \emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.\footnote{This is true for all methods of interacting with a remote Erlang node.}
 
 If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} option to \app{ssh} to get debug output.
 
@@ -795,30 +795,36 @@ Attaching to /tmp/erl_pipe (^D to exit)
 
 And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
 
+%%%
+%%%
+%%%
+
 \chapter{Runtime Metrics}
 \label{chap:runtime-metrics}
 
 One of the best selling point of the Erlang VM for production use is how transparent it can be for all kinds of introspection, debugging, profiling, and analysis at run time.
 
-The advantage of having them all accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is as simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
+The advantage of having these runtime metrics accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is as simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
 
-A practical approach to growing a system and keeping it healthy in production should be ready to attack all angles: in the large, and in the small.
+A practical approach to growing a system and keeping it healthy in production is to make sure all angles are observable: in the large, and in the small.
 
-For this chapter (and most of those that follow), most of the concepts or features to be shown are accessible through code in the standard library or dedicated operations libraries. 
+For this chapter (and most of those that follow), most of the concepts or features to be shown are accessible through code in the standard library, part of the regular OTP distribution. 
 
-However, to make the text lighter, common operations have been regrouped in the \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/}} library, and are generally production-safe.
+However, these features aren't all in one place, and can make it too easy to shoot yourself in the foot within a production system. They also tend to be closer to building blocks than usable tools.
+
+Therefore, to make the text lighter and to be more usable, common operations have been regrouped in the \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/}} library, and are generally production-safe.
 
 \section{Global View}
 \label{sec:global-view}
 
-For a view of the VM in the large, it's useful to track statistics and metrics general to the VM, regardless of the code running on it. Moreover, you should aim for a solution that allows long-term views of each metric — some problems show up as a very long accumulation over weeks that couldn't be detected over small time windows, only over time.
+For a view of the VM in the large, it's useful to track statistics and metrics general to the VM, regardless of the code running on it. Moreover, you should aim for a solution that allows long-term views of each metric — some problems show up as a very long accumulation over weeks that couldn't be detected over small time windows.
 
-Good examples of this include memory or process leaks, but also finding out regular or irregular spikes in activities relative to the time of the day or week, which can often require having months of data to be sure about it.
+Good examples for issues exposed by a long-term view include memory or process leaks, but also finding out regular or irregular spikes in activities relative to the time of the day or week, which can often require having months of data to be sure about it.
 
-For these cases, using existing metrics applications is useful. Common options are:
+For these cases, using existing Erlang metrics applications is useful. Common options are:
 
 \begin{itemize*}
-	\item \otpapp{folsom}\footnote{\href{https://github.com/boundary/folsom}{https://github.com/boundary/folsom}} to aggregate logs. they can then be stored wherever you feel like.
+	\item \otpapp{folsom}\footnote{\href{https://github.com/boundary/folsom}{https://github.com/boundary/folsom}} to store metrics in memory within the VM, whether global or app-specific..
 	\item \otpapp{vmstats}\footnote{\href{https://github.com/ferd/vmstats}{https://github.com/ferd/vmstats}} and \otpapp{statsderl}\footnote{\href{https://github.com/lpgauth/statsderl}{https://github.com/lpgauth/statsderl}}, sending node metrics over to graphite through \app{statsd}\footnote{\href{https://github.com/etsy/statsd/}{https://github.com/etsy/statsd/}}.
 	\item \otpapp{exometer}\footnote{\href{https://github.com/Feuerlabs/exometer}{https://github.com/Feuerlabs/exometer}}, a fancy-pants metrics system that can integrate with \otpapp{folsom} (among other things),  and a variety of back-ends (graphite, collectd, \app{statsd}, Riak, SNMP, etc.). It's the newest player in town
 	\item \otpapp{ehmon}\footnote{\href{https://github.com/heroku/ehmon}{https://github.com/heroku/ehmon}} for output done directly to standard output, to be grabbed later through specific agents, splunk, and so on.
@@ -862,7 +868,7 @@ Fortunately, recon has the function \function{recon\_alloc:memory/1} to figure i
 	\item \expression{usage} returns a percentage (0.0 .. 1.0) of used over allocated memory ratios.
 \end{itemize*}
 
-There's further memory inspection available, but you'll likely only need it when digging it further to figure out memory leaks in chapter \ref{chap:memory-leaks}
+There are additional options available, but you'll likely only need them when investigating memory leaks in chapter \ref{chap:memory-leaks}
 
 \subsection{CPU}
 \label{subsec:global-cpu}
@@ -871,7 +877,7 @@ Unfortunately for Erlang developers, CPU is very hard to profile. There are a fe
 
 \begin{itemize*}
 	\item The VM does a lot of work unrelated to processes when it comes to scheduling — high scheduling work and high amounts of work done by the Erlang processes are hard to characterize.
-	\item The VM internally uses a model based on \emph{reductions}, which represent an arbitrary number of work based on function calls. Each process does a bunch of reductions before being descheduled.
+	\item The VM internally uses a model based on \emph{reductions}, which represent an arbitrary number of work. Every function call, including BIFs, will increment a process reduction counter. After a given number of  reductions, the process gets descheduled.
 	\item To avoid going to sleep when work is low, the threads that control the Erlang schedulers will do busy looping. This ensures that the lowest latency possible for sudden load spikes. The VM flag \command{+sbwt none|very\_short|short|medium|long|very\_long} can be used to change this value.
 \end{itemize*}
 
@@ -891,7 +897,7 @@ While the basic usage is explained in the Erlang/OTP reference manual\footnote{\
  {4,1.2087551402238991e-5}]
 \end{VerbatimEshell}
 
-The function \function{recon:scheduler\_usage/1} will poll for \var{N} milliseconds (here, 1 second) and output the value of each scheduler. In this case, the VM has two very loaded schedulers (at 99.2\% and 93.7\% repectively), and two mostly unused ones at far below 1\%. Yet, a tool like \app{htop} would report something closer to this for each core:
+The function \function{recon:scheduler\_usage(N)} will poll for \var{N} milliseconds (here, 1 second) and output the value of each scheduler. In this case, the VM has two very loaded schedulers (at 99.2\% and 93.7\% repectively), and two mostly unused ones at far below 1\%. Yet, a tool like \app{htop} would report something closer to this for each core:
 
 \begin{VerbatimText}
 [|||||||||||||||||||||||||     70.4%]
@@ -911,9 +917,9 @@ This may especially be important to consider when doing capacity planning.
 \subsection{Processes}
 \label{subsec:global-procs}
 
-Trying to get a global view of processes is helpful when trying to assess how much work is being done in the VM in terms of \emph{tasks}. A general good practice of Erlang is to use processes for truly concurrent activities — on web servers, you will usually get one process per request or connection, and on stateful systems, you may add one process per-user, for example — and therefore the number of processes on a node can be used as a metric for load.
+Trying to get a global view of processes is helpful when trying to assess how much work is being done in the VM in terms of \emph{tasks}. A general good practice in Erlang is to use processes for truly concurrent activities — on web servers, you will usually get one process per request or connection, and on stateful systems, you may add one process per-user, for example — and therefore the number of processes on a node can be used as a metric for load.
 
-Most tools mentioned is section \ref{sec:global-view} will track them in one way or another, but if the process count needs to be done manually, calling the following expression is enough:
+Most tools mentioned in section \ref{sec:global-view} will track them in one way or another, but if the process count needs to be done manually, calling the following expression is enough:
 
 \begin{VerbatimEshell}
 1> length(processes()).
@@ -927,7 +933,7 @@ Tracking this value over time can be extremely helpful to try and characterize l
 
 In a manner similar to processes, \emph{Ports} should be considered. Ports are a datatype that encompasses all kinds of connections and sockets opened to the outside world: TCP sockets, UDP sockets, SCTP sockets, file descriptors, and so on.
 
-There is a general function (again, similar to processes) to count them: \expression{length(erlang:ports())}. However, this function merges in all kinds of ports into a single entity. Instead, one can use \otpapp{recon} to get them sorted by type:
+There is a general function (again, similar to processes) to count them: \expression{length(erlang:ports())}. However, this function merges in all types of ports into a single entity. Instead, one can use \otpapp{recon} to get them sorted by type:
 
 \begin{VerbatimEshell}
 1> recon:port_types().
@@ -941,7 +947,7 @@ There is a general function (again, similar to processes) to count them: \expres
 
 This list contains the types and the count for each type of port. The type name is a string and is defined by the Erlang VM itself.
 
-All the \expression{*\_inet} ports are usually TCP/IP ports, where the prefix is the protocol used. The \expression{efile} type is for files, while \expression{"0/1"} and \expression{"2/2"} are file descriptors for standard I/O channels (\emph{stdin} and \emph{stdout}) and standard error channels (\emph{stderr}), respectively.
+All the \expression{*\_inet} ports are usually sockets, where the prefix is the protocol used (TCP, UDP, SCTP). The \expression{efile} type is for files, while \expression{"0/1"} and \expression{"2/2"} are file descriptors for standard I/O channels (\emph{stdin} and \emph{stdout}) and standard error channels (\emph{stderr}), respectively.
 
 Most other types will be given names of the driver they're talking to, and will be examples of \emph{port programs}\footnote{\href{http://www.erlang.org/doc/tutorial/c\_port.html}{http://www.erlang.org/doc/tutorial/c\_port.html}} or \emph{port drivers}\footnote{\href{http://www.erlang.org/doc/tutorial/c\_portdriver.html}{http://www.erlang.org/doc/tutorial/c\_portdriver.html}}.
 
