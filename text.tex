@@ -426,9 +426,9 @@ You now allow initializations with fewer guarantees: they went from \emph{the co
 \subsection{In a nutshell}
 \label{subsec:start-link-in-a-nutshell}
 
-Production systems I have worked with end up being a mix of both approaches.
+Production systems I have worked with have been a mix of both approaches.
 
-Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minutes boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
 
 On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations,
 then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
@@ -436,7 +436,7 @@ then there's no difference between now and later. You have to handle it the same
 \subsection{Application Strategies}
 \label{subsec:start-link-application-strategies}
 
-No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided in various OTP applications, it becomes possible choose which application is vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
+No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
 
 \begin{itemize*}
 	\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
@@ -444,7 +444,7 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 	\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
 \end{itemize*}
 
-It is also possible to start an applications as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
 
 %%%
 %%% PLEASE REPLACE THIS TOILET ANALOGY WITH A KITCHEN SINK
@@ -454,11 +454,11 @@ It is also possible to start an applications as an \emph{included application}, 
 \chapter{Planning for Overload}
 \label{chap:overload}
 
-By far, the most common cause of failure I've encountered in real-world scenarios were about the node going out of memory, and usually having this related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
+By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
 
-To oversimplify things, most of the projects I end up working on can be visualized as a very large toilet. User and data input are how much stuff goes in the toilet. The Erlang system itself is the pipe, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
+To oversimplify things, most of the projects I end up working on can be visualized as a very large toilet. User and data input are flowing into the toilet. The Erlang system itself is the pipe, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
 
-When an Erlang node dies because of a queue going out, figuring out who to blame is crucial. Did someone put too much stuff in the toilet? Are the sewer systems backing up? Did you just design too small a pipe?
+When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much stuff in the toilet? Are the sewer systems backing up? Did you just design too small a pipe?
 
 Determining what queue blew up is not necessarily hard. This is information that can be found in a crash dump. Finding out why it blew up is trickier. Based on the role of the process or run-time inspection, it's possible to figure out whether causes include fast flooding, blocked processes that won't process messages fast enough, and so on.
 
@@ -474,7 +474,7 @@ In this section, we will explore common causes of queues blowing up and overload
 
 Ironically, the process in charge of error logging is one of the most fragile ones. In a default Erlang install, the \module{error\_logger}\footnote{defined at \href{http://www.erlang.org/doc/man/error\_logger.html}{http://www.erlang.org/doc/man/error\_logger.html}} process will take its sweet time to log things to disk or over the network, and will do so much more slowly than errors can be generated.
 
-This is especially true of user-generated log messages (not for errors), and for crashes in large processes. For the former, this is because \module{error\_logger} doesn't really expect arbitrary levels of messages coming in continually. It's for exceptional cases only and didn't expect lots of traffic. For the later, it's because the entire state of processes (including their mailboxes) get copied over to be logged. It only takes a few of them to have memory bubbling up a lot, and if it's not enough to cause the node to go Out Of Memory (OOM), it may slow the logger enough that additional messages will.
+This is especially true of user-generated log messages (not for errors), and for crashes in large processes. For the former, this is because \module{error\_logger} doesn't really expect arbitrary levels of messages coming in continually. It's for exceptional cases only and doesn't expect lots of traffic. For the latter, it's because the entire state of processes (including their mailboxes) gets copied over to be logged. It only takes a few messages to cause memory to bubble up a lot, and if that's not enough to cause the node to run Out Of Memory (OOM), it may slow the logger enough that additional messages will.
 
 The best solution for this at the time of writing is to use \href{https://github.com/basho/lager}{\module{lager}} as a substitute logging library.
 
@@ -487,13 +487,13 @@ It won't be able to deal with very specific cases, such as when user-submitted m
 
 Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
 
-One of the most common example I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
+One of the most common examples I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
 
 One particular bad example I've seen was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. It had a few weeks of perfect uptime when it suddenly got to be very bad and killed a node or degraded performance in unacceptable ways.
 
 The reason behind this degradation was that when the remote server would go down, all of a sudden, all connecting operations would take at least 10 milliseconds, the time before which the connection attempt is given up on. With around 9,000 messages per second to the central process, each usually taking under 5 milliseconds, the impact became similar to roughly 18,000 messages a second and things got out of hand.
 
-The solution we came up with was to leave the task of connecting to the caller process, and enforce the limits as if the manager had done it on its own. All of a sudden, the blocking operations were distributed to all users of the library, and even less work was required to be done by the manager, now free to accept more requests.
+The solution we came up with was to leave the task of connecting to the caller process, and enforce the limits as if the manager had done it on its own. Now the blocking operations were distributed to all users of the library, and even less work was required to be done by the manager, now free to accept more requests.
 
 The general lesson in such cases is that when there is \emph{any} point of your program that ends up being a central hub for receiving messages, any lengthy task should be moved out of there if possible. Tutorials tend to tell new Erlang programmers to use processes only for truly concurrent tasks and to not put them everywhere just for the sake of it. Handling predictable overload\footnote{Something you know for a fact gets overloaded in production} situations by adding more processes — which either handle the blocking operations or instead act as a buffer while the "main" process blocks — is often a good idea.
 
