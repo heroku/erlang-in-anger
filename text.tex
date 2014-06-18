@@ -446,25 +446,22 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 
 It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
 
-%%%
-%%% PLEASE REPLACE THIS TOILET ANALOGY WITH A KITCHEN SINK
-%%% AND AVOID CHILDISH BATHROOM HUMOR
-%%%
-
 \chapter{Planning for Overload}
 \label{chap:overload}
 
 By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
 
-To oversimplify things, most of the projects I end up working on can be visualized as a very large toilet. User and data input are flowing into the toilet. The Erlang system itself is the pipe, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
+To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
 
-When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much stuff in the toilet? Are the sewer systems backing up? Did you just design too small a pipe?
+When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much water in the sink? Are the sewer systems backing up? Did you just design too small a pipe?
 
 Determining what queue blew up is not necessarily hard. This is information that can be found in a crash dump. Finding out why it blew up is trickier. Based on the role of the process or run-time inspection, it's possible to figure out whether causes include fast flooding, blocked processes that won't process messages fast enough, and so on.
 
-The most difficult part is to decide how to fix it. When the toilet gets clogged up by too much waste, we will usually start by trying to make the pipe (our program) larger. Then the overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add toilets or various locations to help with the global input level.
+The most difficult part is to decide how to fix it. When the sink gets clogged up by too much waste, we will usually start by trying to make the sink itself larger (the part of our program that crashed, at the edge). Then we figure out the sink's drain is too small, and optimize that. Then we find out the pipes themselves are too narrow, and optimize that. The overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add sinks or various locations to help with the global input level.
 
-Then there's a point where things can't be improved anymore at the toilet's level. There are too many logs\footnote{tee hee} sent around, there's a bottleneck on databases that \emph{need} the consistency, or there's simply not enough knowledge or manpower in your organization to improve things there.
+Then there's a point where things can't be improved anymore at the bathroom's level. There are too many logs sent around, there's a bottleneck on databases that \emph{need} the consistency, or there's simply not enough knowledge or manpower in your organization to improve things there.
+
+We identified what the \emph{true bottleneck} of the system was, and all the prior optimization was nice, but it was more or less in vain.
 
 We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on). Even then, there are times where overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash.
 
