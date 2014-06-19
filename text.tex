@@ -10,7 +10,7 @@
 \usepackage{graphicx}
 \setkeys{Gin}{width=\linewidth,totalheight=\textheight,keepaspectratio}
 \graphicspath{{graphics/}}
-
+\usepackage[export]{adjustbox}
 	
 \usepackage{amssymb}
 \usepackage{tabularx}
@@ -452,6 +452,13 @@ It is also possible to start an application as an \emph{included application}, w
 By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
 
 To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
+
+\begin{figure}
+  \includegraphics[max height=7cm]{sink.pdf}%
+  \centering%
+  \caption{Your system is like a sink, and the true bottleneck, at the last drain, needs to be identified before you spend all your time and money making the sink and pipes bigger.}%
+   \label{fig:tracing-venn}
+\end{figure}
 
 When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much water in the sink? Are the sewer systems backing up? Did you just design too small a pipe?
 
@@ -1725,7 +1732,8 @@ You then need to know the different memory allocation strategies of the Erlang v
 Each of these strategies can be configured individually for each \term{alloc\_util} allocator\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}}
 
 \begin{figure}
-  \includegraphics{allocation-strategy-1.pdf}%
+  \includegraphics[max height=7cm]{allocation-strategy-1.pdf}%
+  \centering%
   \caption{Example memory allocated in a specific sub-allocator}%
    \label{fig:allocation-strategy-1}
 \end{figure}
@@ -1737,7 +1745,8 @@ For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the
 \emph{Address order first fit} (\term{aoff}) will favor the address order for its search, and as soon as a block fits, \term{aoff} uses it. Where \term{aobf} and bf would both have picked area 3 to allocate four blocks in Figure \ref{fig:allocation-strategy-1}, this one will get area 2 as a first priority given its address is lowest. In Figure \ref{fig:allocation-strategy-2}, if we were to allocate four blocks, we'd favor block 1 to block 3 because its address is lower, whereas \term{bf} would have picked either 3 or 4, and \term{aobf} would have picked 3.
 
 \begin{figure}
-  \includegraphics{allocation-strategy-2.pdf}%
+  \includegraphics[max height=7cm]{allocation-strategy-2.pdf}%
+  \centering%
   \caption{Example memory allocated in a specific sub-allocator}%
    \label{fig:allocation-strategy-2}
 \end{figure}
@@ -1919,21 +1928,14 @@ Pid specifications lets the user decide which processes to target. They can be s
 
 The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
 
-What defines whether a specific function call gets traced or not is the intersection of both:
+What defines whether a specific function call gets traced or not is the intersection of both, as seen in Figure~\ref{fig:tracing-venn}.
 
-\begin{VerbatimText}
-        _,--------,_      _,--------,_
-     ,-'            `-,,-'            `-,
-  ,-'              ,-'  '-,              `-,
- |   Matching    -'        '-   Matching    |
- |     Pids     |  Getting   |    Trace     |
- |              |   Traced   |  Patterns    |
- |               -,        ,-               |
-  '-,              '-,  ,-'              ,-'
-     '-,_          _,-''-,_          _,-'
-         '--------'        '--------'·
-\end{VerbatimText}
-\footnote{replace by actual venn diagram not in ASCII}
+\begin{figure}
+  \includegraphics[max height=7cm]{tracing-venn.pdf}%
+  \centering%
+  \caption{What gets traced is the result of the intersection between the matching pids and the matching trace patterns}%
+   \label{fig:tracing-venn}
+\end{figure}
 
 If either the pid specification excludes a process or a trace pattern excludes a given call, no trace will be received.
 
