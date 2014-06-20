@@ -42,6 +42,7 @@
 \newcommand{\var}[1]{\Verb`#1`}
 \newcommand{\term}[1]{\Verb`#1`}
 
+
 \def\includecode{\begingroup
 \catcode`\_=12
 \includecodeB}
@@ -978,9 +979,7 @@ Outside of memory leaks, which often need their own specific techniques and are 
 
 By all means, processes are an important part of a running Erlang system. And because they're so central to everything that goes on, there's a lot to want to know about them. Fortunately, the VM makes a lot of information available, some of which is safe to use, and some of which is unsafe to use in production (because they can return data sets large enough that the amount of memory copied to the shell process and used to print it can kill the node).
 
-All the values can be obtained by calling \expression{process\_info(Pid, Key)} or \expression{process\_info(Pid, [Keys])}
-
-Here are the commonly used values for keys\footnote{for \emph{all} options, look at \href{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}}:
+All the values can be obtained by calling \expression{process\_info(Pid, Key)} or \newline \expression{process\_info(Pid, [Keys])}. Here are the commonly used keys\footnote{for \emph{all} options, look at \href{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}{http://www.erlang.org/doc/man/erlang.html\#process\_info-2}}:
 
 \begin{description*}
 	\item[Meta] \hfill
@@ -1454,7 +1453,7 @@ Many options are available depending on the type of memory that's growing.
 
 \subsection{Atom}
 
-\emph{Don't use dynamic atoms!} Atoms go in a global table and are cached forever. Look for places where you call \function{erlang:binary\_to\_term/1} and \function{erlang:list\_to\_atom/1}, and consider switching to safer variants (\expression{erlang:binary\_to\_term(Bin, [safe]} and \function{erlang:list\_to\_existing\_atom/1}).
+\emph{Don't use dynamic atoms!} Atoms go in a global table and are cached forever. Look for places where you call \function{erlang:binary\_to\_term/1} and \function{erlang:list\_to\_atom/1}, and consider switching to safer variants (\expression{erlang:binary\_to\_term(Bin, [safe])} and\newline \function{erlang:list\_to\_existing\_atom/1}).
 
 If you use the \otpapp{xmerl} library that ships with Erlang, consider open source alternatives\footnote{I don't dislike \href{https://github.com/paulgray/exml}{exml} or \href{https://github.com/willemdj/erlsom}{erlsom}} or figuring the way to add your own SAX parser that can be safe\footnote{see Ulf Wiger at \href{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}}. 
 
@@ -1496,7 +1495,7 @@ Finding unlinked (and unmonitored) processes is easy to do with a few basic comm
          []==Ls, []==Ms].
 \end{VerbatimEshell}
 
-This will return a list of processes with neither. For supervisors, just fetching \expression{supervisor:count\_children(SupervisorPidOrName)} and seeing what looks normal can be a good pointer.
+This will return a list of processes with neither. For supervisors, just fetching \newline \expression{supervisor:count\_children(SupervisorPidOrName)} and seeing what looks normal can be a good pointer.
 
 
 \subsubsection{Memory Used}
