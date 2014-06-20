@@ -17,6 +17,8 @@
 \usepackage{mdwlist}
 \usepackage{float}
 
+\usepackage{pdfpages}
+
 \usepackage{hyperref}
 \hypersetup{
 	colorlinks = true,
@@ -45,16 +47,18 @@
 \includecodeB}
 \newcommand{\includecodeB}[2][erlang]{\VerbatimInput[frame=single,label=#1/#2,fontsize=\small]{#1/#2}\endgroup}
 
+%%% Cover
 
+%\title{Stuff Goes Bad:\protect\\ Erlang in Anger}
+%\author{\includegraphics[width=150pt]{heroku-logo-light.pdf}\\
+%Fred Hébert}
 
-\title{Stuff Goes Bad:\protect\\ Erlang in Anger}
-\author{\includegraphics[width=150pt]{heroku-logo-light.pdf}\\
-Fred Hébert}
-
-\date{}							% Activate to display a given date or no date
+%\date{}							% Activate to display a given date or no date
 
 \begin{document}
-\maketitle
+%\maketitle
+
+\includepdf[fitpaper=true]{graphics/cover.pdf}
 
 %%% Copyright page
 \clearpage
@@ -75,7 +79,12 @@ Thanks for the additional work, reviewing, and/or editing done by:
 
 \emph{Jacob Vorreuter}, \emph{Seth Falcon}, ...
 
-\vspace*{\fill}
+\null
+\vfill
+%\vspace*{\fill}
+
+The cover image is a modified version of from \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
+
 \clearpage
 %%%
 
