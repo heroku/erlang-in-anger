@@ -873,7 +873,7 @@ First of all, all the values returned are in bytes, and they represent memory \e
 
 The \expression{total} field contains the sum of the memory used for \expression{processes} and \expression{system} (which is incomplete, unless the VM is instrumented!). \expression{processes} is the memory used by Erlang processes, their stacks and heaps. \expression{system} is the rest: memory used by ETS tables, atoms in the VM, refc binaries\footnote{see Section \ref{sec:binaries}}, and some of the hidden data I mentioned was missing.
 
-If you want the total amount of memory owned by the virtual machine, as in the amount that will trip system's limits (\app{ulimit}), this amount is more difficult to get from within the VM. If you want the data without calling \app{top} or \app{htop}, you have to dig down into the VM's memory allocators to find things out.\footnote{See Section \ref{subsec:erlang-memory-model}}
+If you want the total amount of memory owned by the virtual machine, as in the amount that will trip system limits (\app{ulimit}), this value is more difficult to get from within the VM. If you want the data without calling \app{top} or \app{htop}, you have to dig down into the VM's memory allocators to find things out.\footnote{See Section \ref{subsec:erlang-memory-model}}
 
 Fortunately, recon has the function \function{recon\_alloc:memory/1} to figure it out, where the argument is:
 
@@ -893,11 +893,11 @@ Unfortunately for Erlang developers, CPU is very hard to profile. There are a fe
 
 \begin{itemize*}
 	\item The VM does a lot of work unrelated to processes when it comes to scheduling — high scheduling work and high amounts of work done by the Erlang processes are hard to characterize.
-	\item The VM internally uses a model based on \emph{reductions}, which represent an arbitrary number of work. Every function call, including BIFs, will increment a process reduction counter. After a given number of  reductions, the process gets descheduled.
-	\item To avoid going to sleep when work is low, the threads that control the Erlang schedulers will do busy looping. This ensures that the lowest latency possible for sudden load spikes. The VM flag \command{+sbwt none|very\_short|short|medium|long|very\_long} can be used to change this value.
+	\item The VM internally uses a model based on \emph{reductions}, which represent an arbitrary number of work actions. Every function call, including BIFs, will increment a process reduction counter. After a given number of reductions, the process gets descheduled.
+	\item To avoid going to sleep when work is low, the threads that control the Erlang schedulers will do busy looping. This ensures the lowest latency possible for sudden load spikes. The VM flag \command{+sbwt none|very\_short|short|medium|long|very\_long} can be used to change this value.
 \end{itemize*}
 
-These all play together to mean it's fairly hard to find a good absolute measure of how busy your CPU actually running Erlang code is. It will be common for Erlang nodes in production to do a moderate amount of work and use a lot of CPU, but to actually fit a lot of work in the remaining place when the workload gets higher.
+These factors combine to make it fairly hard to find a good absolute measure of how busy your CPU is actually running Erlang code. It will be common for Erlang nodes in production to do a moderate amount of work and use a lot of CPU, but to actually fit a lot of work in the remaining place when the workload gets higher.
 
 The most accurate representation for this data is the scheduler wall time. It's an optional metric that needs to be turned on by hand on a node, and polled at regular intervals. It will reveal the time percentage a scheduler has been running processes and normal Erlang code, NIFs, BIFs, garbage collection, and so on, versus the amount of time it has spent idling or trying to schedule processes.
 
@@ -922,7 +922,7 @@ The function \function{recon:scheduler\_usage(N)} will poll for \var{N} millisec
 [||||||||||||||||              40.2%]
 \end{VerbatimText}
 
-The result being that there is a decent chunk of CPU usage that would be mostly free to schedule actual Erlang work on (assuming the schedulers are busy waiting more than trying to select tasks to run), but is being reported as busy by the OS.
+The result being that there is a decent chunk of CPU usage that would be mostly free for scheduling actual Erlang work (assuming the schedulers are busy waiting more than trying to select tasks to run), but is being reported as busy by the OS.
 
 This may especially be important to consider when doing capacity planning.
 
@@ -933,7 +933,7 @@ This may especially be important to consider when doing capacity planning.
 \subsection{Processes}
 \label{subsec:global-procs}
 
-Trying to get a global view of processes is helpful when trying to assess how much work is being done in the VM in terms of \emph{tasks}. A general good practice in Erlang is to use processes for truly concurrent activities — on web servers, you will usually get one process per request or connection, and on stateful systems, you may add one process per-user, for example — and therefore the number of processes on a node can be used as a metric for load.
+Trying to get a global view of processes is helpful when trying to assess how much work is being done in the VM in terms of \emph{tasks}. A general good practice in Erlang is to use processes for truly concurrent activities — on web servers, you will usually get one process per request or connection, and on stateful systems, you may add one process per-user — and therefore the number of processes on a node can be used as a metric for load.
 
 Most tools mentioned in section \ref{sec:global-view} will track them in one way or another, but if the process count needs to be done manually, calling the following expression is enough:
 
@@ -972,7 +972,7 @@ Again, tracking these can be useful to assess load or usage of a system, detect 
 \section{Digging In}
 \label{sec:digging-in}
 
-Whenever some 'in the large' view (or logging, maybe) has pointed you towards a potential cause for an issue you're having, it starts being interesting to dig around with a purpose. Is a process having a weird state? Maybe it needs tracing\footnote{See Chapter \ref{chap:tracing}}! Tracing is great whenever you have a specific function call or input or output to watch for, but often, before getting there, a lot more digging is required.
+Whenever some 'in the large' view (or logging, maybe) has pointed you towards a potential cause for an issue you're having, it starts being interesting to dig around with a purpose. Is a process in a weird state? Maybe it needs tracing\footnote{See Chapter \ref{chap:tracing}}! Tracing is great whenever you have a specific function call or input or output to watch for, but often, before getting there, a lot more digging is required.
 
 Outside of memory leaks, which often need their own specific techniques and are discussed in Chapter \ref{chap:memory-leaks}, the most common tasks are related to processes, and ports (file descriptors and sockets).
 
@@ -1077,7 +1077,7 @@ Fortunately, for all the common ones that are also safe, recon contains the \exp
  {work,[{reductions,35}]}]
 \end{VerbatimEshell}
 
-For convenience's sake, \expression{recon:info/1} will accept any pid-like first argument and handle it: literal pids, strings (\expression{"<0.12.0>"}), registered atoms, global names (\expression{\{global, Atom\}}), names registered with a third-party registry (e.g. with \otpapp{gproc}: \expression{\{via, gproc, Name\}}), or tuples (\expression{\{0,12,0\}}). The process just needs to be local to the node you're debugging.
+For the sake of convenience, \expression{recon:info/1} will accept any pid-like first argument and handle it: literal pids, strings (\expression{"<0.12.0>"}), registered atoms, global names (\expression{\{global, Atom\}}), names registered with a third-party registry (e.g. with \otpapp{gproc}: \expression{\{via, gproc, Name\}}), or tuples (\expression{\{0,12,0\}}). The process just needs to be local to the node you're debugging.
 
 If only a category of information is wanted, the category can be used directly:
 
@@ -1116,7 +1116,7 @@ When looking for high memory usage, for example it's interesting to be able to l
 
 Any of the attributes mentioned earlier can work, and for nodes with long-lived processes that can cause problems, it's a fairly useful function.
 
-There is however a problem when most processes are short-lived, usually too short to inspect through other tools, or that a moving window is what we need (for example, what processes are busy accumulating memory or running code \emph{right now}).
+There is however a problem when most processes are short-lived, usually too short to inspect through other tools, or when a moving window is what we need (for example, what processes are busy accumulating memory or running code \emph{right now}).
 
 For this use case, Recon has the \function{recon:proc\_window(Attribute, Num, Milliseconds)} function.
 
@@ -1126,11 +1126,11 @@ It is important to see this function as a snapshot over a sliding window. A prog
 --w---- [Sample1] ---x-------------y----- [Sample2] ---z--->
 \end{Verbatim}
 
-The function will allow to take two samples at an interval defined by \var{Milliseconds}.
+The function will take two samples at an interval defined by \var{Milliseconds}.
 
 Some processes will live between \var{w} and die at \var{x}, some between \var{y} and \var{z}, and some between \var{x} and \var{y}. These samples will not be too significant as they're incomplete.
 
-If the majority of your processes run between a time interval \var{x} to \var{y} (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of \var{w} and \var{z}. Not doing this can skew the results: long-lived processes that have 10 times the time to accumulate data (say reductions) will look like huge consumers when they're not one.\footnote{Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many dozens of thousands of processes.}
+If the majority of your processes run between a time interval \var{x} to \var{y} (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of \var{w} and \var{z}. Not doing this can skew the results: long-lived processes that have 10 times the time to accumulate data (say reductions) will look like huge consumers when they're not one.\footnote{Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many tens of thousands of processes.}
 
 The function, once running gives results like follows:
 
@@ -1147,14 +1147,14 @@ The function, once running gives results like follows:
    {initial_call,{erlang,apply,2}}]}]
 \end{VerbatimEshell}
 
-With these two functions, it becomes possible to home in on a specific process that is causing issues or misbehaving.
+With these two functions, it becomes possible to hone in on a specific process that is causing issues or misbehaving.
 
 
 \subsection{OTP Processes}
 
 When processes in question are OTP processes (most of the processes in a production system should definitely be OTP processes), you instantly win more tools to inspect them.
 
-In general the \module{sys} module\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} is what you want to look into. Read the documentation on it and you'll get why it's so useful. It contains the following feature for any OTP process:
+In general the \module{sys} module\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} is what you want to look into. Read the documentation on it and you'll discover why it's so useful. It contains the following features for any OTP process:
 
 \begin{itemize*}
 	\item logging of all messages and state transitions, both to the shell or to a file, or even in an internal buffer to be queried;
@@ -1165,13 +1165,13 @@ In general the \module{sys} module\footnote{\href{http://www.erlang.org/doc/man/
 	\item custom debugging functions to be used as callbacks
 \end{itemize*}
 
-On top of functionality to suspend or resume process execution.
+It also provides functionality to suspend or resume process execution.
 
 I won't go into a lot of details about these functions, but be aware that they exist.
 
 \subsection{Ports}
 
-Similarly to processes, Erlang ports allow a lot of introspection. The info can be accessed by calling \function{erlang:port\_info(Port, Key)}, and some more of it is located within the \module{inet} module. Most of it has been regrouped by the \function{recon:port\_info/1-2} functions, which work using a somewhat similar interface to their process-related counterpart. 
+Similarly to processes, Erlang ports allow a lot of introspection. The info can be accessed by calling \function{erlang:port\_info(Port, Key)}, and more info is available through the \module{inet} module. Most of it has been regrouped by the \function{recon:port\_info/1-2} functions, which work using a somewhat similar interface to their process-related counterparts. 
 
 \begin{description*}
 	\item[Meta] \hfill
@@ -1403,10 +1403,11 @@ In such a case, the issue is that a specific application (\expression{<AppName>}
 Similarly to the process count, the port count is simple and mostly useful when you know your usual values\footnote{See subsection \ref{subsec:global-ports} for details}.
 
 A high count may be the result of overload, Denial of Service attacks, or plain old resource leaks. Looking at the type of port leaked (TCP, UDP, or files) can also help reveal if there was contention on specific resources, or just point bad code running with them.
+% TODO: refactor "or just point bad code running with them". not sure what you mean.
 
 \section{Can't Allocate Memory}
 
-This is by far the most common type of crashes you are likely to see. There's so much about them that Chapter \ref{chap:memory-leaks} is dedicated to understanding them and doing the required debugging on live systems.
+These are by far the most common types of crashes you are likely to see. There's so much to cover, that Chapter \ref{chap:memory-leaks} is dedicated to understanding them and doing the required debugging on live systems.
 
 In any case, the crash dump will help figure out what the problem was after the fact. The process mailboxes and individual heaps are usually good indicators of issues. If you're running out of memory without any mailbox being outrageously large, look at the processes heap and stack sizes as returned by the recon script.
 
@@ -1421,19 +1422,19 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 \chapter{Memory Leaks}
 \label{chap:memory-leaks}
 
-There are truckload of ways for an Erlang node to bleed memory. They go from extremely simple to astonishingly hard to figure out (fortunately, the latter type is also rarer), and it's possible you'll never encounter any problem with them.
+There are truckloads of ways for an Erlang node to bleed memory. They go from extremely simple to astonishingly hard to figure out (fortunately, the latter type is also rarer), and it's possible you'll never encounter any problem with them.
 
-You will find about memory leaks in two ways:
+You will find out about memory leaks in two ways:
 
 \begin{enumerate*}
 	\item A crash dump (see Chapter \ref{chap:crash-dumps});
 	\item By finding a worrisome trend in the data you are monitoring. 
 \end{enumerate*}
 
-This chapter will mostly focus on the latter kind of leak, because they're easier to investigate and see grow in real time. We will focus on finding what is growing on the node and common remediation options, handling binary leaks (they're a special case),  and detecting memory fragmentation. 
+This chapter will mostly focus on the latter kind of leak, because they're easier to investigate and see grow in real time. We will focus on finding what is growing on the node and common remediation options, handling binary leaks (they're a special case), and detecting memory fragmentation. 
 \section{Common Sources of Leaks}
 
-Whenever some calls for help saying "oh no, my nodes are crashing", the first step is always to ask for data. Interesting questions to ask and pieces of data to consider are:
+Whenever someone calls for help saying "oh no, my nodes are crashing", the first step is always to ask for data. Interesting questions to ask and pieces of data to consider are:
 
 \begin{itemize*}
 	\item Do you have a crash dump and is it complaining about memory specifically? If not, the issue may be unrelated. If so, go dig into it, it's full of data.
@@ -1469,7 +1470,7 @@ See Section \ref{sec:binaries}.
 
 The code on an Erlang node is loaded in memory in its own area, and sits there until it is garbage collected. Only two copies of a module can coexist at one time, so looking for very large modules should be easy-ish.
 
-If none of them stands out, look for code compiled with HiPE\footnote{\href{http://www.erlang.org/doc/man/HiPE\_app.html}{http://www.erlang.org/doc/man/HiPE\_app.html}}. HiPE code, unlike regular BEAM code, is native code and cannot be garbage collected from the VM when new versions are loaded. Memory can accumulate, usually very slowly, if many or large modules are native-compiled and loaded at run time.
+If none of them stand out, look for code compiled with HiPE\footnote{\href{http://www.erlang.org/doc/man/HiPE\_app.html}{http://www.erlang.org/doc/man/HiPE\_app.html}}. HiPE code, unlike regular BEAM code, is native code and cannot be garbage collected from the VM when new versions are loaded. Memory can accumulate, usually very slowly, if many or large modules are native-compiled and loaded at run time.
 
 Alternatively, you may look for weird modules you didn't load yourself on the node and panic if someone got access to your system!
 
@@ -1479,7 +1480,7 @@ ETS tables are never garbage collected, and will maintain their memory usage as 
 
 In the rare cases you're actually leaking ETS data, call the undocumented \function{ets:i()} function in the shell. It will print out information regarding number of entries (\expression{size}) and how much memory they take (\expression{mem}). Figure out if anything is bad.
 
-It's entirely possible all the data there is legit, and you're facing the difficult problem of needing to shard your data set and distribute it over many nodes. This is out of scope for this book, so best of luck to you. You can look into compression your tables if you need to buy time, however.\footnote{See the \href{http://www.erlang.org/doc/man/ets.html\#new-2}{\expression{compressed} option for \function{ets:new/2}}}
+It's entirely possible all the data there is legit, and you're facing the difficult problem of needing to shard your data set and distribute it over many nodes. This is out of scope for this book, so best of luck to you. You can look into compression of your tables if you need to buy time, however.\footnote{See the \href{http://www.erlang.org/doc/man/ets.html\#new-2}{\expression{compressed} option for \function{ets:new/2}}}
 
 \subsection{Processes}
 
@@ -1487,7 +1488,7 @@ There are a lot of different ways in which process memory can grow. Most interes
 
 \subsubsection{Links and Monitors}
 
-Is the global process count indicative of a leak? If so, you may need to investigate unlinked process, or peek inside supervisors' children lists to see what may be weird-looking.
+Is the global process count indicative of a leak? If so, you may need to investigate unlinked processes, or peek inside supervisors' children lists to see what may be weird-looking.
 
 Finding unlinked (and unmonitored) processes is easy to do with a few basic commands:
 
@@ -1504,7 +1505,7 @@ This will return a list of processes with neither. For supervisors, just fetchin
 
 The per-process memory model is briefly described in Subsection \ref{subsec:memory-process-level}, but generally speaking, you can find which individual processes use the most memory by looking for their \term{memory} attribute. You can look things up either as absolute terms or as a sliding window.
 
-For memory leaks, unless you're in a predictable fast increase, absolute values are usually those worth digging in first:
+For memory leaks, unless you're in a predictable fast increase, absolute values are usually those worth digging into first:
 
 \begin{VerbatimEshell}
 1> recon:proc_count(memory, 3).
@@ -1531,7 +1532,7 @@ It is very well possible that a process uses lots of memory, but only for short 
 
 Monitoring all garbage collections in real-time from the shell would be costly. Instead, setting up Erlang's system monitor\footnote{\href{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}} might be the best way to go at it.
 
-Erlang's system monitor will allow to track information such as long garbage collection periods and large process heaps, among other things. A monitor can temporarily be set up as follows:
+Erlang's system monitor will allow you to track information such as long garbage collection periods and large process heaps, among other things. A monitor can temporarily be set up as follows:
 
 \begin{VerbatimEshell}
 1> erlang:system_monitor().
@@ -1558,7 +1559,7 @@ The first command checks that nothing (or nobody else) is using a system monitor
 The second command will be notified every time a garbage collection takes over 500 milliseconds. The result is flushed in the third command. Feel free to also check for \expression{\{large\_heap, NumWords\}} if you want to monitor such sizes.
 Be careful to start with large values at first if you're unsure. You don't want to flood your process' mailbox with a bunch of heaps that are 1-word large or more, for example.
 
-Commands 5 unsets the system monitor (exiting or killing the monitor process also frees it up), and command 6 validates that everything worked.
+Command 5 unsets the system monitor (exiting or killing the monitor process also frees it up), and command 6 validates that everything worked.
 
 You can then find out if such monitoring messages tend to coincide with the memory increases that seem to result in leaks or overuses, and try to catch culprits before things are too bad. Quickly reacting and digging into the process (possibly with \function{recon:info/1}) may help find out what's wrong with the application.
 
