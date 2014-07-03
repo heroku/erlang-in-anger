@@ -525,14 +525,14 @@ However, all kinds of OTP-compliant systems end up having processes that may not
 
 \section{Generally Restricting Input}
 
-Restricting input is the simplest way to manage message queue growth in Erlang systems. It's the simplest approach because it basically means you're slowing the user down (applying \emph{back-pressure}), which instantly fixes the problem without any further optimization required. On the other hand, it's the one that can end up giving the user a really crappy experience.
+Restricting input is the simplest way to manage message queue growth in Erlang systems. It's the simplest approach because it basically means you're slowing the user down (applying \emph{back-pressure}), which instantly fixes the problem without any further optimization required. On the other hand, it can lead to a really crappy experience for the user.
 
 The most common way to restrict data input is to make calls to a process whose queue would grow in uncontrollable ways synchronously. By requiring a response before moving on to the next request, you will generally ensure that the direct source of the problem will be slowed down.
 
 The difficult part for this approach is that the bottleneck causing the queue to grow is usually not at the edge of the system, but deep inside it, which you find after optimizing nearly everything that came before. Such bottlenecks will often be database operations, disk operations, or some service over the network. 
 
-This means that when you start going synchronous deep into the system, you'll possibly need to go back up, level by level, until you end up at the system's edges and tell the user "please slow down."
-Developers that see this pattern happen often try to put API limits per user\footnote{There's a tradeoff between slowing down all requests equally or using rate-limiting, both of which are valid. Rate-limiting per user would mean you'd still need to increase capacity or lower the limits of all users when more new users hammer your system, whereas a synchronous system that indiscriminately blocks should adapt to any load with more ease, but possibly unfairly.} on the system entry points. This is a valid approach, especially since it can guarantee a basic quality of service (QoS) to the system and allows one to allocate resources as fairly (or unfairly) as desired.
+This means that when you introduce synchronous behavior deep in the system, you'll possibly need to handle back-pressure, level by level, until you end up at the system's edges and can tell the user, "please slow down."
+Developers that see this pattern will often try to put API limits per user\footnote{There's a tradeoff between slowing down all requests equally or using rate-limiting, both of which are valid. Rate-limiting per user would mean you'd still need to increase capacity or lower the limits of all users when more new users hammer your system, whereas a synchronous system that indiscriminately blocks should adapt to any load with more ease, but possibly unfairly.} on the system entry points. This is a valid approach, especially since it can guarantee a basic quality of service (QoS) to the system and allows one to allocate resources as fairly (or unfairly) as desired.
   
 \subsection{How Long Should a Time Out Be}
 
@@ -540,7 +540,7 @@ What's particularly tricky about applying back-pressure to handle overload via s
 
 The best way to express the problem is that the first timer to be started will be at the edge of the system, but the critical operations will be happening deep within it. This means that the edge of the system's timers will need to have longer timers, unless you plan on having operations time out even though they succeeded.
 
-An easy way out for this is to go for infinite timeouts. Pat Helland\footnote{\href{http://queue.acm.org/detail.cfm?id=2187821}{Idempotence is Not a Medical Condition}, April 14, 2012} has an interesting answer to this:
+An easy way out of this is to go for infinite timeouts. Pat Helland\footnote{\href{http://queue.acm.org/detail.cfm?id=2187821}{Idempotence is Not a Medical Condition}, April 14, 2012} has an interesting answer to this:
 
 \begin{quote}
 Some application developers may push for no timeout and argue it is OK to wait indefinitely. I typically propose they set the timeout to 30 years. That, in turn, generates a response that I need to be reasonable and not silly. \emph{Why is 30 years silly but infinity is reasonable?} I have yet to see a messaging application that really wants to wait for an unbounded period of time…
@@ -554,15 +554,16 @@ A somewhat simpler approach is to identify the resources we want to block on, th
 
 The \emph{SafetyValve}\footnote{\href{https://github.com/jlouis/safetyvalve}{https://github.com/jlouis/safetyvalve}} application is a system-wide framework that can be used when you know the synchronous approach is the one you'll need.
 
-Otherwise, ad-hoc solutions can be written using processes, ETS, or any other tool available. The important part of them is that the edge of the system (or subsystem) may block and ask for the right to process data, but the critical bottleneck in code is the one to determine whether that right can be granted or not.
+Otherwise, ad-hoc solutions can be written using processes, ETS, or any other tool available. The important part is that the edge of the system (or subsystem) may block and ask for the right to process data, but the critical bottleneck in code is the one to determine whether that right can be granted or not.
 
 The advantage of proceeding that way is that you may just avoid all the tricky stuff about timers and making every single layer of abstraction synchronous. You'll instead put guards at the bottleneck and at a given edge or control point, and everything in between can be expressed in the most readable way possible.
 
 \subsection{What Users See}
- 
+
+% TODO: The second sentence "Implicit back-pressure.." needs to be reworked or split into two sentences.
 The tricky part about back-pressure is reporting it. Implicit back-pressure done through synchronous calls, the only way to know back-pressure is at work is that the system becomes slower and less usable. Sadly, this is also going to be a potential symptom of bad hardware, bad network, unrelated overload, and possibly a slow client.
 
-Trying to figure out that a system is applying back-pressure through how responsive it is is equivalent to trying to diagnose which illness someone has by observing that person has a fever. It tells you something is wrong, but not what.
+Trying to figure out that a system is applying back-pressure by measuring its responsiveness is equivalent to trying to diagnose which illness someone has by observing that person has a fever. It tells you something is wrong, but not what.
 
 Asking for permission, as a mechanism, will generally allow you to define your interface in such a way that you can explicitly report what is going on: the system as a whole is overloaded, or you're hitting a limit into the rate at which you can perform an operation and adjust accordingly.
 
@@ -581,7 +582,7 @@ When nothing can slow down outside of your Erlang system and things can't be sca
 
 It's a sad reality that nobody really wants to deal with. Programmers, software engineers, and computer scientists are trained to purge the useless data, and keep everything that's useful. Success goes through optimization, not giving up.
 
-However, there's a point that can be reached where the data that comes in does so at a rate faster than tit comes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks up.
+However, there's a point that can be reached where the data that comes in does so at a rate faster than it comes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks.
 
 If you don't have the option of limiting how much data you receive, you then have to drop messages to avoid crashing.
 
@@ -593,7 +594,7 @@ The trick is to define some threshold value between 0.0 and 1.0 and to fetch a r
 
 \includecode[erlang]{drop.erl}
 
-If you were to want to keep 95\% of messages you send, the authorization could be written by a call to \expression{case drop:random(0.95) of true -> send(); false -> drop() end}, or a shorter \expression{drop:random(0.95) andalso send()} if you don't need to do anything specific when dropping a message. 
+If you aim to keep 95\% of the messages you send, the authorization could be written by a call to \expression{case drop:random(0.95) of true -> send(); false -> drop() end}, or a shorter \expression{drop:random(0.95) andalso send()} if you don't need to do anything specific when dropping a message. 
 
 The \function{maybe\_seed()} function will check that a valid seed is present in the process dictionary and use it rather than a crappy one, but only if it has not been defined before, in order to avoid calling \function{now()} (a monotonic function that requires a global lock) too often.
 
@@ -601,15 +602,16 @@ There is one 'gotcha' to this method, though: the random drop must ideally be do
 
 On the other hand, dropping at the producer level ensures that the dropping work is distributed equally across all processes.
 
-This can give place to interesting optimizations where the working process or a given monitor process\footnote{any process tasked with checking the load of specific processes using heuristics such as \expression{process\_info(Pid, message\_queue\_len)} could be a monitor} uses values in an ETS table or \function{application:set\_env/3} to dynamically increase and decrease the threshold to be used with the random number. This allows control over how many messages are dropped based on overload, and fetched by all by using \function{application:get\_env/2} rather efficiently.
+This can give place to interesting optimizations where the working process or a given monitor process\footnote{any process tasked with checking the load of specific processes using heuristics such as \expression{process\_info(Pid, message\_queue\_len)} could be a monitor} uses values in an ETS table or \function{application:set\_env/3} to dynamically increase and decrease the threshold to be used with the random number. This allows control over how many messages are dropped based on overload, and the configuration data can be fetched by any process rather efficiently by using \function{application:get\_env/2}.
 
-Similar techniques could also be used to implement different drop ratios for different message priorities, rather than trying to sort it all out in the end. 
+Similar techniques could also be used to implement different drop ratios for different message priorities, rather than trying to sort it all out in the end.
+% TODO: "rather than trying to sort it all out in the end" is kinda vague. does this mean at the receiving queue? 
 
 \subsection{Queue Buffers}
 
-Queue buffers will be a good alternative when you want more control over the messages you get rid of than with random drops, particularly when you expect overload to be coming in bursts rather than being a constant stream to make thinner.
+Queue buffers will be a good alternative when you want more control over the messages you get rid of than with random drops, particularly when you expect overload to be coming in bursts rather than a constant stream in need of thinning.
 
-Even though the regular mailbox for a process has the form a queue, you'll generally want to pull \emph{all} the messages out of it as soon as possible. A queue buffer will need two processes to be safe:
+Even though the regular mailbox for a process has the form of a queue, you'll generally want to pull \emph{all} the messages out of it as soon as possible. A queue buffer will need two processes to be safe:
 
 \begin{itemize*}
 	\item The regular process you'd work with (likely a \module{gen\_server});
@@ -668,15 +670,15 @@ In practice, though, we want to avoid atoms generated dynamically, so I tend to 
 
 An approach similar to this one is used in the \module{lhttpc}\footnote{the \href{https://github.com/ferd/lhttpc/blob/master/src/lhttpc\_lb.erl}{lhttpc\_lb} module in this library implements it.} library mentioned earlier, to split load balancers on a per-domain basis.
 
-For the second approach, using counters and locks, the basic structure still remains similar (pick one of many options, send it a message), but before actually sending a message, you must atomically update an ETS counter\footnote{By using \function{ets:update\_counter/3}.}. There is a known limit shared across all clients (either through their supervisor, or any other config or ETS value) and each request that can be made to a process needs to clear this limit first.
+For the second approach, using counters and locks, the same basic structure still remains (pick one of many options, send it a message), but before actually sending a message, you must atomically update an ETS counter\footnote{By using \function{ets:update\_counter/3}.}. There is a known limit shared across all clients (either through their supervisor, or any other config or ETS value) and each request that can be made to a process needs to clear this limit first.
 
 This approach has been used in \module{dispcount}\footnote{\href{https://github.com/ferd/dispcount}{https://github.com/ferd/dispcount}} to avoid message queues, and to guarantee low-latency responses to any message that won't be handled so that you do not need to wait to know your request was denied. It is then up to the user of the library whether to give up as soon as possible, or to keep retrying with different workers.
 
 \subsection{How Do You Drop}
 
-A few other things to consider when dropping messages is the kind of dropping you do. Most of the solutions outlined here work based on the number of message, but it's also possible to try and do it based on message size, or expected complexity, if you can predict it. When using a queue or stack buffer, instead of counting entries, all you may need to do is then to count their size or assign them a given load as a limit, for example.
+Most of the solutions outlined here work based on message quantity, but it's also possible to try and do it based on message size, or expected complexity, if you can predict it. When using a queue or stack buffer, instead of counting entries, all you may need to do is count their size or assign them a given load as a limit.
 
-I've found that in practice, dropping without regards to the specifics of the message works rather well, but each application has its share of unique compromises that can be acceptable or not\footnote{Old papers such as \href{http://research.microsoft.com/en-us/um/people/blampson/33-hints/webpage.html}{Hints for Computer System Designs} by Butler W. Lampson recommend dropping messages: "Shed load to control demand, rather than allowing the system to become overloaded." The paper also mentions that  "A system cannot be expected to function well if the demand for any resource exceeds two-thirds of the capacity, unless the load can be characterized extremely well." adding that "The only systems in which cleverness has worked are those with very well-known loads."}.
+I've found that in practice, dropping without regard to the specifics of the message works rather well, but each application has its share of unique compromises that can be acceptable or not\footnote{Old papers such as \href{http://research.microsoft.com/en-us/um/people/blampson/33-hints/webpage.html}{Hints for Computer System Designs} by Butler W. Lampson recommend dropping messages: "Shed load to control demand, rather than allowing the system to become overloaded." The paper also mentions that  "A system cannot be expected to function well if the demand for any resource exceeds two-thirds of the capacity, unless the load can be characterized extremely well." adding that "The only systems in which cleverness has worked are those with very well-known loads."}.
 
 There are also cases where the data is sent to you in a "fire and forget" manner — the entire system is part of an asynchronous pipeline — and it proves difficult to provide feedback to the end-user about why some requests were dropped or are missing. If you can reserve a special type of message that accumulates dropped responses and tells the user "\var{N} messages were dropped for reason \var{X}", that can, on its own, make the compromise far more acceptable to the user. This is the choice that was made with Heroku's \href{https://devcenter.heroku.com/articles/logplex}{logplex} log routing system, which can spit out \href{https://devcenter.heroku.com/articles/error-codes\#l10-drain-buffer-overflow}{L10 errors}, alerting the user that a part of the system can't deal with all the volume right now.
 
@@ -708,7 +710,7 @@ Most common usages will depend on a cookie being present on the two nodes you wa
 
 \section{Job Control Mode}
 
-The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. From that menu, there is an option allowing to connect to a remote shell:
+The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. From that menu, there is an option allowing you to connect to a remote shell:
 
 \begin{VerbatimEshell}
 (somenode@ferdmbp.local)1>
@@ -738,7 +740,7 @@ User switch command
  --> q
 \end{VerbatimEshell}
 
-You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) in order not to connect to an entire cluster automatically.
+You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) to avoid connecting to an entire cluster automatically.
 
 \section{Remsh}
 
@@ -758,9 +760,9 @@ All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$
 
 \section{SSH Daemon}
 
-Erlang/OTP comes shipped with an SSH implementation that can both act as a server and a client. Part of it is a demo application that allows to have a remote shell working in Erlang.
+Erlang/OTP comes shipped with an SSH implementation that can both act as a server and a client. Part of it is a demo application providing a remote shell working in Erlang.
 
-To get this to work, you usually need to have your keys to have access to SSH stuff remotely all in place already, but for quick tests purposes, you can get things working rather quickly by doing:
+To get this to work, you usually need to have your keys to have access to SSH stuff remotely in place already, but for quick test purposes, you can get things working by doing:
 
 \begin{VerbatimEshell}
 $ mkdir /tmp/ssh
@@ -791,7 +793,7 @@ If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} optio
 
 \section{Named Pipes}
 
-A least known way to connect with an Erlang node that requires no explicit distribution is through named pipes. This can be done by starting Erlang with \app{run\_erl}, which wraps Erlang in a named pipe\footnote{\command{"erl"} is the command being run. Additional arguments can be added after it. For example \command{"erl +K true"} will turn kernel polling on.}:
+A little known way to connect with an Erlang node that requires no explicit distribution is through named pipes. This can be done by starting Erlang with \app{run\_erl}, which wraps Erlang in a named pipe\footnote{\command{"erl"} is the command being run. Additional arguments can be added after it. For example \command{"erl +K true"} will turn kernel polling on.}:
 \begin{VerbatimEshell}
 $ run_erl /tmp/erl_pipe /tmp/log_dir "erl"
 \end{VerbatimEshell}
@@ -816,9 +818,9 @@ And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect
 \chapter{Runtime Metrics}
 \label{chap:runtime-metrics}
 
-One of the best selling point of the Erlang VM for production use is how transparent it can be for all kinds of introspection, debugging, profiling, and analysis at run time.
+One of the best selling points of the Erlang VM for production use is how transparent it can be for all kinds of introspection, debugging, profiling, and analysis at run time.
 
-The advantage of having these runtime metrics accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is as simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
+The advantage of having these runtime metrics accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is equally simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
 
 A practical approach to growing a system and keeping it healthy in production is to make sure all angles are observable: in the large, and in the small.
 
@@ -833,7 +835,7 @@ Therefore, to make the text lighter and to be more usable, common operations hav
 
 For a view of the VM in the large, it's useful to track statistics and metrics general to the VM, regardless of the code running on it. Moreover, you should aim for a solution that allows long-term views of each metric — some problems show up as a very long accumulation over weeks that couldn't be detected over small time windows.
 
-Good examples for issues exposed by a long-term view include memory or process leaks, but also finding out regular or irregular spikes in activities relative to the time of the day or week, which can often require having months of data to be sure about it.
+Good examples for issues exposed by a long-term view include memory or process leaks, but also could be regular or irregular spikes in activities relative to the time of the day or week, which can often require having months of data to be sure about it.
 
 For these cases, using existing Erlang metrics applications is useful. Common options are:
 
