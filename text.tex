@@ -261,6 +261,51 @@ You'll usually have a file similar to the configuration files used by \module{sy
 %%%
 %%%
 
+%%% Cognitive
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - How do you know if a code base is an application? A release?
+%% - Where can you find what an application does?
+%% - What differentiates an application from a library application?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - What can be said of processes under a one_for_all scheme for supervision?
+%% - Why would someone use a gen_fsm process over a gen_server?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% Using the code at: https://github.com/ferd/recon_demo
+%% - Is this application meant to be used as a library? A standalone system?
+%% - What does it do?
+%% - Does it have any dependencies? What are they?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%% - The app's readme mentions being non-deterministic. Can you prove if this is true? How?
+%% - Can you express the dependency chain of applications in there? Generate a diagram of them?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - Can you add more processes to the application? DO IT!
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Do you think the method you've chosen to add applications would work well operationally to be done live? If not, is this due to your choice or the application structure? 
+%%
+%%
+%%% Affective
+%% nope
+%%
+%%
+%%% Psychomotor
+%% nope, or through cognitive verifications
+%%
+
+%%%
+%%%
+%%%
+
 \chapter{Building Open Source Erlang Software}
 \label{chap:building-open-source-erlang-software}
 
@@ -455,6 +500,58 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 \end{itemize*}
 
 It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+
+%%%
+%%%
+%%%
+
+%%% Cognitive
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - Does Erlang have package management? Where do dependencies live in a system?
+%% - What are the commands to build an Erlang project using rebar?
+%% - What tools are available to build releases?
+%% - Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
+%% - What are the three application strategies?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - What are the main differences between the directory structure of an app? of a release?
+%% - When should you use a release?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% Using the code at: https://github.com/ferd/recon_demo
+%% - Extract the main application hosted in the release to make it independent, and includable in other projects
+%% - Build a release with the app that was turned as a dependency
+%%
+%% Analysis: break down info, make inferences, find evidence
+%% - Give two examples of the type of state that can go in a process' init function
+%% - Give two examples of the type of state that should not go in a process' init function
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - Give example of applications you would design as temporary, transient, and permanent
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Do you think OTP supervisors should offer a back-off strategy on restart?
+%% - What are the build tools you would choose for your app?
+%%
+%%
+%%% Affective
+%% nope
+%%
+%%
+%%% Psychomotor
+%% nope, or through cognitive verifications
+%%
+
+%%%
+%%%
+%%%
+
 
 \chapter{Planning for Overload}
 \label{chap:overload}
@@ -681,6 +778,59 @@ I've found that in practice, dropping without regard to the specifics of the mes
 There are also cases where the data is sent to you in a "fire and forget" manner — the entire system is part of an asynchronous pipeline — and it proves difficult to provide feedback to the end-user about why some requests were dropped or are missing. If you can reserve a special type of message that accumulates dropped responses and tells the user "\var{N} messages were dropped for reason \var{X}", that can, on its own, make the compromise far more acceptable to the user. This is the choice that was made with Heroku's \href{https://devcenter.heroku.com/articles/logplex}{logplex} log routing system, which can spit out \href{https://devcenter.heroku.com/articles/error-codes\#l10-drain-buffer-overflow}{L10 errors}, alerting the user that a part of the system can't deal with all the volume right now.
 
 In the end, what is acceptable or not to deal with overload tends to depend on the humans that use the system. It is often easier to bend the requirements a bit than develop new technology, but sometimes it is just not avoidable.
+
+%%%
+%%% should rework to break up causes and solutions
+%%%
+
+%%% Cognitive
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - Name the common sources of overload in Erlang systems
+%% - What are the two main classes of strategies to handle overload?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - Why is it that error_logger may cause failures? How can they be fixed?
+%% - When can long-running operations become problematic?
+%% - How can long-running operations be made safer?
+%% - When going synchronous, how should timeouts be chosen?
+%% - What is an alternative to having timeouts?
+%% - What are ways to communicate overload to users?
+%% - What can you do when you can't slow down data input?
+%% - Is there a different approach to be taken between temporary and permanent overload?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - How can you find what is a 'true bottleneck' ?
+%% - In an application that calls a third party API, response times vary by a lot depending on how healthy the other servers are. How could one design the system to prevent occasionally slow requests from blocking other ones?
+%% - When would you pick a queue buffer before a stack buffer? 
+%% - When should you keep the old items in a queue buffer? The new ones?
+%% - 
+%%
+%% Analysis: break down info, make inferences, find evidence
+%% - Give two examples of the type of state that can go in a process' init function
+%% - Give two examples of the type of state that should not go in a process' init function
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - Give example of applications you would design as temporary, transient, and permanent
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - What are the risks, for a user, when dropping or blocking a request? How can we prevent duplicate submissions or missed ones?
+%% - Which form of overload management would be most appropriate for a bank? For an online polling system?
+%%
+%%
+%%% Affective
+%% nope
+%%
+%%
+%%% Psychomotor
+%% nope, or through cognitive verifications
+%%
+
 
 %%%
 %%%
