@@ -293,14 +293,6 @@ You'll usually have a file similar to the configuration files used by \module{sy
 %%
 %% - Do you think the method you've chosen to add applications would work well operationally to be done live? If not, is this due to your choice or the application structure? 
 %%
-%%
-%%% Affective
-%% nope
-%%
-%%
-%%% Psychomotor
-%% nope, or through cognitive verifications
-%%
 
 %%%
 %%%
@@ -538,14 +530,6 @@ It is also possible to start an application as an \emph{included application}, w
 %%
 %% - Do you think OTP supervisors should offer a back-off strategy on restart?
 %% - What are the build tools you would choose for your app?
-%%
-%%
-%%% Affective
-%% nope
-%%
-%%
-%%% Psychomotor
-%% nope, or through cognitive verifications
 %%
 
 %%%
@@ -806,30 +790,25 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 %% - How can you find what is a 'true bottleneck' ?
 %% - In an application that calls a third party API, response times vary by a lot depending on how healthy the other servers are. How could one design the system to prevent occasionally slow requests from blocking other ones?
 %% - When would you pick a queue buffer before a stack buffer? 
-%% - When should you keep the old items in a queue buffer? The new ones?
-%% - 
+%% - Which end should you drop items from in a queue buffer, and when?
 %%
 %% Analysis: break down info, make inferences, find evidence
-%% - Give two examples of the type of state that can go in a process' init function
-%% - Give two examples of the type of state that should not go in a process' init function
+%% - What's likely to happen to new requests to an overloaded latency-sensitive service where data has backed up in a stack buffer? What about old ones?
+%% - What can you expect about response times if an app is permanently overloaded while using a queue buffer?
+%% - 
 %%
 %% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
 %%
-%% - Give example of applications you would design as temporary, transient, and permanent
+%% - Explain how you could turn a lossy overload mechanism ( into one that can also provide back-pressure.
+%% - Explain how you could turn a back-pressure mechanism into a lossy overload 
+%% - Can you think of application designs where lager can't save you of error_logger issues?
 %%
 %% Evaluation: Present and defend opinions by making judgments about information
 %%
 %% - What are the risks, for a user, when dropping or blocking a request? How can we prevent duplicate submissions or missed ones?
 %% - Which form of overload management would be most appropriate for a bank? For an online polling system?
-%%
-%%
-%%% Affective
-%% nope
-%%
-%%
-%%% Psychomotor
-%% nope, or through cognitive verifications
-%%
+%% - What can you expect to happen to your API design if you forget to deal with overload, and suddenly need to add back-pressure or load-shedding to it?
+%% - What positive points could you think of when using infinite timeouts?
 
 
 %%%
@@ -958,6 +937,41 @@ Attaching to /tmp/erl_pipe (^D to exit)
 \end{VerbatimEshell}
 
 And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
+
+%%%
+%%%
+%%%
+
+%%% Cognitive
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - What are the 4 ways to connect to a remote node?
+%% - Can you connect to a node that hasn't received a name?
+%% - What's the command to go into the Job Control Mode (JCL)?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - What's the advantage of using the SSH daemon to connect to a node?
+%% - Which method(s) require the least preparation in advance to be able to connect to a node?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - Which method(s) of connecting to a remote shell should you avoid for an output-heavy application?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - What instances of remote connections shouldn't be disconnected using ^G?
+%% - What command should never be used to disconnect from a session?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - Can all of the methods mentioned support having multiple users connected onto the same Erlang node without issue?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Would you be tempted to run your Erlang software from a screen or a tmux session instead of using the tools presented in this chapter?
+%% 
 
 %%%
 %%%
@@ -1415,6 +1429,74 @@ For this one, the value in the middle of the tuple is what \expression{send\_oct
 
 There is still some manual work involved into properly linking a misbehaving port to a process (and then possibly to a specific user or customer), but all the tools are in place. 
 
+%%%
+%%%
+%%%
+
+%%% Cognitive (Global)
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - What kind of values are reported for Erlang's memory?
+%% - What's a valuable process-related metric for a global view?
+%% - What's a port, and how should it be monitored?
+%% - Why can't you trust 'top' or 'htop' for CPU usage? What's the alternative?
+%% - Name two types of signal-related information available for processes
+%% - How can you find what code a specific process is running?
+%% - What are the different kinds of memory information available for a specific process?
+%% - How can you know if a process is doing a lot of work?
+%% - Name a few of the values that are dangerous to fetch when inspecting processes.
+%% - What are some features provided to OTP processes through the sys module?
+%% - What kind of values are available when inspecting inet ports?
+%% - How can you find the type of a port (Files, TCP, UDP)?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - Why do you want a long time window available on global metrics?
+%% - Why can tracking counts of things such as file descriptors be useful?
+%% - Which would be more appropriate between recon:proc_count/2 and recon:proc_window to find issues with:
+%%   a) reductions  b)  memory  c)  message queue length
+%% - How can you find information about who is the supervisor of a given process?
+%% - When should you use recon:inet_count/2? recon:inet_window/3?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - What could explain the difference in memory reported by the operating system and the memory functions in Erlang?
+%% - Why is it that Erlang can sometimes look very busy even when it isn't?
+%%
+%%   Using https://github.com/ferd/recon_demo (recon is part of the release):
+%% - What's the system memory?
+%% - Is the node's CPU loaded?
+%% - Is any process mailbox overflowing?
+%% - Is the node using any UDP ports at all?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - What could point to your node's schedulers doing a lot of busy looping for no reason?
+%%
+%%   Using https://github.com/ferd/recon_demo (recon is part of the release):
+%% - Which chatty process takes the most memory?
+%% - Which chatty process is eating the most CPU?
+%% - Which chatty process is consuming the most bandwidth?
+%% - Which chatty process sends the most messages over TCP? The least?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - The number of processes on web-server node keeps increasing all the time, rarely going down, while the number of file descriptors remains mostly stable. What could explain this? Is it a problem?
+%% - Can you find out if a specific process tends to hold multiple connections or file descriptors open at the same time on a node?
+%% - Can you find out which function is being called by the most processes at once on any given node right now?
+%% - What proportion of processes on a node are ready to run, but can't be scheduled right away?
+%% - Are most connections on a node mostly unidirectional (sending or receiving more data) or symmetric (well-balanced input and output)?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - What other values would it be worth tracking over time for a global view? They can be application-specific.
+%% - Do you think it's ever worth replacing the state of processes while they're running (through the sys module) ?
+%% - Could you use the port info in order to bill specific customers? If not, what else could you do with it?
+
+%%%
+%%%
+%%%
 
 \chapter{Reading Crash Dumps}
 \label{chap:crash-dumps}
@@ -1480,7 +1562,7 @@ different):
       1 284745853
       1 5157867
       1 4298223
-      2 196650s 
+      2 196650
      12 121536
 
 Processes OldHeap memory sizes (words) used in the VM (5 largest
@@ -1564,7 +1646,45 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 
 %%%
 %%%
-%%%%
+%%%
+
+%%% Cognitive
+%%
+%% These should be done after reading the standard documentation on crash dumps referenced by the text.
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - What's a crash dump?
+%% - How can you choose where a crash dump will be generated?
+%% - What are common avenues to explore if the crash dump shows that the node ran out of memory?
+%% - What should you look for if the process count is suspiciously low?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - In the crash dump analysis shown in <7.1 General View>, what are specific outliers that could point to an issue?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - In the crash dump analysis shown before, does it look like repeated errors are the issue? If not, what could it be?
+%% - What can you explore if you find many processes have large mailboxes as a backlog?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - What could be used in a crash dump to point at repeated failures before the node died?
+%% - 
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - If you find the node died with a process having a lot of memory, what could you do to find out which one it was?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Do you think there's value to crash dumps alone? What would be the most efficient use of them in a real world product's operational cycle?
+%% 
+
+%%%
+%%%
+%%%
 
 \chapter{Memory Leaks}
 \label{chap:memory-leaks}
@@ -1963,6 +2083,49 @@ This is a very long process for which there is no shortcut, and if issues happen
 %%%
 %%%
 
+%%% Cognitive
+%%
+%% These should be done after reading the standard documentation on crash dumps referenced by the text.
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - What are the two main ways to find about a memory leak?
+%% - What are good questions to ask about the node if you suspect a leak?
+%% - Name some of the common sources of leaks in Erlang programs.
+%% - What are the two main types of binaries in Erlang?
+%% - What could be to blame if no specific data type seems guilty of a leak?
+%% - Can Erlang's memory allocation schemes be modified or are they unchangeable without patches?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - How could you verify if a leak is caused by forgetting to kill processes, or by processes using too much memory on their own?
+%% - What could cause the atom table to grow infinitely?
+%% - How could code itself cause a leak?
+%% - How can you find out if garbage collections are taking too long to run?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - Using any system you know or have to maintain in Erlang (including toy systems), can you figure out if there are any binary memory leaks on there?
+%% - A process opens a 150MB log file in binary mode to go extract a piece of information from it, and then stores that information in an ETS table. After figuring out you have a binary memory leak, what should be done to minimize binary memory usage on the node?
+%% - What could you use to find out if ETS tables are growing too fast?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - What steps should you go through to find out that a node is likely suffering from fragmentation? How could you disprove the idea that is could be due to a NIF or driver leaking memory?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - How could you find out if a process with a large mailbox (from reading 'message_queue_len') seems to be leaking data from there, or never handling new messages?
+%% - A process with a large memory footprint seems to be rarely running garbage collections. What could explain this?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - When should you alter the allocation strategies on your nodes? Should you prefer to tweak this, or the way you wrote code?
+%% 
+
+%%%
+%%%
+%%%
 
 \chapter{CPU and Scheduler Hogs}
 \label{chap:cpu-hogs}
