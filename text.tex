@@ -132,7 +132,7 @@ The book is divided in two parts.
 
 Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} -- a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
 %%%
 %%%
@@ -157,7 +157,7 @@ If you encounter a raw Erlang code base, you're pretty much on your own. These r
 
 This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
 
-Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} -- a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
+Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
 
 \section{OTP Applications}
 \label{sec:dive-otp-applications}
@@ -531,7 +531,7 @@ The most common way to restrict data input is to make calls to a process whose q
 
 The difficult part for this approach is that the bottleneck causing the queue to grow is usually not at the edge of the system, but deep inside it, which you find after optimizing nearly everything that came before. Such bottlenecks will often be database operations, disk operations, or some service over the network. 
 
-This means that when you introduce synchronous behavior deep in the system, you'll possibly need to handle back-pressure, level by level, until you end up at the system's edges and can tell the user, "please slow down."
+This means that when you introduce synchronous behaviour deep in the system, you'll possibly need to handle back-pressure, level by level, until you end up at the system's edges and can tell the user, "please slow down."
 Developers that see this pattern will often try to put API limits per user\footnote{There's a tradeoff between slowing down all requests equally or using rate-limiting, both of which are valid. Rate-limiting per user would mean you'd still need to increase capacity or lower the limits of all users when more new users hammer your system, whereas a synchronous system that indiscriminately blocks should adapt to any load with more ease, but possibly unfairly.} on the system entry points. This is a valid approach, especially since it can guarantee a basic quality of service (QoS) to the system and allows one to allocate resources as fairly (or unfairly) as desired.
   
 \subsection{How Long Should a Time Out Be}
@@ -560,8 +560,7 @@ The advantage of proceeding that way is that you may just avoid all the tricky s
 
 \subsection{What Users See}
 
-% TODO: The second sentence "Implicit back-pressure.." needs to be reworked or split into two sentences.
-The tricky part about back-pressure is reporting it. Implicit back-pressure done through synchronous calls, the only way to know back-pressure is at work is that the system becomes slower and less usable. Sadly, this is also going to be a potential symptom of bad hardware, bad network, unrelated overload, and possibly a slow client.
+The tricky part about back-pressure is reporting it. When back-pressure is done implicitly through synchronous calls, the only way to know it is at work due to overload is that the system becomes slower and less usable. Sadly, this is also going to be a potential symptom of bad hardware, bad network, unrelated overload, and possibly a slow client.
 
 Trying to figure out that a system is applying back-pressure by measuring its responsiveness is equivalent to trying to diagnose which illness someone has by observing that person has a fever. It tells you something is wrong, but not what.
 
@@ -604,8 +603,7 @@ On the other hand, dropping at the producer level ensures that the dropping work
 
 This can give place to interesting optimizations where the working process or a given monitor process\footnote{any process tasked with checking the load of specific processes using heuristics such as \expression{process\_info(Pid, message\_queue\_len)} could be a monitor} uses values in an ETS table or \function{application:set\_env/3} to dynamically increase and decrease the threshold to be used with the random number. This allows control over how many messages are dropped based on overload, and the configuration data can be fetched by any process rather efficiently by using \function{application:get\_env/2}.
 
-Similar techniques could also be used to implement different drop ratios for different message priorities, rather than trying to sort it all out in the end.
-% TODO: "rather than trying to sort it all out in the end" is kinda vague. does this mean at the receiving queue? 
+Similar techniques could also be used to implement different drop ratios for different message priorities, rather than trying to sort it all out at the consumer level.
 
 \subsection{Queue Buffers}
 
@@ -1402,8 +1400,7 @@ In such a case, the issue is that a specific application (\expression{<AppName>}
 
 Similarly to the process count, the port count is simple and mostly useful when you know your usual values\footnote{See subsection \ref{subsec:global-ports} for details}.
 
-A high count may be the result of overload, Denial of Service attacks, or plain old resource leaks. Looking at the type of port leaked (TCP, UDP, or files) can also help reveal if there was contention on specific resources, or just point bad code running with them.
-% TODO: refactor "or just point bad code running with them". not sure what you mean.
+A high count may be the result of overload, Denial of Service attacks, or plain old resource leaks. Looking at the type of port leaked (TCP, UDP, or files) can also help reveal if there was contention on specific resources, or if the code using them is just wrong.
 
 \section{Can't Allocate Memory}
 
