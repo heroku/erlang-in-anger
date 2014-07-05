@@ -2139,7 +2139,7 @@ The existing approaches are often limited to profiling and reduction-counting if
 \section{Profiling and Reduction Counts}
 \label{sec:cpu-profiling}
 
-To pin issues to specific pieces of Erlang code, as mentioned earlier, there are two main approaches. One will be to do the old standard profiling routing, likely using one of the following applications:\footnote{All of these profilers work using Erlang tracing functionality with almost no restraint. They will have an impact on the run-time performance of the application, and shouldn't be used in production.}
+To pin issues to specific pieces of Erlang code, as mentioned earlier, there are two main approaches. One will be to do the old standard profiling routine, likely using one of the following applications:\footnote{All of these profilers work using Erlang tracing functionality with almost no restraint. They will have an impact on the run-time performance of the application, and shouldn't be used in production.}
 
 \begin{itemize*}
 	\item \otpapp{eprof},\footnote{\href{http://www.erlang.org/doc/man/eprof.html}{http://www.erlang.org/doc/man/eprof.html}} the oldest Erlang profiler around. It will give general percentage values and will mostly report in terms of time taken.
@@ -2173,7 +2173,9 @@ Using the code locations\footnote{Call \expression{recon:info(PidTerm, location)
 \section{System Monitors}
 \label{sec:cpu-system-monitors}
 
-If nothing seems to stand out through either profiling or checking reduction counts, it's possible some of your work ends up being done by NIFs, garbage collections, and so on. To find about such cases, the best way around is to use \function{erlang:system\_monitor/2}, and look for \term{long\_gc} and \term{long\_schedule}. The former will show whenever garbage collection ends up doing a lot of work (it takes time!), and the latter will likely catch issues with busy processes, either through NIFs or some other means, that end up making them hard to de-schedule.\footnote{long garbage collections count towards scheduling time. It is very possible that a lot of your long schedules will be tied to garbage collections depending on your system.}
+If nothing seems to stand out through either profiling or checking reduction counts, it's possible some of your work ends up being done by NIFs, garbage collections, and so on. These kinds of work may not always increment their reductions count correctly, so they won't show up with the previous methods, only through long run times.
+
+To find about such cases, the best way around is to use \function{erlang:system\_monitor/2}, and look for \term{long\_gc} and \term{long\_schedule}. The former will show whenever garbage collection ends up doing a lot of work (it takes time!), and the latter will likely catch issues with busy processes, either through NIFs or some other means, that end up making them hard to de-schedule.\footnote{long garbage collections count towards scheduling time. It is very possible that a lot of your long schedules will be tied to garbage collections depending on your system.}
 
 We've seen how to set such a system monitor In Garbage Collection in \ref{subsubsec:leak-gc}, but here's a different pattern\footnote{If you're on 17.0 or newer versions, the shell functions can be made recursive far more simply by using their named form, but to have the widest compatibility possible with older versions of Erlang, I've let them as is.} I've used before to catch long-running items:
 
@@ -2187,12 +2189,12 @@ We've seen how to set such a system monitor In Garbage Collection in \ref{subsub
     end,
     F(F)
 end.
-2> Setup = fun() -> 
+2> Setup = fun(Delay) -> fun() -> 
      register(temp_sys_monitor, self()),
-     erlang:system_monitor(self(), [{long_schedule, 1000}, {long_gc, 1000}]),
+     erlang:system_monitor(self(), [{long_schedule, Delay}, {long_gc, Delay}]),
      F(F)
-end.
-3> spawn_link(Setup).
+end end.
+3> spawn_link(Setup(1000)).
 <0.1293.0>
 monitor=long_schedule pid=<0.54.0> info=[{timeout,1102},
                                          {in,{some_module,some_function,3}},
@@ -2212,6 +2214,42 @@ This kind of event can be monitored by passing in the atom \term{busy\_port} to 
 
 If you find out you're having problems with these, try replacing your sending functions where in critical paths with \function{erlang:port\_command(Port, Data, [nosuspend])} for ports, and \function{erlang:send(Pid, Msg, [nosuspend])} for messages to distributed processes. They will then tell you when the message could not be sent and you would therefore have been descheduled.
 
+
+%%%
+%%%
+%%%
+
+%%% Cognitive
+%%
+%% These should be done after reading the standard documentation on crash dumps referenced by the text.
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - What are the two main approaches to pin issues about CPU usages?
+%% - Name some of the profiling tools available
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - What approaches are preferable for production use? Why?
+%% - Why can long scheduling monitors be useful to find CPU or scheduler over-consumption?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% - Can you set up a system monitor and then trigger it with regular Erlang code? Can you use it to find out for how long processes seem to be scheduled on average?
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - A set of heavily loaded processes appear to be working fine most of the time, but eventually have their queues build up and get bogged down more and more. You suspect this might be because the process is overworked. What would you test to find the source of the issue?
+%% - No process particularly stands out as being using a lot of CPU on the node. What can you do to determine whether one piece of code run many times is using too much CPU or whether the node is just purely overloaded?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Try any of the profiling tools on any given code base. Which one do you prefer? Why?
+%% 
 
 %%%
 %%%
@@ -2408,6 +2446,45 @@ Note that in the pattern above, no specific function (\expression{'\_'}) was mat
 Be aware that extremely broad patterns with lax rate-limitting (or very high absolute limits) may impact your node's stability in ways \module{recon\_trace} cannot easily help you with. Similarly, tracing extremely large amounts of function calls (all of them, or all of \module{io} for example) can be risky if more trace messages are generated than any process on the node could ever handle, despite the precautions taken by the library.
 
 In doubt, start with the most restrictive tracing possible, with low limits, and progressively increase your scope.
+
+%%%
+%%%
+%%%
+
+%%% Cognitive
+%%
+%% These should be done after reading the standard documentation on crash dumps referenced by the text.
+%%
+%% Knowledge: recall facts, terms, basic concepts
+%% 
+%% - Why is debugger use limited on Erlang?
+%% - What are options you can use to trace OTP processes?
+%%
+%% Comprehension: organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas
+%%
+%% - What determines whether a given set of functions or processes get traced?
+%% - How can you stop tracing with recon_trace?
+%% - How can you trace non-exported function calls?
+%%
+%% Application: Solve problems in new situations by applying acquired knowledge, facts, techniques and rules in a different way
+%%
+%% Using https://github.com/ferd/recon_demo
+%% - Can chatty processes message themselves? (can this work with registered names? Do I need to check the chattiest one and see if it messages itself?)
+%% - Can you estimate the overall frequency at which messages are sent globally?
+%% - Can you crash a node using any of the tracing tools? (hint: dbg makes it easier due to its flexibility)
+%%
+%% Analysis: break down info, make inferences, find evidence
+%%
+%% - When would you want to move time stamping of traces to the VM's trace mechanisms directly? What would be a possible downside of doing this?
+%%
+%% Synthesis: Compile information together in a different way by combining elements in a new pattern or proposing alternative solutions
+%%
+%% - Imagine that traffic sent out of a node does so over SSL, over a multi-tenant system. However, due to wanting to validate data sent (following a customer complain), you need to be able to inspect what was seen clear text. Can you think up a plan to be able to snoop in the data sent to their end through the 'ssl' socket, without snooping on the data sent to any other customer?
+%%
+%% Evaluation: Present and defend opinions by making judgments about information
+%%
+%% - Do you think tracing is more useful than debugging, even in development? If not, why?
+%% 
 
 
 %%%
