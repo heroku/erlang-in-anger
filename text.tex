@@ -563,9 +563,13 @@ We identified what the \emph{true bottleneck} of the system was, and all the pri
 
 We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on). Even then, there are times where overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash.
 
-In this section, we will explore common causes of queues blowing up and overload in Erlang systems, with possible solutions.
+In this chapter, we will explore common causes of queues blowing up, along with two broad strategies to deal with the issue in general: back-pressure and load-shedding.
 
-\section{error\_logger Explodes}
+\section{Common Overload Sources}
+
+There are a few common causes of queues blowing up and overload in Erlang systems that most people will encounter sooner or later, no matter how they approach their system. They're usually symptomatic of having your system grow up and require some help scaling up, or of an unexpected type of failure that ends up cascading much harder than it should have.
+
+\subsection{error\_logger Explodes}
 
 Ironically, the process in charge of error logging is one of the most fragile ones. In a default Erlang install, the \module{error\_logger}\footnote{defined at \href{http://www.erlang.org/doc/man/error\_logger.html}{http://www.erlang.org/doc/man/error\_logger.html}} process will take its sweet time to log things to disk or over the network, and will do so much more slowly than errors can be generated.
 
@@ -578,7 +582,7 @@ While Lager will not solve all your problems, it will truncate voluminous log me
 It won't be able to deal with very specific cases, such as when user-submitted messages are in very large volume and all coming from one-off processes. This is, however, a much rarer occurrence than everything else, and one where the programmer tends to have more control.
 
 
-\section{Locks and Blocking Operations}
+\subsection{Locks and Blocking Operations}
 
 Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
 
@@ -598,7 +602,7 @@ Another option is to transform the blocking task into an asynchronous one. If th
 
 This option tends to be more obscure than using many processes and can quickly devolve into callback hell, but may use fewer resources.
 
-\section{Unexpected Messages}
+\subsection{Unexpected Messages}
 
 Messages you didn't know about tend to be rather rare when using OTP applications. Because OTP behaviours pretty much expect you to handle anything with some clause in \function{handle\_info/2}, unexpected messages will not accumulate much.
 
@@ -1086,7 +1090,9 @@ The function \function{recon:scheduler\_usage(N)} will poll for \var{N} millisec
 
 The result being that there is a decent chunk of CPU usage that would be mostly free for scheduling actual Erlang work (assuming the schedulers are busy waiting more than trying to select tasks to run), but is being reported as busy by the OS.
 
-This may especially be important to consider when doing capacity planning.
+Another interesting behaviour possible is that the scheduler usage may show a higher rate (1.0) than what the OS will report. Schedulers waiting for os resources are considered utilized as they cannot handle more work. If the OS itself is holding up on non-CPU tasks it is still possible for Erlang's schedulers not to be able to do more work and report a full ratio.
+
+These behaviours may especially be important to consider when doing capacity planning, and can be better indicators of headroom than looking at CPU usage or load.
 
 %% 08:37 #erlounge: <+garazdawi> MononcQc: There is a cost when not doing work. The way it works is that when starting/stopping to do work it checks the time, but if the
 %%                              scheduler has something to do the entire time then there is no overhead. So you might see a slight cpu increase if the schedulers run out of
