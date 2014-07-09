@@ -134,6 +134,7 @@ Part \ref{part:writing-applications} focuses on how to write applications. It in
 
 Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
+Each chapter is followed up by a few optional exercises in the form of questions or hands-on things to try if you feel like making sure you understood everything, or if you want to push things further.
 %%%
 %%%
 %%%
@@ -248,7 +249,7 @@ All applications have dependencies\footnote{at the very least on the \module{ker
    \label{fig:app-deps}
 \end{figure}
 
-Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
+Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find recon's script directory and call \command{escript ./deps/recon/script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
 
 \section{OTP Releases}
 \label{sec:dive-otp-releases}
@@ -257,6 +258,30 @@ OTP releases are not a lot harder to understand than most OTP applications in th
 
 You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{a lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that was officially released in early 2014.
 
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item How do you know if a code base is an application? A release?
+	\item What differentiates an application from a library application?
+	\item What can be said of processes under a \term{one\_for\_all} scheme for supervision?
+	\item Why would someone use a \module{gen\_fsm} behaviour over a \module{gen\_server}?
+\end{enumerate}
+
+\subsection{Hands-On}
+
+Download the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}. This will be used as a test test bed for exercises throughout the book. Given you are not familiar with the code base yet, let's see if you can use the tips and tricks mentioned in this chapter to get an understanding of it.
+
+\begin{enumerate}
+	\item Is this application meant to be used as a library? A standalone system?
+	\item What does it do?
+	\item Does it have any dependencies? What are they?
+	\item The app's \filename{README} mentions being non-deterministic. Can you prove if this is true? How?
+	\item Can you express the dependency chain of applications in there? Generate a diagram of them?
+	\item Can you add more processes to the main application than those described in the \filename{README}? 
+\end{enumerate}
 %%%
 %%%
 %%%
@@ -493,11 +518,28 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 
 It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
 
-%%%
-%%%
-%%%
+\section{Exercises}
 
-%%% Cognitive
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item  Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
+	\item What are the three application strategies? What do they do?
+	\item What are the main differences between the directory structure of an app and a release?
+	\item When should you use a release?
+	\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
+\end{enumerate}
+
+\subsection{Hands-On}
+
+Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+
+\begin{enumerate}
+	\item Extract the main application hosted in the release to make it independent, and includable in other projects.
+	\item Host the application somewhere (Github, Bitbucket, local server), and build a release with that application as a dependency.
+	\item The main application's workers (\module{council\_member}) starts a server and connects to it in its \function{init/1} function. Can you make this connection happen outside of the init function's? Is there a benefit to doing so in this specific case?
+\end{enumerate}
+
 %%
 %% Knowledge: recall facts, terms, basic concepts
 %% 
@@ -767,9 +809,32 @@ There are also cases where the data is sent to you in a "fire and forget" manner
 
 In the end, what is acceptable or not to deal with overload tends to depend on the humans that use the system. It is often easier to bend the requirements a bit than develop new technology, but sometimes it is just not avoidable.
 
-%%%
-%%% should rework to break up causes and solutions
-%%%
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item Name the common sources of overload in Erlang systems
+	\item What are the two main classes of strategies to handle overload?
+	\item How can long-running operations be made safer?
+	\item When going synchronous, how should timeouts be chosen?
+	\item What is an alternative to having timeouts?
+	\item When would you pick a queue buffer before a stack buffer?
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item What is a \emph{true bottleneck}? How can you find it?
+	\item In an application that calls a third party API, response times vary by a lot depending on how healthy the other servers are. How could one design the system to prevent occasionally slow requests from blocking other ones?
+	\item What's likely to happen to new requests to an overloaded latency-sensitive service where data has backed up in a stack buffer? What about old requests?
+	\item Explain how you could turn a load-shedding overload mechanism into one that can also provide back-pressure.
+	\item Explain how you could turn a back-pressure mechanism into a load-shedding mechanism. 
+	\item What are the risks, for a user, when dropping or blocking a request? How can we prevent duplicate messages or missed ones?
+	\item What can you expect to happen to your API design if you forget to deal with overload, and suddenly need to add back-pressure or load-shedding to it?
+\end{enumerate}
+
 
 %%% Cognitive
 %%
@@ -942,6 +1007,25 @@ Attaching to /tmp/erl_pipe (^D to exit)
 
 And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
 
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item What are the 4 ways to connect to a remote node?
+	\item Can you connect to a node that wasn't given a name?
+	\item What's the command to go into the Job Control Mode (JCL)?
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item Which method(s) of connecting to a remote shell should you avoid for a system that outputs a lot of data to standard output?
+	\item What instances of remote connections shouldn't be disconnected using \command{\^{}G}?
+	\item What command(s) should never be used to disconnect from a session?
+	\item Can all of the methods mentioned support having multiple users connected onto the same Erlang node without issue?
+\end{enumerate}
 %%%
 %%%
 %%%
@@ -1436,6 +1520,58 @@ For this one, the value in the middle of the tuple is what \expression{send\_oct
 There is still some manual work involved into properly linking a misbehaving port to a process (and then possibly to a specific user or customer), but all the tools are in place. 
 
 %%%
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item What kind of values are reported for Erlang's memory?
+	\item What's a valuable process-related metric for a global view?
+	\item What's a port, and how should it be monitored globally?
+	\item Why can't you trust \app{top} or \app{htop} for CPU usage with Erlang systems? What's the alternative?
+	\item Name two types of signal-related information available for processes
+	\item How can you find what code a specific process is running?
+	\item What are the different kinds of memory information available for a specific process?
+	\item How can you know if a process is doing a lot of work?
+	\item Name a few of the values that are dangerous to fetch when inspecting processes in a production system.
+	\item What are some features provided to OTP processes through the sys module?
+	\item What kind of values are available when inspecting inet ports?
+	\item How can you find the type of a port (Files, TCP, UDP)?
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item Why do you want a long time window available on global metrics?
+	\item Which would be more appropriate between \function{recon:proc\_count/2} and \function{recon:proc\_window/3} to find issues with: 
+		\begin{enumerate*}
+			\item Reductions \item Memory \item Message queue length
+		\end{enumerate*}	
+	\item How can you find information about who is the supervisor of a given process?
+	\item When should you use \function{recon:inet\_count/2}? \function{recon:inet\_window/3}?
+	\item What could explain the difference in memory reported by the operating system and the memory functions in Erlang?
+	\item Why is it that Erlang can sometimes look very busy even when it isn't?
+	\item How can you find what proportion of processes on a node are ready to run, but can't be scheduled right away?
+\end{enumerate}
+
+\subsection{Hands-On}
+
+Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+
+\begin{enumerate}
+	\item What's the system memory?
+	\item Is the node using a lot of CPU resources?
+	\item Is any process mailbox overflowing?
+	\item Which chatty process (\module{council\_member}) takes the most memory?
+	\item Which chatty process is eating the most CPU?
+	\item Which chatty process is consuming the most bandwidth?
+	\item Which chatty process sends the most messages over TCP? The least?
+	\item Can you find out if a specific process tends to hold multiple connections or file descriptors open at the same time on a node?
+	\item Can you find out which function is being called by the most processes at once on the node right now?
+\end{enumerate}
+
+%%%
 %%%
 %%%
 
@@ -1514,6 +1650,7 @@ The format is mostly documented in Erlang's official documentation\footnote{\hre
 The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{Heroku's Routing and Telemetry teams use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app. It can be added to a project to automatically name the dumps by boot time and put them in a pre-set location}.
 
 \section{General View}
+\label{sec:crashdump-general-view}
 
 Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
 
@@ -1649,6 +1786,26 @@ In any case, the crash dump will help figure out what the problem was after the 
 In case of large outliers at the top, you know some restricted set of processes may be eating up most of your node's memory. In case they're all more or less equal, see if the amount of memory reported sounds like a lot.
 
 If it looks more or less reasonable, head towards the "Memory" section of the dump and check if a type (ETS or Binary, for example) seems to be fairly large. They may point towards resource leaks you hadn't expected.
+
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item How can you choose where a crash dump will be generated?
+	\item What are common avenues to explore if the crash dump shows that the node ran out of memory?
+	\item What should you look for if the process count is suspiciously low?
+	\item If you find the node died with a process having a lot of memory, what could you do to find out which one it was?\end{enumerate}
+
+\subsection{Hands-On}
+
+Using the analysis of a crash dump in Section \ref{sec:crashdump-general-view}:
+
+\begin{enumerate}
+	\item What are specific outliers that could point to an issue?
+	\item Does it look like repeated errors are the issue? If not, what could it be? 
+\end{enumerate}
 
 %%%
 %%%
@@ -2085,6 +2242,38 @@ You will need to figure out what the average data size is, the frequency of allo
 
 This is a very long process for which there is no shortcut, and if issues happen only every few months per node, you may be in for the long haul. 
 
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item Name some of the common sources of leaks in Erlang programs.
+	\item What are the two main types of binaries in Erlang?
+	\item What could be to blame if no specific data type seems to be the source of a leak?
+	\item If you find the node died with a process having a lot of memory, what could you do to find out which one it was?
+	\item How could code itself cause a leak?
+	\item How can you find out if garbage collections are taking too long to run?
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item  How could you verify if a leak is caused by forgetting to kill processes, or by processes using too much memory on their own?
+	\item A process opens a 150MB log file in binary mode to go extract a piece of information from it, and then stores that information in an ETS table. After figuring out you have a binary memory leak, what should be done to minimize binary memory usage on the node?
+	\item What could you use to find out if ETS tables are growing too fast?
+	\item What steps should you go through to find out that a node is likely suffering from fragmentation? How could you disprove the idea that is could be due to a NIF or driver leaking memory?
+	\item How could you find out if a process with a large mailbox (from reading \term{message\_queue\_len}) seems to be leaking data from there, or never handling new messages?
+	\item A process with a large memory footprint seems to be rarely running garbage collections. What could explain this?
+	\item When should you alter the allocation strategies on your nodes? Should you prefer to tweak this, or the way you wrote code?
+\end{enumerate}
+
+\subsection{Hands-On}
+
+\begin{enumerate}
+	\item Using any system you know or have to maintain in Erlang (including toy systems), can you figure out if there are any binary memory leaks on there?
+\end{enumerate}
+	
 %%%
 %%%
 %%%
@@ -2220,6 +2409,24 @@ This kind of event can be monitored by passing in the atom \term{busy\_port} to 
 
 If you find out you're having problems with these, try replacing your sending functions where in critical paths with \function{erlang:port\_command(Port, Data, [nosuspend])} for ports, and \function{erlang:send(Pid, Msg, [nosuspend])} for messages to distributed processes. They will then tell you when the message could not be sent and you would therefore have been descheduled.
 
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item What are the two main approaches to pin issues about CPU usages?
+	\item Name some of the profiling tools available. What approaches are preferable for production use? Why?
+	\item Why can long scheduling monitors be useful to find CPU or scheduler over-consumption?
+
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
+	\item Can you set up a system monitor and then trigger it with regular Erlang code? Can you use it to find out for how long processes seem to be scheduled on average? You may need to manually start random processes from the shell that are more aggressive in their work than those provided by the existing system.
+\end{enumerate}
 
 %%%
 %%%
@@ -2452,6 +2659,37 @@ Note that in the pattern above, no specific function (\expression{'\_'}) was mat
 Be aware that extremely broad patterns with lax rate-limitting (or very high absolute limits) may impact your node's stability in ways \module{recon\_trace} cannot easily help you with. Similarly, tracing extremely large amounts of function calls (all of them, or all of \module{io} for example) can be risky if more trace messages are generated than any process on the node could ever handle, despite the precautions taken by the library.
 
 In doubt, start with the most restrictive tracing possible, with low limits, and progressively increase your scope.
+
+
+\section{Exercises}
+
+\subsection{Revision Questions}
+
+\begin{enumerate}
+	\item Why is debugger use generally limited on Erlang?
+	\item What are the options you can use to trace OTP processes?
+	\item What determines whether a given set of functions or processes get traced?
+	\item How can you stop tracing with \module{recon\_trace}? With other tools?
+	\item How can you trace non-exported function calls?
+\end{enumerate}
+
+\subsection{Open-ended Questions}
+
+\begin{enumerate}
+	\item When would you want to move time stamping of traces to the VM's trace mechanisms directly? What would be a possible downside of doing this?	
+	\item Imagine that traffic sent out of a node does so over SSL, over a multi-tenant system. However, due to wanting to validate data sent (following a customer complain), you need to be able to inspect what was seen clear text. Can you think up a plan to be able to snoop in the data sent to their end through the \module{ssl} socket, without snooping on the data sent to any other customer?
+\end{enumerate}
+
+\subsection{Hands-On}
+
+Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo} (these may require a decent understanding of the code there):
+
+\begin{enumerate}
+	\item Can chatty processes (\module{council\_member}) message themselves? (\emph{hint: can this work with registered names? Do you need to check the chattiest process and see if it messages itself?})
+	\item Can you estimate the overall frequency at which messages are sent globally?
+	\item Can you crash a node using any of the tracing tools? (\emph{hint: dbg makes it easier due to its greater flexibility})
+\end{enumerate}
+
 
 %%%
 %%%
