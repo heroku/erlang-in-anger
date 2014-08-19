@@ -30,6 +30,7 @@
 \fvset{fontsize=\normalsize}
 
 \DefineVerbatimEnvironment{VerbatimText}{Verbatim}{frame=lines,framesep=2mm,numbers=left,numbersep=3mm}
+\DefineVerbatimEnvironment{VerbatimRaw}{Verbatim}{frame=lines,framesep=2mm}
 \DefineVerbatimEnvironment{VerbatimErl}{Verbatim}{frame=lines,framesep=2mm,fontsize=\small}
 \DefineVerbatimEnvironment{VerbatimEshell}{Verbatim}{frame=lines,framesep=2mm,fontsize=\small}
 
@@ -52,7 +53,8 @@
 \def\includecode{\begingroup
 \catcode`\_=12
 \includecodeB}
-\newcommand{\includecodeB}[2][erlang]{\VerbatimInput[frame=lines,framesep=2mm,label=#1/#2,fontsize=\small]{#1/#2}\endgroup}
+\newcommand{\includecodeB}[2][erlang]{\VerbatimInput[frame=lines,framesep=2mm,%label=#1/#2,
+fontsize=\small]{#1/#2}\endgroup}
 
 %%% Cover
 
@@ -79,12 +81,12 @@
 \end{center}
 
 \begin{center}
-\emph{Erlang in Anger: Stuff Goes Bad} by Fred Hébert and Heroku is licensed under a \href{http://creativecommons.org/licenses/by-nc-sa/4.0/}{Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License}.
+\emph{Stuff Goes Bad: Erlang in Anger} by Fred Hébert and Heroku is licensed under a \href{http://creativecommons.org/licenses/by-nc-sa/4.0/}{Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License}.
 \end{center}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, Raoul Duke, ...
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, ...
 
 \null
 \vfill
@@ -175,7 +177,7 @@ Fortunately, you should rarely encounter raw Erlang in the wild, and they are of
 
 Figuring out OTP applications is usually rather simple. They usually all share a directory structure that looks like:
 
-\begin{VerbatimText}
+\begin{VerbatimRaw}
 doc/
 ebin/
 src/
@@ -183,7 +185,7 @@ test/
 LICENSE.txt
 README.md
 rebar.config
-\end{VerbatimText}
+\end{VerbatimRaw}
 
 There might be slight differences, but the general structure will be the same.
 
@@ -255,11 +257,13 @@ All applications have dependencies\footnote{at the very least on the \module{ker
 \begin{figure}
   \includegraphics{app-deps-riak-cs.pdf}%
   \caption{Dependency graph of riak\_cs, Basho's open source cloud library.
-  The graph has been generated with recon's app\_deps script, and ignores dependencies on common applications like kernel and stdlib}%
+  The graph has been generated with recon's app\_deps script, and ignores dependencies on common applications like kernel and stdlib. Ovals are applications, rectangles are library applications.}%
    \label{fig:app-deps}
 \end{figure}
 
 Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find recon's script directory and call \command{escript ./deps/recon/script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
+
+\FloatBarrier
 
 \section{OTP Releases}
 \label{sec:dive-otp-releases}
@@ -271,7 +275,7 @@ You'll usually have a file similar to the configuration files used by \module{sy
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item How do you know if a code base is an application? A release?
@@ -342,7 +346,7 @@ OTP applications are the vast majority of the open source code people will encou
 
 If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build and OTP application or release is left up to the Erlang introduction book you have at hand.}
 
-The main build tools supported are \app{rebar} and \app{erlang.mk}. The former is a portable Erlang script that will be used to wrap around a lot of standard functionality and add its own, while the latter is a very fancy makefile that does a bit less, but tends to be faster when it comes to compiling. In this chapter, I'll mostly focus on using \app{rebar}\footnote{\href{https://github.com/rebar/rebar}{https://github.com/rebar/rebar}} to build things, given it's the ad-hoc standard, is well-established, and \app{erlang.mk} applications tend to also be supported by \app{rebar} as dependencies.
+The main build tools supported are \app{rebar} and \app{erlang.mk}. The former is a portable Erlang script that will be used to wrap around a lot of standard functionality and add its own, while the latter is a very fancy makefile that does a bit less, but tends to be faster when it comes to compiling. In this chapter, I'll mostly focus on using \app{rebar} to build things, given it's the ad-hoc standard, is well-established, and \app{erlang.mk} applications tend to also be supported by \app{rebar} as dependencies.
 
 \section{Project Structure}
 \label{sec:project-structure}
@@ -365,7 +369,7 @@ README.md
 rebar.config
 \end{VerbatimText}
 
-What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system, or keep a local copy if you require a specific version to build your application.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
+What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system, or keep a local copy if you require a specific version to build your system.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted what \app{rebar} provided, which was that you fetch dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
 
 This is accomplished with \app{rebar} by adding a few config lines to \filename{rebar.config}:
 
@@ -396,14 +400,14 @@ For releases, the structure should be a bit different\footnote{I say \emph{shoul
 
 Instead of having a top-level app, applications should be nested one level deeper and divided into two categories: apps and deps. The apps directory contains your applications' source code (say, internal business code), and the deps directory contains independently managed dependency applications.
 
-\begin{VerbatimText}
+\begin{VerbatimRaw}
 apps/
 doc/
 deps/
 LICENSE.txt
 README.md
 rebar.config
-\end{VerbatimText}
+\end{VerbatimRaw}
 
 This structure lends itself to generating releases. Tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power. An easier tool that recently appeared is \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}.
 
@@ -530,7 +534,7 @@ It is also possible to start an application as an \emph{included application}, w
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item  Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
@@ -709,7 +713,7 @@ There is a choice to be made when designing the system. Are your users going to 
 
 System-global or node-global limits are usually easy to implement, but will have the downside that they may be unfair. A user doing 90\% of all your requests may end up making the platform unusable for the vast majority of the other users.
 
-Per-account limits, on the other hand, tend to be very fair, and allow fancy schemes such as having premium users who can go above the usual limits. This is extremely nice, but has the downside that the more users use your system, the higher the global system limit tends to move. Starting with 100 users that can do 100 requests a minute gives you a global 10000 requests per minute. Add 20 new users with that same rate allowed, and suddenly you may crash a lot more often.
+Per-account limits, on the other hand, tend to be very fair, and allow fancy schemes such as having premium users who can go above the usual limits. This is extremely nice, but has the downside that the more users use your system, the higher the effective global system limit tends to move. Starting with 100 users that can do 100 requests a minute gives you a global 10000 requests per minute. Add 20 new users with that same rate allowed, and suddenly you may crash a lot more often.
 
 The safe margin of error you established when designing the system slowly erodes as more people use it. It's important to consider the tradeoffs your business can tolerate from that point of view, because users will tend not to appreciate seeing their allowed usage go down all the time, possibly even more so than seeing the system go down entirely from time to time.
 
@@ -824,7 +828,7 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item Name the common sources of overload in Erlang systems
@@ -839,7 +843,7 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 
 \begin{enumerate}
 	\item What is a \emph{true bottleneck}? How can you find it?
-	\item In an application that calls a third party API, response times vary by a lot depending on how healthy the other servers are. How could one design the system to prevent occasionally slow requests from blocking other ones?
+	\item In an application that calls a third party API, response times vary by a lot depending on how healthy the other servers are. How could one design the system to prevent occasionally slow requests from blocking other concurrent calls to the same service?
 	\item What's likely to happen to new requests to an overloaded latency-sensitive service where data has backed up in a stack buffer? What about old requests?
 	\item Explain how you could turn a load-shedding overload mechanism into one that can also provide back-pressure.
 	\item Explain how you could turn a back-pressure mechanism into a load-shedding mechanism. 
@@ -964,7 +968,7 @@ And as follows for short names:
 erl -sname local@domain -remsh remote@domain
 \end{VerbatimText}
 
-All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
+All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local). \command{\^{}G}  remains the safest way to exit the remote shell.
 
 \section{SSH Daemon}
 
@@ -1022,17 +1026,12 @@ And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item What are the 4 ways to connect to a remote node?
 	\item Can you connect to a node that wasn't given a name?
 	\item What's the command to go into the Job Control Mode (JCL)?
-\end{enumerate}
-
-\subsection{Open-ended Questions}
-
-\begin{enumerate}
 	\item Which method(s) of connecting to a remote shell should you avoid for a system that outputs a lot of data to standard output?
 	\item What instances of remote connections shouldn't be disconnected using \command{\^{}G}?
 	\item What command(s) should never be used to disconnect from a session?
@@ -1084,7 +1083,7 @@ One of the best selling points of the Erlang VM for production use is how transp
 
 The advantage of having these runtime metrics accessible programmatically is that building tools relying on them is easy, and building automation for some tasks or watchdogs is equally simple\footnote{making sure your automated processes don't run away and go overboard with whatever corrective actions they take is more complex}. Then, in times of need, it's also possible to bypass the tools and go direct to the VM for information.
 
-A practical approach to growing a system and keeping it healthy in production is to make sure all angles are observable: in the large, and in the small.
+A practical approach to growing a system and keeping it healthy in production is to make sure all angles are observable: in the large, and in the small. There's no generic recipe to tell in advance what is going to be normal or not. You want to keep a lot of data and to look at it from time to time to form an idea about what your system looks like under normal circumstances. The day something goes awry, you will have all these angles you've grown to know, and it will be simpler to find what is off and needs fixing.
 
 For this chapter (and most of those that follow), most of the concepts or features to be shown are accessible through code in the standard library, part of the regular OTP distribution. 
 
@@ -1535,7 +1534,7 @@ There is still some manual work involved into properly linking a misbehaving por
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item What kind of values are reported for Erlang's memory?
@@ -1659,7 +1658,7 @@ Whenever an Erlang node crashes, it will generate a crash dump\footnote{If it is
 
 The format is mostly documented in Erlang's official documentation\footnote{\href{http://www.erlang.org/doc/apps/erts/crash\_dump.html}{http://www.erlang.org/doc/apps/erts/crash\_dump.html}}, and anyone willing to dig deeper inside of it will likely be able to figure out what data means by looking at that documentation. There will be specific data that is hard to understand without also understanding the part of the VM they refer to, but that might be too complex for this document.
 
-The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{Heroku's Routing and Telemetry teams use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app. It can be added to a project to automatically name the dumps by boot time and put them in a pre-set location}.
+The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{Heroku's Routing and Telemetry teams use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app to set the path and name of the crash dumps. It can be added to a project to name the dumps by boot time and put them in a pre-set location}.
 
 \section{General View}
 \label{sec:crashdump-general-view}
@@ -1667,7 +1666,7 @@ The crash dump is going to be named \filename{erl\_crash.dump} and be located wh
 Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
 
 %% Show debugging here with output
-\begin{VerbatimText}
+\begin{VerbatimRaw}
 $ ./recon/script/erl_crashdump_analyzer.sh erl_crash.dump
 analyzing erl_crash.dump, generated on:  Thu Apr 17 18:34:53 2014
 
@@ -1734,7 +1733,7 @@ Process States when crashing (sum):
       1 Garbing
      74 Scheduled
   36421 Waiting
-\end{VerbatimText}
+\end{VerbatimRaw}
 
 This data dump won't point out a problem directly to your face, but will be a good clue as to where to look. For example, the node here ran out of memory and had 11079 Mb out of 15 Gb used (I know this because that's the max instance size we were using!) This can be a symptom of:
 
@@ -1802,7 +1801,7 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item How can you choose where a crash dump will be generated?
@@ -1918,7 +1917,7 @@ Alternatively, you may look for weird modules you didn't load yourself on the no
 
 \subsection{ETS}
 
-ETS tables are never garbage collected, and will maintain their memory usage as long as records will be left undeleted in a table (or that the table holding them won't be deleted).
+ETS tables are never garbage collected, and will maintain their memory usage as long as records will be left undeleted in a table. Only removing records manually (or deleting the table) will reclaim memory.
 
 In the rare cases you're actually leaking ETS data, call the undocumented \function{ets:i()} function in the shell. It will print out information regarding number of entries (\expression{size}) and how much memory they take (\expression{mem}). Figure out if anything is bad.
 
@@ -2222,6 +2221,7 @@ Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on
 This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory.\footnote{in cases this consumes too much memory, the feature can be disabled with the options \term{+MBacul 0}.} It also enables the migration of memory blocks across schedulers when they contain little data, according to their needs.
 
 \subsubsection{The Process Level}
+\label{subsec:memory-process-level}
 
 On a smaller scale, for each Erlang process, the layout still is a bit different. It basically has this piece of memory that can be imagine as one box:
 
@@ -2260,7 +2260,7 @@ This is a very long process for which there is no shortcut, and if issues happen
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item Name some of the common sources of leaks in Erlang programs.
@@ -2427,7 +2427,7 @@ If you find out you're having problems with these, try replacing your sending fu
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item What are the two main approaches to pin issues about CPU usages?
@@ -2537,7 +2537,7 @@ Recon, by default, will match all processes. This will often be good enough for 
 
 The most basic form is \expression{\{Mod, Fun, Arity\}}, where a literal module, function name, arity (number) or wildcards (\expression{'\_'}). Recon will forbid forms that match too widely on everything (such as \expression{\{'\_','\_','\_'\}}), as they could be plain dangerous to run in production.
 
-A fancier form will be to replace the arity by a function to match on lists of arguments. The function is limited to those usable by match specifications similar to what is available in ETS\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}. FInally, multiple patterns can be put into a list to broaden the matching scope.
+A fancier form will be to replace the arity by a function to match on lists of arguments. The function is limited to those usable by match specifications similar to what is available in ETS\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}. Finally, multiple patterns can be put into a list to broaden the matching scope.
 
 It will also be possible to rate limit based on two manners: a static count, or a number of matches per time interval.
 
@@ -2679,7 +2679,7 @@ In doubt, start with the most restrictive tracing possible, with low limits, and
 
 \section{Exercises}
 
-\subsection{Revision Questions}
+\subsection{Review Questions}
 
 \begin{enumerate}
 	\item Why is debugger use generally limited on Erlang?
