@@ -86,7 +86,7 @@ fontsize=\small]{#1/#2}\endgroup}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, ...
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, ...
 
 \null
 \vfill
@@ -118,17 +118,17 @@ The cover image is a modified version of from \href{http://www.freeimages.com/ph
 \section{On Running Software}
 \label{sec:on-running-software}
 
-There's something rather unique in Erlang in how it approaches failure compared to most other languages out there. In general, there's this kind of standard way of thinking where the language, programming environment, and methodology do everything possible to prevent errors. Something going wrong at run-time is something that needs to be prevented, and if it cannot be prevented, then it's out of scope for whatever solution people have been thinking about.
+There's something rather unique in Erlang in how it approaches failure compared to most other languages out there. There's this kind of standard way of thinking where the language, programming environment, and methodology do everything possible to prevent errors. Something going wrong at run-time is something that needs to be prevented, and if it cannot be prevented, then it's out of scope for whatever solution people have been thinking about.
 
 The program is written once, and after that, it's off to production, whatever may happen there. If there are errors, new versions will need to be shipped.
 
-Erlang, on the other hand, takes the approach that failures will happen no matter what, whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category, but some cases still happen.} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
+Erlang, on the other hand, takes the approach that failures will happen no matter what whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category, but some cases still happen.} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
 
 This is where the "Let it Crash"\footnote{Erlang people now seem to favour "let it fail", given it makes people far less nervous.} idea comes from: Because you can now deal with failure, and because the cost of weeding out all of the complex bugs from a system before it hits production is often prohibitive, the programmer should only deal with the errors he or she knows how to handle, and leave the rest for another process (a supervisor) or the virtual machine to deal with.
 
 Given that most bugs are transient\footnote{131 out of 132 bugs are transient bugs (they're caused by circumstances, and trying again may solve the problem entirely), according to Jim Gray in \href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}}, simply restarting processes back to a state known to be stable when encountering an error can be a surprisingly good strategy.
 
-Erlang is a programming environment where what you have is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Pretty much every environment offers the hygiene, to varying degrees. Nearly no other environment offers the immune system where errors at run time can be dealt with and seen as survivable.
+Erlang is a programming environment where what you have is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Pretty much every environment offers varying degrees of hygiene. Nearly no other environment offers the immune system where errors at run time can be dealt with and seen as survivable.
 
 Because the system doesn't collapse the first time something bad touches it, Erlang/OTP also allows you to be a doctor. You can go in the system, pry it open, carefully observe everything inside as it runs, and even try to fix it interactively. To continue with the analogy, Erlang allows you to perform extensive tests to diagnose the problem and various degrees of surgery (even very invasive surgery), without the patient needing to sit down or interrupt his daily activities.
 
@@ -137,20 +137,20 @@ This book intends to be a little guide about how to be the Erlang medic in a tim
 \section{Who is this for?}
 \label{sec:who-is-this-for}
 
-This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment, where you just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
+This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment where they just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
 
 This book assumes that the reader is proficient in basic Erlang and the OTP framework. Erlang/OTP features are explained as I see fit — usually when I consider them tricky — and it is expected that a reader who feels confused by usual Erlang/OTP material will have an idea of where to look for explanations if necessary\footnote{I do recommend visiting \href{http://learnyousomeerlang.com}{Learn You Some Erlang} or the regular \href{http://www.erlang.org/erldoc}{Erlang Documentation} if a free resource is required}.
 
-What is not assumed is that the reader necessarily knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of some of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
+What is not necessarily assumed is that the reader knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
 
 \section{How To Read This Book}
 \label{sec:how-to-read-this-book}
 
-The book is divided in two parts. 
+This book is divided in two parts. 
 
-Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), how most open source Erlang software is written (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
+Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), general tips on writing open source Erlang software (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
 
-Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics you should plan to make visible and are available to you (Chapter \ref{chap:runtime-metrics}). It also explains how to do the autopsy of a system using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and solve memory leaks (Chapter \ref{chap:memory-leaks}) and how to find what is using up all your CPU (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics available (Chapter \ref{chap:runtime-metrics}). It also explains how to perform a system autopsy using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and fix memory leaks (Chapter \ref{chap:memory-leaks}), and how to find runaway CPU usage (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
 
 Each chapter is followed up by a few optional exercises in the form of questions or hands-on things to try if you feel like making sure you understood everything, or if you want to push things further.
 %%%
@@ -163,7 +163,7 @@ Each chapter is followed up by a few optional exercises in the form of questions
 \chapter{How to Dive into a Code Base}
 \label{chap:how-to-dive-into-a-code-base}
 
-"Read the source" is one of the most annoying things to be told, but dealing with Erlang programmers, you'll have to do it often. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems, and not really test or try them in other circumstances, leaving it to you to extend or fix issues that arise in new contexts.
+"Read the source" is one of the most annoying things to be told, but dealing with Erlang programmers, you'll have to do it often. Either the documentation for a library will be incomplete, outdated, or just not there. In other cases, Erlang programmers are a bit similar to Lispers in that they will tend to write libraries that will solve their problems and not really test or try them in other circumstances, leaving it to you to extend or fix issues that arise in new contexts.
 
 It's thus pretty much guaranteed you'll have to go dive in some code base you know nothing about, either because you inherited it at work, or because you need to fix it or understand it to be able to move forward with your own system. This is in fact true of most languages whenever the project you work on is not one you architected yourself.
 
@@ -226,7 +226,7 @@ The first file should be similar in use to what we had in a library application 
 
 If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
 
-The application will necessarily start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
+The application will start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
 
 The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on processes that were started earlier.
 
@@ -240,7 +240,7 @@ The supervisor restart strategy reflects the relationship between processes unde
 	\item \expression{one\_for\_all} is used for processes that entirely depend on each other.
 \end{itemize*}
 
-Because of this, it is easiest to navigate OTP applications in a top-down manner by exploring supervision subtrees. 
+This structure means It is easiest to navigate OTP applications in a top-down manner by exploring supervision subtrees. 
 
 For each worker process supervised, the behaviour it implements will give a good clue about its purpose:
 
@@ -263,11 +263,11 @@ All applications have dependencies\footnote{At the very least on the \module{ker
 \begin{figure}
   \includegraphics{app-deps-riak-cs.pdf}%
   \caption{Dependency graph of riak\_cs, Basho's open source cloud library.
-  The graph has been generated with recon's app\_deps script, and ignores dependencies on common applications like kernel and stdlib. Ovals are applications, rectangles are library applications.}%
+  The graph ignores dependencies on common applications like kernel and stdlib. Ovals are applications, rectangles are library applications.}%
    \label{fig:app-deps}
 \end{figure}
 
-Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find recon's script directory and call \command{escript ./deps/recon/script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
+Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find \app{recon}'s script directory and call \command{escript script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
 
 \FloatBarrier
 
@@ -292,7 +292,7 @@ You'll usually have a file similar to the configuration files used by \module{sy
 
 \subsection{Hands-On}
 
-Download the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}. This will be used as a test test bed for exercises throughout the book. Given you are not familiar with the code base yet, let's see if you can use the tips and tricks mentioned in this chapter to get an understanding of it.
+Download the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}. This will be used as a test bed for exercises throughout the book. Given you are not familiar with the code base yet, let's see if you can use the tips and tricks mentioned in this chapter to get an understanding of it.
 
 \begin{enumerate}
 	\item Is this application meant to be used as a library? A standalone system?
