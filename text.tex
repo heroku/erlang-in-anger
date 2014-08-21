@@ -122,7 +122,7 @@ There's something rather unique in Erlang in how it approaches failure compared 
 
 The program is written once, and after that, it's off to production, whatever may happen there. If there are errors, new versions will need to be shipped.
 
-Erlang, on the other hand, takes the approach that failures will happen no matter what whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category, but some cases still happen.} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
+Erlang, on the other hand, takes the approach that failures will happen no matter what whether they're developer, operator, or hardware related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
 
 This is where the "Let it Crash"\footnote{Erlang people now seem to favour "let it fail", given it makes people far less nervous.} idea comes from: Because you can now deal with failure, and because the cost of weeding out all of the complex bugs from a system before it hits production is often prohibitive, the programmer should only deal with the errors he or she knows how to handle, and leave the rest for another process (a supervisor) or the virtual machine to deal with.
 
@@ -176,7 +176,7 @@ If you encounter a raw Erlang code base, you're pretty much on your own. These r
 
 This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
 
-Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications, even when releases would be appropriate.\footnote{See Section \ref{sec:dive-otp-releases}}
+Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar}\footnote{\href{https://github.com/rebar/rebar/}{https://github.com/rebar/rebar/} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications.
 
 \section{OTP Applications}
 \label{sec:dive-otp-applications}
@@ -274,7 +274,7 @@ Using such a hierarchy and looking at each application's short description might
 \section{OTP Releases}
 \label{sec:dive-otp-releases}
 
-OTP releases are not a lot harder to understand than most OTP applications in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to releases than that, but generally, the same discovery process used for individual OTP applications will be applicable here.
+OTP releases are not a lot harder to understand than most OTP applications you'll encounter in the wild. A release is a set of OTP applications packaged in a production-ready manner so it boots and shuts down without needing to manually call \function{application:start/2} for any app. Of course there's a bit more to releases than that, but generally, the same discovery process used for individual OTP applications will be applicable here.
 
 You'll usually have a file similar to the configuration files used by \module{systools} or \module{reltool}, which will state all applications part of the release and a few\footnote{A lot} options regarding their packaging. To understand them, I recommend \href{http://learnyousomeerlang.com/release-is-the-word}{reading existing documentation on them}. If you're lucky, the project may be using \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}, an easier tool that was officially released in early 2014.
 
@@ -465,12 +465,12 @@ If, on the other hand, your database is on a remote host, you should expect the 
 
 The reconnection to the database can then be done using whatever cooldown or backoff strategy you believe is optimal, without impacting the stability of the system. It can be attempted in the initialization phase as an optimization, but the process should be able to reconnect later on if anything ever disconnects.
 
-If you expect failure to happen on an external service, do not make its presence a guarantee of your system. We're dealing with the real world here, and failure of external dependencies is always an option. To put it another way, we're going to lean on liveness (something good should eventually happen) as a guarantee, and reduce the safety (something bad will never happen) that we promise when it comes to the availability of services in a distributed system.
+If you expect failure to happen on an external service, do not make its presence a guarantee of your system. We're dealing with the real world here, and failure of external dependencies is always an option. 
 
 \subsection{Side Effects}
 \label{subsec:start-link-side-effects}
 
-Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
+Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, one that depends on your business rules and what you can or can't do to a client, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
 
 The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
 
@@ -532,7 +532,7 @@ No matter what, a sequence of failures is not a death sentence for the node. Onc
 
 \begin{itemize*}
 	\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
-	\item \term{transient}: if the app terminates for reason 'normal', that's ok. Any other reason for termination shuts down the entire system.
+	\item \term{transient}: if the app terminates for reason \term{normal}, that's ok. Any other reason for termination shuts down the entire system.
 	\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
 \end{itemize*}
 
@@ -606,10 +606,10 @@ By far, the most common cause of failure I've encountered in real-world scenario
 
 To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
 
-\begin{figure}
+\begin{figure}[h!]
   \includegraphics[max height=7cm]{sink.pdf}%
   \centering%
-  \caption{Your system is like a sink, and the true bottleneck, at the last drain, needs to be identified before you spend all your time and money making the sink and pipes bigger.}%
+%  \caption{Your system is like a sink, and the true bottleneck, at the last drain, needs to be identified before you spend all your time and money making the sink and pipes bigger.}%
    \label{fig:tracing-venn}
 \end{figure}
 
@@ -617,17 +617,17 @@ When an Erlang node dies because of a queue overflowing, figuring out who to bla
 
 Determining what queue blew up is not necessarily hard. This is information that can be found in a crash dump. Finding out why it blew up is trickier. Based on the role of the process or run-time inspection, it's possible to figure out whether causes include fast flooding, blocked processes that won't process messages fast enough, and so on.
 
-The most difficult part is to decide how to fix it. When the sink gets clogged up by too much waste, we will usually start by trying to make the sink itself larger (the part of our program that crashed, at the edge). Then we figure out the sink's drain is too small, and optimize that. Then we find out the pipes themselves are too narrow, and optimize that. The overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add sinks or various locations to help with the global input level.
+The most difficult part is to decide how to fix it. When the sink gets clogged up by too much waste, we will usually start by trying to make the bathroom sink itself larger (the part of our program that crashed, at the edge). Then we figure out the sink's drain is too small, and optimize that. Then we find out the pipes themselves are too narrow, and optimize that. The overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add sinks or add bathrooms to help with the global input level.
 
 Then there's a point where things can't be improved anymore at the bathroom's level. There are too many logs sent around, there's a bottleneck on databases that \emph{need} the consistency, or there's simply not enough knowledge or manpower in your organization to improve things there.
 
-\FloatBarrier
+By finding that point, we identified what the \emph{true bottleneck} of the system was, and all the prior optimization was nice (and likely expensive), but it was more or less in vain.
 
-We identified what the \emph{true bottleneck} of the system was, and all the prior optimization was nice, but it was more or less in vain.
+We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on). 
 
-We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on). Even then, there are times where overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash.
+Even then, there are times where the overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash. These mechanisms fall into two broad strategies: back-pressure and load-shedding.
 
-In this chapter, we will explore common causes of queues blowing up, along with two broad strategies to deal with the issue in general: back-pressure and load-shedding.
+We'll explore them in this chapter, along with common events that end up causing Erlang systems to blow up.
 
 \section{Common Overload Sources}
 
@@ -652,7 +652,7 @@ Locking and blocking operations will often be problematic when they're taking un
 
 One of the most common examples I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
 
-One particularly bad example was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. After a few weeks of perfect uptime, the HTTP client pool caused an outage when one the remote servers went down.
+One particularly bad example was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. After a few weeks of perfect uptime, the HTTP client pool caused an outage when one of the remote servers went down.
 
 The reason behind this degradation was that when the remote server would go down, all of a sudden, all connecting operations would take at least 10 milliseconds, the time before which the connection attempt is given up on. With around 9,000 messages per second to the central process, each usually taking under 5 milliseconds, the impact became similar to roughly 18,000 messages a second and things got out of hand.
 
@@ -699,9 +699,9 @@ This is, ultimately, a case-by-case issue. In many cases, it may be interesting 
 
 \subsection{Asking For Permission}
 
-A somewhat simpler approach is to identify the resources we want to block on, those that cannot be made faster and are critical to your business and users, and lock them behind a module or procedure where a caller must ask for the right to make a request and use them. There's plenty of variables that can be used: memory, CPU, overall load, a bounded number of calls, concurrency, response times, a combination of them, and so on.
+A somewhat simpler approach to back-pressure is to identify the resources we want to block on, those that cannot be made faster and are critical to your business and users. Lock these resources behind a module or procedure where a caller must ask for the right to make a request and use them. There's plenty of variables that can be used: memory, CPU, overall load, a bounded number of calls, concurrency, response times, a combination of them, and so on.
 
-The \emph{SafetyValve}\footnote{\href{https://github.com/jlouis/safetyvalve}{https://github.com/jlouis/safetyvalve}} application is a system-wide framework that can be used when you know the synchronous approach is the one you'll need.
+The \emph{SafetyValve}\footnote{\href{https://github.com/jlouis/safetyvalve}{https://github.com/jlouis/safetyvalve}} application is a system-wide framework that can be used when you know back-pressure is what you'll need.
 
 Otherwise, ad-hoc solutions can be written using processes, ETS, or any other tool available. The important part is that the edge of the system (or subsystem) may block and ask for the right to process data, but the critical bottleneck in code is the one to determine whether that right can be granted or not.
 
@@ -728,9 +728,9 @@ The safe margin of error you established when designing the system slowly erodes
 
 When nothing can slow down outside of your Erlang system and things can't be scaled up, you must either drop data or crash (which drops data that was in flight, for most cases, but with more violence).
 
-It's a sad reality that nobody really wants to deal with. Programmers, software engineers, and computer scientists are trained to purge the useless data, and keep everything that's useful. Success goes through optimization, not giving up.
+It's a sad reality that nobody really wants to deal with. Programmers, software engineers, and computer scientists are trained to purge the useless data, and keep everything that's useful. Success comes through optimization, not giving up.
 
-However, there's a point that can be reached where the data that comes in does so at a rate faster than it comes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks.
+However, there's a point that can be reached where the data that comes in does so at a rate faster than it goes out, even if the Erlang system on its own is able to do everything fast enough. In some cases, It's the component \emph{after} it that blocks.
 
 If you don't have the option of limiting how much data you receive, you then have to drop messages to avoid crashing.
 
@@ -746,7 +746,7 @@ If you aim to keep 95\% of the messages you send, the authorization could be wri
 
 The \function{maybe\_seed()} function will check that a valid seed is present in the process dictionary and use it rather than a crappy one, but only if it has not been defined before, in order to avoid calling \function{now()} (a monotonic function that requires a global lock) too often.
 
-There is one 'gotcha' to this method, though: the random drop must ideally be done at the producer level rather than at the queue (the receiver) level. The best way to avoid overloading a queue is to not send data its way in the first place. Because there are no bounded mailboxes in Erlang, dropping in the receiving process only guarantees that this process will be spinning crazily, trying to get rid of messages, and fighting the schedulers to do actual work.
+There is one `gotcha' to this method, though: the random drop must ideally be done at the producer level rather than at the queue (the receiver) level. The best way to avoid overloading a queue is to not send data its way in the first place. Because there are no bounded mailboxes in Erlang, dropping in the receiving process only guarantees that this process will be spinning crazily, trying to get rid of messages, and fighting the schedulers to do actual work.
 
 On the other hand, dropping at the producer level ensures that the dropping work is distributed equally across all processes.
 
@@ -916,9 +916,9 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 \chapter{Connecting to Remote Nodes}
 \label{chap:connecting}
 
-Interacting with a running server program is traditionally done in one of two ways. One is to do it through an interactive shell kept available by using a \app{screen} or \app{tmux} session that runs in the background, and letting someone connect to it. The other is to program management functions or comprehensive configuration files that can be dynamically reloaded.
+Interacting with a running server program is traditionally done in one of two ways. One is to do it through an interactive shell kept available by using a \app{screen} or \app{tmux} session that runs in the background and letting someone connect to it. The other is to program management functions or comprehensive configuration files that can be dynamically reloaded.
 
-The former is usually an okay decision for software that runs in a strict Read-Eval-Print-Loop (REPL). The latter requires careful planning in whatever tasks you think you'll need to do, and hopefully getting it right. Pretty much all systems can try that approach, so I'll skip it given I'm somewhat more interested in the cases where stuff is already bad and no function exists for it.
+The interactive session approach is usually okay for software that runs in a strict Read-Eval-Print-Loop (REPL). The programmed management and configuration approach requires careful planning in whatever tasks you think you'll need to do, and hopefully getting it right. Pretty much all systems can try that approach, so I'll skip it given I'm somewhat more interested in the cases where stuff is already bad and no function exists for it.
 
 Erlang uses something closer to an "interactor" than a REPL. Basically, a regular Erlang virtual machine does not need a REPL, and will happily run byte code and stick with that, no shell needed. However, because of how it works with concurrency and multiprocessing, and good support for distribution, it is possible to have in-software REPLs that run as arbitrary Erlang processes.
 
@@ -1399,7 +1399,7 @@ The function will take two samples at an interval defined by \var{Milliseconds}.
 
 Some processes will live between \var{w} and die at \var{x}, some between \var{y} and \var{z}, and some between \var{x} and \var{y}. These samples will not be too significant as they're incomplete.
 
-If the majority of your processes run between a time interval \var{x} to \var{y} (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of \var{w} and \var{z}. Not doing this can skew the results: long-lived processes that have 10 times the time to accumulate data (say reductions) will look like huge consumers when they're not one.\footnote{Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many tens of thousands of processes.}
+If the majority of your processes run between a time interval \var{x} to \var{y} (in absolute terms), you should make sure that your sampling time is smaller than this so that for many processes, their lifetime spans the equivalent of \var{w} and \var{z}. Not doing this can skew the results: long-lived processes that have 10 times the time to accumulate data (say reductions) will look like huge consumers when they're not one.\footnote{Warning: this function depends on data gathered at two snapshots, and then building a dictionary with entries to differentiate them. This can take a heavy toll on memory when you have many tens of thousands of processes, and a little bit of time.}
 
 The function, once running gives results like follows:
 
