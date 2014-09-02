@@ -488,6 +488,7 @@ init(Args) ->
 [...]
 
 handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
+    %% try reconnecting in a loop
     case connect(Opts) of
         {ok, New} -> {noreply, S#state{sock=New}};
          _ -> self() ! reconnect, {noreply, S}
@@ -507,6 +508,7 @@ init(Args) ->
 [...]
 
 handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
+    %% try reconnecting in a loop
     case connect(Opts) of
         {ok, New} -> {noreply, S#state{sock=New}};
         _ -> self() ! reconnect, {noreply, S}
@@ -520,7 +522,7 @@ You now allow initializations with fewer guarantees: they went from \emph{the co
 
 Production systems I have worked with have been a mix of both approaches.
 
-Things like configuration files, accessibility to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+Things like configuration files, access to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
 
 On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations,
 then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
@@ -639,11 +641,11 @@ Ironically, the process in charge of error logging is one of the most fragile on
 
 This is especially true of user-generated log messages (not for errors), and for crashes in large processes. For the former, this is because \module{error\_logger} doesn't really expect arbitrary levels of messages coming in continually. It's for exceptional cases only and doesn't expect lots of traffic. For the latter, it's because the entire state of processes (including their mailboxes) gets copied over to be logged. It only takes a few messages to cause memory to bubble up a lot, and if that's not enough to cause the node to run Out Of Memory (OOM), it may slow the logger enough that additional messages will.
 
-The best solution for this at the time of writing is to use \href{https://github.com/basho/lager}{\module{lager}} as a substitute logging library.
+The best solution for this at the time of writing is to use \href{https://github.com/basho/lager}{\otpapp{lager}} as a substitute logging library.
 
-While Lager will not solve all your problems, it will truncate voluminous log messages, optionally drop OTP-generated error messages when they go over a certain threshold, and will automatically switch between asynchronous and synchronous modes for user-submitted messages in order to self-regulate.
+While \otpapp{lager} will not solve all your problems, it will truncate voluminous log messages, optionally drop OTP-generated error messages when they go over a certain threshold, and will automatically switch between asynchronous and synchronous modes for user-submitted messages in order to self-regulate.
 
-It won't be able to deal with very specific cases, such as when user-submitted messages are in very large volume and all coming from one-off processes. This is, however, a much rarer occurrence than everything else, and one where the programmer tends to have more control.
+It won't be able to deal with very specific cases, such as when user-submitted messages are very large in volume and all coming from one-off processes. This is, however, a much rarer occurrence than everything else, and one where the programmer tends to have more control.
 
 
 \subsection{Locks and Blocking Operations}
@@ -672,7 +674,7 @@ Messages you didn't know about tend to be rather rare when using OTP application
 
 However, all kinds of OTP-compliant systems end up having processes that may not implement a behaviour, or processes that go in a non-behaviour stretch where it overtakes message handling. If you're lucky enough, monitoring tools\footnote{See Section \ref{sec:global-view}} will show a constant memory increase, and inspecting for large queue sizes\footnote{See Subsection \ref{subsec:digging-procs}} will let you find which process is at fault. You can then fix the problem by handling the messages as required.
 
-\section{Generally Restricting Input}
+\section{Restricting Input}
 
 Restricting input is the simplest way to manage message queue growth in Erlang systems. It's the simplest approach because it basically means you're slowing the user down (applying \emph{back-pressure}), which instantly fixes the problem without any further optimization required. On the other hand, it can lead to a really crappy experience for the user.
 
@@ -724,7 +726,7 @@ Per-account limits, on the other hand, tend to be very fair, and allow fancy sch
 The safe margin of error you established when designing the system slowly erodes as more people use it. It's important to consider the tradeoffs your business can tolerate from that point of view, because users will tend not to appreciate seeing their allowed usage go down all the time, possibly even more so than seeing the system go down entirely from time to time.
 
 
-\section{Generally Discarding Data}
+\section{Discarding Data}
 
 When nothing can slow down outside of your Erlang system and things can't be scaled up, you must either drop data or crash (which drops data that was in flight, for most cases, but with more violence).
 
@@ -765,8 +767,7 @@ Even though the regular mailbox for a process has the form of a queue, you'll ge
 	\item A new process that will do nothing but buffer the messages. Messages from the outside should go to this process.
 \end{itemize*}
 
-To make things work, the buffer process only has to remove all the messages it can from its mail box and put them in a queue data structure\footnote{The \module{queue} module in Erlang provides a purely functional queue data structure that can work fine for such a buffer.}. Whenever the server is ready to do more work, it can ask the buffer to send it a given number of messages that it can work on. The buffer sends them, and goes back to accumulating data.
-
+To make things work, the buffer process only has to remove all the messages it can from its mail box and put them in a queue data structure\footnote{The \module{queue} module in Erlang provides a purely functional queue data structure that can work fine for such a buffer.} it manages on its own. Whenever the server is ready to do more work, it can ask the buffer process to send it a given number of messages that it can work on. The buffer process picks them from its queue, forwards them to the server, and goes back to accumulating data.
 
 Whenever the queue grows beyond a certain size\footnote{To calculate the length of a queue, it is preferable to use a counter that gets incremented and decremented on each message sent or received, rather than iterating over the queue every time. It takes slightly more memory, but will tend to distribute the load of counting more evenly, helping predictability and avoiding more sudden build-ups in the buffer's mailbox} and you receive a new message, you can then pop the oldest one and push the new one in there, dropping the oldest elements as you go.\footnote{You can alternatively make a queue that pops the newest message and queues up the oldest ones if you feel previous data is more important to keep.}
 
@@ -790,11 +791,13 @@ On the other hand, a stack will make it so only a restricted number of elements 
 
 Whenever you see the stack grow beyond a certain size or notice that an element in it is too old for your QoS requirements you can just drop the rest of the stack and keep going from there. \emph{PO Box} also offers such a buffer implementation.
 
+A major downside of stack buffers is that messages are not necessarily going to be processed in the order they were submitted — they're nicer for independent tasks, but will ruin your day if you expect a sequence of events to be respected.
+
+\subsection{Time-Sensitive Buffers}
+
 If you need to react to old events \emph{before} they are too old, then things become more complex, as you can't know about it without looking deep in the stack each time, and dropping from the bottom of the stack in a constant manner gets to be inefficient. An interesting approach could be done with buckets, where multiple stacks are used, with each of them containing a given time slice. When requests get too old for the QoS constraints, drop an entire bucket, but not the entire buffer.
 
-It may sound counter-intuitive to make some requests a lot worse to benefit the majority — you'll have great medians but poor 99 percentiles — but this happens in a state where you would drop messages anyway, and is preferable in cases where you do need low latency. 
-
-A major downside of stack buffers is that messages are not necessarily going to be processed in the order they were submitted — they're nicer for independent tasks, but will ruin your day if you expect a sequence of events to be respected.
+It may sound counter-intuitive to make some requests a lot worse to benefit the majority — you'll have great medians but poor 99 percentiles — but this happens in a state where you would drop messages anyway, and is preferable in cases where you do need low latency.
 
 \subsection{Dealing With Constant Overload}
 
