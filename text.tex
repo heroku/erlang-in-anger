@@ -20,7 +20,7 @@
 
 \usepackage{pdfpages}
 
-\usepackage{hyperref}
+\usepackage{bookmark,hyperref}
 \hypersetup{
 	colorlinks = true,
 	urlcolor = cyan
@@ -112,10 +112,12 @@ The cover image is a modified version of from \href{http://www.freeimages.com/ph
 \hypersetup{linkcolor=violet}
 
 
-\chapter{Introduction}
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
 \label{chap:introduction}
 
-\section{On Running Software}
+\section*{On Running Software}
+%\addcontentsline{toc}{section}{On Running Software}
 \label{sec:on-running-software}
 
 There's something rather unique in Erlang in how it approaches failure compared to most other programming languages. There's this common way of thinking where the language, programming environment, and methodology do everything possible to prevent errors. Something going wrong at run-time is something that needs to be prevented, and if it cannot be prevented, then it's out of scope for whatever solution people have been thinking about.
@@ -134,7 +136,8 @@ Because the system doesn't collapse the first time something bad touches it, Erl
 
 This book intends to be a little guide about how to be the Erlang medic in a time of war. It is first and foremost a collection of tips and tricks to help understand where failures come from, and a dictionary of different code snippets and practices that helped developers debug production systems that were built in Erlang.
 
-\section{Who is this for?}
+\section*{Who is this for?}
+%\addcontentsline{toc}{section}{Who is this for?}
 \label{sec:who-is-this-for}
 
 This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment where they just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
@@ -143,7 +146,8 @@ This book assumes that the reader is proficient in basic Erlang and the OTP fram
 
 What is not necessarily assumed is that the reader knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
 
-\section{How To Read This Book}
+\section*{How To Read This Book}
+%\addcontentsline{toc}{section}{How To Read This Book}
 \label{sec:how-to-read-this-book}
 
 This book is divided in two parts. 
@@ -2770,8 +2774,10 @@ Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/
 %% Kernel Polling
 
 %% 
-
-\chapter{Conclusion}
+\bookmarksetup{startatroot} % Split conclusion from previous Part
+\addtocontents{toc}{\bigskip} % Add space in ToC
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
 
 There is no such thing as a conclusion, because maintaining and debugging software never ends. New bugs and confusing behaviours will keep popping up around the place all the time. There would probably be enough stuff out there to fill out dozens of  manuals like these, even when dealing with the cleanest of all systems.
 
