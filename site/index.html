@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+        <link rel="shortcut icon" href="https://d4yt8xl9b7in.cloudfront.net/assets/favicon-ec1c49d2d16026c03484fa43c0d3a237.ico" type="image/x-icon"/>
+        <title>Stuff Goes Bad: Erlang in Anger</title>
+        <style>
+            /*
+            Purple: #534AAB  
+            Purple Lighter: #726BB9  
+            Headline: #534D49  
+            Body Text: #777777  
+            Top Banner BG: #EBEBEB  
+            Divider: #EBEBEB  
+            Footer Text: #999999  
+
+            Text all Benton Sans
+
+            Headline: Light
+            Subhead: Medium
+            Ebook header: Light
+            Body: Regular
+            */
+            @font-face {
+                font-family: 'benton-sans';
+                font-weight: 200;
+                font-style: normal;
+                src: url('//www.herokucdn.com/fonts/bentonsans-book.eot');
+                src: url('//www.herokucdn.com/fonts/bentonsans-book.eot?#iefix') format('embedded-opentype'), url('//www.herokucdn.com/fonts/bentonsans-book.woff') format('woff'), url('//www.herokucdn.com/fonts/bentonsans-book.ttf') format('truetype'), url('//www.herokucdn.com/fonts/bentonsans-book.svg#benton-sans') format('svg');
+            }
+
+            @font-face {
+                font-family: 'benton-sans';
+                font-weight: normal;
+                font-style: normal;
+                src: url('//www.herokucdn.com/fonts/bentonsans-regular.eot');
+                src: url('//www.herokucdn.com/fonts/bentonsans-regular.eot?#iefix') format('embedded-opentype'), url('//www.herokucdn.com/fonts/bentonsans-regular.woff') format('woff'), url('//www.herokucdn.com/fonts/bentonsans-regular.ttf') format('truetype'), url('//www.herokucdn.com/fonts/bentonsans-regular.svg#benton-sans') format('svg');
+            }
+
+            @font-face {
+                font-family: 'benton-sans';
+                font-weight: bold;
+                font-style: normal;
+                src: url('//www.herokucdn.com/fonts/bentonsans-medium.eot');
+                src: url('//www.herokucdn.com/fonts/bentonsans-medium.eot?#iefix') format('embedded-opentype'), url('//www.herokucdn.com/fonts/bentonsans-medium.woff') format('woff'), url('//www.herokucdn.com/fonts/bentonsans-medium.ttf') format('truetype'), url('//www.herokucdn.com/fonts/bentonsans-medium.svg#benton-sans') format('svg');
+            }
+
+            body {
+                background: #fff url('https://s3.amazonaws.com/erlang-in-anger/bg.png') top repeat-x;
+                font-family: benton-sans, 'Helvetica Neue', helvetica, arial, sans-serif;
+                color: #777;
+                margin: 0 auto;
+                padding-top: 75px;
+                width:70px;
+                min-width:825px;
+            }
+            header img {
+                float: left;
+                margin-right: 80px;
+                box-shadow: 0 5px 15px rgba(0,0,0,.25);
+            }
+
+            h1 {
+                color: #534d49;
+                padding-top: 20px;
+                margin-bottom: 10px;
+            }
+            h1 span#title {
+                font-size: 46px;
+                font-weight: 300;
+                display: block;
+            }
+            h1 span#subtitle {
+                font-size: 26px;
+                text-transform: uppercase;
+                display: block;
+            }
+
+            #book {
+                width: 400px;
+                float: left;
+            }
+
+            #book h2 {
+                font-size:17px;
+                font-weight: 200;
+                text-transform: uppercase;
+                color: #726BB9;
+                margin-bottom: 60px;
+            }
+
+            #book h2 a {
+                text-decoration: none;
+            }
+
+            #book h2::before {
+                content: '';
+                width: 16px;
+                height: 23px;
+                background: url('https://s3.amazonaws.com/erlang-in-anger/icon_book.png') no-repeat;
+                display: block;
+                float: left;
+                margin-right: 10px;
+            }
+
+            p {
+                font-size: 15px;
+                line-height: 26px;
+            }
+
+            a {
+                color: #534aab;
+            }
+
+            a#download {
+                font-size: 16px;
+                text-transform: uppercase;
+                text-decoration: none;
+                color: #ebebeb;
+                display:block;
+                width: 235px;
+                height: 60px;
+                border-radius: 3px;
+                background: #534aab;
+                content: center;
+                margin-top: 35px;
+            }
+
+            a#download:hover {
+                background-color: #655BCA;
+            }
+
+            a#download span {
+                display:block;
+                padding: 20px 0 0 36px;
+            }
+            a#download span::before {
+                content: '';
+                width: 22px;
+                height: 22px;
+                background: url('https://s3.amazonaws.com/erlang-in-anger/icon_download.png') no-repeat;
+                display: block;
+                float: left;
+                margin-right: 15px;
+            }
+
+            #author {
+                clear: both;
+                padding-top: 85px;
+                margin-bottom: 85px;
+                overflow: auto;
+            }
+
+            #author h2 {
+                margin: 0;
+                padding-left: 240px;
+                padding-top: 45px;
+                border-top: 1px solid #ebebeb;
+                color: #534aab;
+                font-weight: 300;
+            }
+
+            #author img {
+                float: left;
+            }
+
+            #author p {
+                float: left;
+            }
+
+            #author p::before {
+                content: '';
+                width: 175px;
+                height: 175px;
+                background: url('https://s3.amazonaws.com/erlang-in-anger/self.png') no-repeat;
+                display:block;
+                margin-right: 65px;
+                margin-top: -50px;
+                float: left;
+                border-radius: 90px;
+            }
+
+            footer {
+                clear: both;
+                margin-top: 25px;
+                border-top: 1px solid #ebebeb;
+                text-align: center;
+            }
+            footer p, footer a {
+                color: #999
+            }
+
+        </style>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+             (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+             m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+             })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-54766528-1', 'auto');
+            ga('send', 'pageview');
+        </script>
+    </head>
+    <body>
+        <header>
+            <a title="Version alpha-2014-09-12, 2.8MB" href="https://s3.amazonaws.com/erlang-in-anger/text.alpha.2014-09-12.pdf">
+                <img id="book-cover" src="https://s3.amazonaws.com/erlang-in-anger/book-cover.png"
+                 width="344" height="472" alt="Book Cover" />
+            </a>
+
+            <h1>
+                <span id="title">Stuff Goes Bad</span>
+                <span id="subtitle">Erlang in Anger</span>
+            </h1>
+        </header>
+        <article>
+            <section id="book">
+                <h2><a title="Version alpha-2014-09-12, 2.8MB" href="https://s3.amazonaws.com/erlang-in-anger/text.alpha.2014-09-12.pdf">Free Ebook</a></h2>
+
+                <p>
+                    This book intends to be a little guide about how to be the Erlang
+                    medic in a time of war. It is first and foremost a collection of
+                    tips and tricks to help understand where failures come from, and a
+                    dictionary of different code snippets and practices that helped
+                    developers debug production systems that were built in Erlang.
+                </p>
+
+                <a id="download" title="Version alpha-2014-09-12, 2.8MB"
+                   href="https://s3.amazonaws.com/erlang-in-anger/text.alpha.2014-09-12.pdf">
+                   <span>Download PDF</span>
+                </a>
+<!--
+                <p>
+                    This manual adds to the Heroku Routing team's efforts to
+                    interact with the Erlang (and polyglot) community at large,
+                    sharing knowledge with teams from all over the place.
+                </p>
+-->
+            </section>
+
+            <section id="author">
+                <h2>About the Author</h2>
+
+                <p>
+                    <a href="https://twitter.com/mononcqc">Fred Hebert</a>
+                    is the author of
+                    <a href="http://learnyousomeerlang.com" title="link to the
+                    book">Learn You Some Erlang for Great Good!</a>, a free
+                    online (also paid for, on paper) book designed to teach
+                    Erlang. He works as a senior member of technical staff on
+                    Heroku's routing team, helping design, program, maintain,
+                    and operate large scale distributed systems in the cloud,
+                    more often than not written in Erlang.
+                </p>
+
+            </section>
+
+        </article>
+
+        <footer>
+            <p>© 2014 <a href="http://heroku.com">Heroku</a></p>
+        </footer>
+    </body>
+</html>
+
