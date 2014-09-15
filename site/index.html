@@ -4,6 +4,7 @@
         <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
         <link rel="shortcut icon" href="https://d4yt8xl9b7in.cloudfront.net/assets/favicon-ec1c49d2d16026c03484fa43c0d3a237.ico" type="image/x-icon"/>
         <title>Stuff Goes Bad: Erlang in Anger</title>
+        <meta name="viewport" content="width=device-width">
         <style>
             /*
             Purple: #534AAB  
@@ -49,20 +50,27 @@
                 background: #fff url('https://s3.amazonaws.com/erlang-in-anger/bg.png') top repeat-x;
                 font-family: benton-sans, 'Helvetica Neue', helvetica, arial, sans-serif;
                 color: #777;
-                margin: 0 auto;
-                padding-top: 75px;
-                width:70px;
-                min-width:825px;
             }
+
+            header, article, footer {
+                width: 850px;
+                margin: 0 auto;
+            }
+
+            header {
+                padding-top: 75px;
+            }
+
             header img {
                 float: left;
                 margin-right: 80px;
+                -moz-box-shadow: 0 5px 15px #333;
+                -webkit-box-shadow: 0 5px 15px #333;
                 box-shadow: 0 5px 15px rgba(0,0,0,.25);
             }
 
             h1 {
                 color: #534d49;
-                padding-top: 20px;
                 margin-bottom: 10px;
             }
             h1 span#title {
@@ -120,6 +128,8 @@
                 display:block;
                 width: 235px;
                 height: 60px;
+                -webkit-border-radius: 3px;
+                -moz-border-radius: 3px;
                 border-radius: 3px;
                 background: #534aab;
                 content: center;
@@ -190,6 +200,56 @@
                 color: #999
             }
 
+            @media all and (max-width:800px) {
+                header, article, footer {
+                    width: 98%;
+                }
+
+                #book {
+                    width: 300px;
+                }
+            }
+            @media all and (max-width:720px) {
+                img {
+                    width: 100%;
+                    height: auto;
+                    clear: both;
+                    display:block;
+                }
+                header, article, footer {
+                    width: 95%;
+                    margin: 1%;
+                }
+                header {
+                    padding-top: 0;
+                }
+                #book {
+                    width: auto;
+                }
+                #book-cover {
+                    margin-bottom: 15px;
+                }
+                h1 span#title {
+                    font-size: 38px;
+                }
+                #author {
+                    padding-top: 0;
+                }
+                #author h2 {
+                    margin: 0;
+                    padding-left: 0;
+                    padding-top: 20px;
+                    margin-top: 45px;
+                }
+                #author p::before {
+                    display: none;
+                }
+                #author p {
+                    width: 100%;
+                    clear: both;
+                    display: block;
+                }
+            }
         </style>
         <script>
             (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
