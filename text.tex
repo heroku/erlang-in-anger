@@ -17,6 +17,7 @@
 \usepackage{mdwlist}
 \usepackage{float}
 \usepackage{placeins} % float barriers
+\usepackage{fancyhdr} % to write version in footer of copyright page
 
 \usepackage{pdfpages}
 
@@ -71,9 +72,13 @@ fontsize=\small]{#1/#2}\endgroup}
 
 %%% Copyright page
 \clearpage
-\thispagestyle{empty}
-\vspace*{\fill}
+\thispagestyle{fancy}
 
+\fancyhf{} % remove everything
+\renewcommand{\headrulewidth}{0pt} % remove lines as well
+\renewcommand{\footrulewidth}{0pt}
+
+\vspace*{\fill}
 
 
 \begin{center}
@@ -86,13 +91,13 @@ fontsize=\small]{#1/#2}\endgroup}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan},  \emph{Tim Chevalier}, ...
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, and  \emph{Tim Chevalier}.
 
 \null
 \vfill
 %\vspace*{\fill}
-
 The cover image is a modified version of from \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
+\cfoot{\emph{v1.0.0}}
 
 %% License as of Monday, August 18, 2014:
 %%
@@ -2779,8 +2784,11 @@ Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/
 \chapter*{Conclusion}
 \addcontentsline{toc}{chapter}{Conclusion}
 
-There is no such thing as a conclusion, because maintaining and debugging software never ends. New bugs and confusing behaviours will keep popping up around the place all the time. There would probably be enough stuff out there to fill out dozens of  manuals like these, even when dealing with the cleanest of all systems.
 
-Even the most solid bridges need to be repainted all the time in order avoid corrosion to the point of their collapse. Best of luck to you.
+Maintaining and debugging software never ends. New bugs and confusing behaviours will keep popping up around the place all the time. There would probably be enough stuff out there to fill out dozens of manuals like this one, even when dealing with the cleanest of all systems. 
+
+I hope that after reading this text, the next time stuff goes bad, it won't go \emph{too} bad. Still, there are probably going to be plenty of opportunities to debug production systems. Even the most solid bridges need to be repainted all the time in order avoid corrosion to the point of their collapse.
+
+Best of luck to you.
 
 \end{document}  
