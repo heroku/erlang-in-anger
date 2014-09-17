@@ -91,13 +91,13 @@ fontsize=\small]{#1/#2}\endgroup}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, and  \emph{Tim Chevalier}.
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, \emph{Lukas Larsson},  and  \emph{Tim Chevalier}.
 
 \null
 \vfill
 %\vspace*{\fill}
 The cover image is a modified version of from \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
-\cfoot{\emph{v1.0.0}}
+\cfoot{\emph{v1.0.1}}
 
 %% License as of Monday, August 18, 2014:
 %%
@@ -290,7 +290,7 @@ You'll usually have a file similar to the configuration files used by \module{sy
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item How do you know if a code base is an application? A release?
@@ -299,7 +299,7 @@ You'll usually have a file similar to the configuration files used by \module{sy
 	\item Why would someone use a \module{gen\_fsm} behaviour over a \module{gen\_server}?
 \end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 Download the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}. This will be used as a test bed for exercises throughout the book. Given you are not familiar with the code base yet, let's see if you can use the tips and tricks mentioned in this chapter to get an understanding of it.
 
@@ -551,7 +551,7 @@ It is also possible to start an application as an \emph{included application}, w
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item  Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
@@ -561,7 +561,7 @@ It is also possible to start an application as an \emph{included application}, w
 	\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
 \end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
 
@@ -848,7 +848,7 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item Name the common sources of overload in Erlang systems
@@ -859,7 +859,7 @@ In the end, what is acceptable or not to deal with overload tends to depend on t
 	\item When would you pick a queue buffer before a stack buffer?
 \end{enumerate}
 
-\subsection{Open-ended Questions}
+\subsection*{Open-ended Questions}
 
 \begin{enumerate}
 	\item What is a \emph{true bottleneck}? How can you find it?
@@ -1046,7 +1046,7 @@ And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item What are the 4 ways to connect to a remote node?
@@ -1554,7 +1554,7 @@ There is still some manual work involved into properly linking a misbehaving por
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item What kind of values are reported for Erlang's memory?
@@ -1571,7 +1571,7 @@ There is still some manual work involved into properly linking a misbehaving por
 	\item How can you find the type of a port (Files, TCP, UDP)?
 \end{enumerate}
 
-\subsection{Open-ended Questions}
+\subsection*{Open-ended Questions}
 
 \begin{enumerate}
 	\item Why do you want a long time window available on global metrics?
@@ -1586,7 +1586,7 @@ There is still some manual work involved into properly linking a misbehaving por
 	\item How can you find what proportion of processes on a node are ready to run, but can't be scheduled right away?
 \end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
 
@@ -1821,7 +1821,7 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item How can you choose where a crash dump will be generated?
@@ -1829,7 +1829,7 @@ If it looks more or less reasonable, head towards the "Memory" section of the du
 	\item What should you look for if the process count is suspiciously low?
 	\item If you find the node died with a process having a lot of memory, what could you do to find out which one it was?\end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 Using the analysis of a crash dump in Section \ref{sec:crashdump-general-view}:
 
@@ -2280,7 +2280,7 @@ This is a very long process for which there is no shortcut, and if issues happen
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item Name some of the common sources of leaks in Erlang programs.
@@ -2291,7 +2291,7 @@ This is a very long process for which there is no shortcut, and if issues happen
 	\item How can you find out if garbage collections are taking too long to run?
 \end{enumerate}
 
-\subsection{Open-ended Questions}
+\subsection*{Open-ended Questions}
 
 \begin{enumerate}
 	\item  How could you verify if a leak is caused by forgetting to kill processes, or by processes using too much memory on their own?
@@ -2303,7 +2303,7 @@ This is a very long process for which there is no shortcut, and if issues happen
 	\item When should you alter the allocation strategies on your nodes? Should you prefer to tweak this, or the way you wrote code?
 \end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 \begin{enumerate}
 	\item Using any system you know or have to maintain in Erlang (including toy systems), can you figure out if there are any binary memory leaks on there?
@@ -2445,7 +2445,7 @@ If you find out you're having problems with these, try replacing your sending fu
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item What are the two main approaches to pin issues about CPU usages?
@@ -2454,7 +2454,7 @@ If you find out you're having problems with these, try replacing your sending fu
 
 \end{enumerate}
 
-\subsection{Open-ended Questions}
+\subsection*{Open-ended Questions}
 
 \begin{enumerate}
 	\item If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
@@ -2697,7 +2697,7 @@ In doubt, start with the most restrictive tracing possible, with low limits, and
 
 \section{Exercises}
 
-\subsection{Review Questions}
+\subsection*{Review Questions}
 
 \begin{enumerate}
 	\item Why is debugger use generally limited on Erlang?
@@ -2707,14 +2707,14 @@ In doubt, start with the most restrictive tracing possible, with low limits, and
 	\item How can you trace non-exported function calls?
 \end{enumerate}
 
-\subsection{Open-ended Questions}
+\subsection*{Open-ended Questions}
 
 \begin{enumerate}
 	\item When would you want to move time stamping of traces to the VM's trace mechanisms directly? What would be a possible downside of doing this?	
 	\item Imagine that traffic sent out of a node does so over SSL, over a multi-tenant system. However, due to wanting to validate data sent (following a customer complain), you need to be able to inspect what was seen clear text. Can you think up a plan to be able to snoop in the data sent to their end through the \module{ssl} socket, without snooping on the data sent to any other customer?
 \end{enumerate}
 
-\subsection{Hands-On}
+\subsection*{Hands-On}
 
 Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo} (these may require a decent understanding of the code there):
 
