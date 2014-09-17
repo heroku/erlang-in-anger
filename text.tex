@@ -359,7 +359,7 @@ Most Erlang books tend to explain how to build Erlang/OTP applications, but few 
 
 OTP applications are the vast majority of the open source code people will encounter. In fact, many people who would need to build an OTP release would do so as one umbrella OTP application. 
 
-If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build and OTP application or release is left up to the Erlang introduction book you have at hand.}
+If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build an OTP application or release is left up to the Erlang introduction book you have at hand.}
 
 The main build tools supported are \app{rebar} and \app{erlang.mk}. The former is a portable Erlang script that will be used to wrap around a lot of standard functionality and add its own, while the latter is a very fancy makefile that does a bit less, but tends to be faster when it comes to compiling. In this chapter, I'll mostly focus on using \app{rebar} to build things, given it's the ad-hoc standard, is well-established, and \app{erlang.mk} applications tend to also be supported by \app{rebar} as dependencies.
 
@@ -713,6 +713,8 @@ This is, ultimately, a case-by-case issue. In many cases, it may be more practic
 A somewhat simpler approach to back-pressure is to identify the resources we want to block on, those that cannot be made faster and are critical to your business and users. Lock these resources behind a module or procedure where a caller must ask for the right to make a request and use them. There's plenty of variables that can be used: memory, CPU, overall load, a bounded number of calls, concurrency, response times, a combination of them, and so on.
 
 The \emph{SafetyValve}\footnote{\href{https://github.com/jlouis/safetyvalve}{https://github.com/jlouis/safetyvalve}} application is a system-wide framework that can be used when you know back-pressure is what you'll need.
+
+For more specific use cases having to do with service or system failures, there are plenty of circuit breaker applications available. Examples include \otpapp{breaky}\footnote{\href{https://github.com/mmzeeman/breaky}{https://github.com/mmzeeman/breaky}}, \otpapp{fuse}\footnote{\href{https://github.com/jlouis/fuse}{https://github.com/jlouis/fuse}},  or Klarna's \otpapp{circuit\_breaker}\footnote{\href{https://github.com/klarna/circuit\_breaker}{https://github.com/klarna/circuit\_breaker}}.
 
 Otherwise, ad-hoc solutions can be written using processes, ETS, or any other tool available. The important part is that the edge of the system (or subsystem) may block and ask for the right to process data, but the critical bottleneck in code is the one to determine whether that right can be granted or not.
 
