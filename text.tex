@@ -91,13 +91,14 @@ fontsize=\small]{#1/#2}\endgroup}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, \emph{Lukas Larsson},  and  \emph{Tim Chevalier}.
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, \emph{Lukas Larsson}, \emph{Tim Chevalier}, and \emph{Paul Bone}.
 
 \null
 \vfill
 %\vspace*{\fill}
 The cover image is a modified version of from \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
-\cfoot{\emph{v1.0.1}}
+\cfoot{\emph{v1.0.2}}
+\rfoot{\emph{2014-09-18}}
 
 %% License as of Monday, August 18, 2014:
 %%
@@ -107,7 +108,8 @@ The cover image is a modified version of from \href{http://www.freeimages.com/ph
 
 \clearpage
 %%%
-
+\pagenumbering{roman}
+\setcounter{page}{1}
 
 \tableofcontents
 
@@ -116,10 +118,13 @@ The cover image is a modified version of from \href{http://www.freeimages.com/ph
 %% Colors of figure refs for text
 \hypersetup{linkcolor=violet}
 
-
 \chapter*{Introduction}
+\markboth{\MakeUppercase{Introduction}}{}
 \addcontentsline{toc}{chapter}{Introduction}
 \label{chap:introduction}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
 
 \section*{On Running Software}
 %\addcontentsline{toc}{section}{On Running Software}
@@ -1150,7 +1155,7 @@ The memory reported by the Erlang VM in most tools will be a variant of what is 
 
 This requires some explaining.
 
-First of all, all the values returned are in bytes, and they represent memory \emph{allocated} (memory actively used to store Erlang terms from the internal Erlang memory allocators, not the memory set aside by the operating system for the Erlang VM). It will sooner or later look much smaller than what the operating system reports.
+First of all, all the values returned are in bytes, and they represent memory \emph{allocated} (memory actively used by the Erlang VM, not the memory set aside by the operating system for the Erlang VM). It will sooner or later look much smaller than what the operating system reports.
 
 The \expression{total} field contains the sum of the memory used for \expression{processes} and \expression{system} (which is incomplete, unless the VM is instrumented!). \expression{processes} is the memory used by Erlang processes, their stacks and heaps. \expression{system} is the rest: memory used by ETS tables, atoms in the VM, refc binaries\footnote{See Section \ref{sec:binaries}}, and some of the hidden data I mentioned was missing.
 
@@ -2164,7 +2169,7 @@ To understand where memory goes, one must first understand the many allocators b
 \begin{enumerate*}
     \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
     \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
-    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is).
+    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is). Reference counted binaries stored in an ETS table remain in this allocator.
     \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
     \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
     \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
@@ -2238,7 +2243,7 @@ Each of these strategies can be applied individually to every kind of allocator,
 
 Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on each scheduler has what is called a \emph{\term{mbcs} pool}. The \term{mbcs} pool is a feature used to fight against memory fragmentation on the VM. When an allocator gets to have one of its multiblock carriers become mostly empty,\footnote{The threshold is configurable through \href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}} the carrier becomes \emph{abandoned}. 
 
-This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory.\footnote{In cases this consumes too much memory, the feature can be disabled with the options \term{+MBacul 0}.} It also enables the migration of memory blocks across schedulers when they contain little data, according to their needs.
+This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows to cache mostly-empty carriers without forcing deallocation of their memory.\footnote{In cases this consumes too much memory, the feature can be disabled with the options \term{+MBacul 0}.} It also enables the migration of carriers across schedulers when they contain little data, according to their needs.
 
 \subsubsection{The Process Level}
 \label{subsec:memory-process-level}
@@ -2784,6 +2789,7 @@ Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/
 \bookmarksetup{startatroot} % Split conclusion from previous Part
 \addtocontents{toc}{\bigskip} % Add space in ToC
 \chapter*{Conclusion}
+ \markboth{\MakeUppercase{Conclusion}}{}
 \addcontentsline{toc}{chapter}{Conclusion}
 
 
