@@ -21,3 +21,4 @@ erl_crash.dump
 *.htoc
 *-html*
 *.epub
+*.mobi

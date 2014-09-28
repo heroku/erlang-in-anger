@@ -6,12 +6,17 @@ EPUB:
 Couldn't figure out how to fix it yet without renumbering all chapters,
 which sucks. The information is lost at the HTML level.
 
-- Chapter 6 footnotes 6 and 7 have invalid refs (??)
-
-Haven't figured it out yet, lost at the HTML level.
-
 - Links to chapters, subsections, section refs, and figures appear broken
 
 No idea. Works in HTML. ToC also works.
 The references of the form <CLASS:TERM> are preservec in \ref usage, but the
- initial \label pieces are gone
+ initial \label pieces are gone and replaced by a <a id="">, which appear
+ not to be preserved in the end.
+
+
+MOBI:
+
+- Chapter 6 footnotes 6 and 7 have invalid refs (??)
+
+Haven't figured it out yet, lost at the HTML level.
+
