@@ -58,6 +58,12 @@
     next;
 }
 
+## Fix nested lists
+#/^\\item\[.*\]/ {
+#    print gsub(/\\item\[(.*)\]/, "\\item \\emph{&1}", $0);
+#    next;
+#}
+
 ## Replace silent chapters/sections with ToC entry with regular ones
 ## this renumbers the chapters and sucks
 #/^\\chapter\*{/ {
@@ -84,6 +90,10 @@
 ## Replace itemize
 /\\begin{itemize.*}/ { print "\\begin{itemize}"; next; }
 /\\end{itemize.*}/   { print "\\end{itemize}"; next; }
+
+## Replace description
+/\\begin{description.*}/ { print "\\begin{description}"; next; }
+/\\end{description.*}/   { print "\\end{description}"; next; }
 
 ## Leave as is
 { print $0 }
