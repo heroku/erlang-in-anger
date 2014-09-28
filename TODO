@@ -1,0 +1,27 @@
+EPUB:
+
+- Introduction and Conclusion unlinked in ToC. Likely due to using
+  \chapter*{...} instead of \chapter{...} for these.
+
+Couldn't figure out how to fix it yet without renumbering all chapters,
+which sucks. The information is lost at the HTML level.
+
+- In lists of processes properties in chapter 5, nested lists are made
+  flat and lose their existing hierarchy/nesting, making content hard to
+  read
+
+Have not yet figured this one out. Information is left at the HTML
+level.
+
+- Same in the list in 5.3. In fact, the small section titles used to
+  break up lists disappear and only the lists remain.
+
+Actually there's a nested list in 5.3 that's nested right at the HTML
+level and also at the EPUB level.
+
+I'm guessing what is lost here are the <dl> lists, but the rest is fine.
+That may sadly require some fancypants patching, but I'll look into it.
+
+- Chapter 6 footnotes 6 and 7 have invalid refs (??)
+
+Haven't figured it out yet, lost at the HTML level.
