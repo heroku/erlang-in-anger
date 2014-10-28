@@ -91,7 +91,7 @@ fontsize=\small]{#1/#2}\endgroup}
 
 Thanks for the additional work, reviewing, and/or editing done by:
 
-\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, \emph{Lukas Larsson}, \emph{Tim Chevalier}, and \emph{Paul Bone}.
+\emph{Jacob Vorreuter}, \emph{Seth Falcon}, \emph{Raoul Duke}, \emph{Nathaniel Waisbrot}, \emph{David Holland}, \emph{Alisdair Sullivan}, \emph{Lukas Larsson}, \emph{Tim Chevalier}, \emph{Paul Bone}, \emph{Jonathan Roes}, and \emph{Roberto Aloi}.
 
 \null
 \vfill
@@ -99,6 +99,7 @@ Thanks for the additional work, reviewing, and/or editing done by:
 The cover image is a modified version of \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
 \cfoot{\emph{v1.0.3}}
 \rfoot{\emph{2014-10-28}}
+
 
 %% License as of Monday, August 18, 2014:
 %%
@@ -1580,10 +1581,10 @@ There is still some manual work involved into properly linking a misbehaving por
 
 \begin{enumerate}
 	\item Why do you want a long time window available on global metrics?
-	\item Which would be more appropriate between \function{recon:proc\_count/2} and \function{recon:proc\_window/3} to find issues with: 
+	\item Which would be more appropriate between \function{recon:proc\_count/2} and \function{recon:proc\_window/3} to find issues with:
 		\begin{enumerate*}
 			\item Reductions \item Memory \item Message queue length
-		\end{enumerate*}	
+		\end{enumerate*}
 	\item How can you find information about who is the supervisor of a given process?
 	\item When should you use \function{recon:inet\_count/2}? \function{recon:inet\_window/3}?
 	\item What could explain the difference in memory reported by the operating system and the memory functions in Erlang?

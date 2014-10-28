@@ -1,0 +1,13 @@
+# README
+
+## Dependencies (Mac)
+
+* XQuartz (http://xquartz.macosforge.org/landing/)
+* hevea (http://hevea.inria.fr/)
+* calibre (http://calibre-ebook.com/download_osx)
+
+## Build
+
+    make
+
+You will get a text.epub in the root directory
