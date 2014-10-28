@@ -97,8 +97,8 @@ Thanks for the additional work, reviewing, and/or editing done by:
 \vfill
 %\vspace*{\fill}
 The cover image is a modified version of \href{http://www.freeimages.com/photo/533163}{fallout shelter} by \href{http://www.freeimages.com/profile/drouu}{drouu} on \href{http://sxc.hu}{sxc.hu}.
-\cfoot{\emph{v1.0.2}}
-\rfoot{\emph{2014-09-18}}
+\cfoot{\emph{v1.0.3}}
+\rfoot{\emph{2014-10-28}}
 
 %% License as of Monday, August 18, 2014:
 %%
@@ -795,7 +795,7 @@ The \emph{PO Box}\footnote{Available at: \href{https://github.com/ferd/pobox}{ht
 
 Stack buffers are ideal when you want the amount of control offered by queue buffers, but you have an important requirement for low latency.
 
-To use a stack as a buffer, you'll need two processes, just like you would with queue buffers, but a list\footnote{Erlang lists \emph{are} stacks. For all we care, they provide push and pop operations that take O(1) complexity and are very fast} will be used instead of a queue data structure.
+To use a stack as a buffer, you'll need two processes, just like you would with queue buffers, but a list\footnote{Erlang lists \emph{are} stacks, for all we care. They provide push and pop operations that take O(1) complexity and are very fast} will be used instead of a queue data structure.
 
 The reason the stack buffer is particularly good for low latency is related to issues similar to bufferbloat\footnote{\href{http://queue.acm.org/detail.cfm?id=2071893}{http://queue.acm.org/detail.cfm?id=2071893 }}. If you get behind on a few messages being buffered in a queue, all the messages in the queue get to be slowed down and acquire milliseconds of wait time. Eventually, they all get to be too old and the entire buffer needs to be discarded.
 
@@ -2595,7 +2595,7 @@ recon_trace:calls(TSpec, Max, [{args, arity}])
 
 %% Matching the filter/2 functions of both dict and lists modules, across new
 %% processes only:
-recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new]})
+recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])
 
 %% Tracing the handle_call/3 functions of a given module for all new processes,
 %% and those of an existing one registered with gproc:
