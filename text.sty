@@ -1,0 +1,56 @@
+\usepackage[french,english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage[]{geometry}
+
+\usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,totalheight=\textheight,keepaspectratio}
+\graphicspath{{graphics/}}
+\usepackage[export]{adjustbox}
+	
+\usepackage{amssymb}
+\usepackage{tabularx}
+\usepackage{mdwlist}
+\usepackage{float}
+\usepackage{placeins} % float barriers
+\usepackage{fancyhdr} % to write version in footer of copyright page
+
+\usepackage{pdfpages}
+
+\usepackage{bookmark,hyperref}
+\hypersetup{
+	colorlinks = true,
+	urlcolor = cyan
+}
+
+\usepackage{fancyvrb}
+\fvset{fontsize=\normalsize}
+
+\DefineVerbatimEnvironment{VerbatimText}{Verbatim}{frame=lines,framesep=2mm,numbers=left,numbersep=3mm}
+\DefineVerbatimEnvironment{VerbatimRaw}{Verbatim}{frame=lines,framesep=2mm}
+\DefineVerbatimEnvironment{VerbatimErl}{Verbatim}{frame=lines,framesep=2mm,fontsize=\small}
+\DefineVerbatimEnvironment{VerbatimEshell}{Verbatim}{frame=lines,framesep=2mm,fontsize=\small}
+
+\newcommand{\filename}[1]{\Verb`#1`}
+\newcommand{\app}[1]{\Verb`#1`}
+\newcommand{\otpapp}[1]{\Verb`#1`}
+\newcommand{\module}[1]{\Verb`#1`}
+\newcommand{\function}[1]{\Verb`#1`}
+\newcommand{\expression}[1]{\Verb`#1`}
+\newcommand{\command}[1]{\Verb`#1`}
+\newcommand{\var}[1]{\Verb`#1`}
+\newcommand{\term}[1]{\Verb`#1`}
+
+
+%% Colors of footnotes
+\renewcommand\thefootnote{\textcolor{violet}{\arabic{footnote}}}
+%% Colors of figure refs for table of contents and list of figures
+\hypersetup{linkcolor=black}
+
+\def\includecode{\begingroup
+\catcode`\_=12
+\includecodeB}
+\newcommand{\includecodeB}[2][erlang]{\VerbatimInput[frame=lines,framesep=2mm,%label=#1/#2,
+fontsize=\small]{#1/#2}\endgroup}
+
