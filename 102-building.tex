@@ -32,7 +32,7 @@ rebar.lock
 
 What's new in this one is the \filename{\_build/} directory and the \filename{rebar.lock} file, which will be generated automatically by \app{rebar3}\footnote{Some people package \app{rebar3} directly in their application. This was initially done to help people who had never used rebar3 or its predecessors use libraries and projects in a boostrapped manner. Feel free to install rebar3 globally on your system, or keep a local copy if you require a specific version to build your system.}. 
 
-This is the directory where \app{rebar3} places all build artifacts for a project, including local copies of libraries and packages required for it to work. No mainstream Erlang tool installs packages globally\footnote{except as a cache}, preferring to instead keep everything project-local to avoid inter-project conflicts.
+This is the directory where \app{rebar3} places all build artifacts for a project, including local copies of libraries and packages required for it to work. No mainstream Erlang tool installs packages globally\footnote{Except as a local cache of unbuilt packages.}, preferring to instead keep everything project-local to avoid inter-project conflicts.
 
 Such dependencies can be specified for \app{rebar3} by adding a few config lines to \filename{rebar.config}:
 
@@ -41,17 +41,10 @@ Such dependencies can be specified for \app{rebar3} by adding a few config lines
   %% Hex.pm Packages
   myapp,
   {myapp,"1.0.0"},
-  {myapp, {pkg, myapp_fork}}, % myapp under a different package name
-  {myapp, "1.0.0", {pkg, myapp_fork}},
   %% source dependencies 
-  {myapp, {git, "git://github.com/user/myapp.git"}},
-  {myapp, {git, "http://github.com/user/myapp.git"}},
-  {myapp, {git, "https://github.com/user/myapp.git"}},
-  {myapp, {git, "git@github.com:user/myapp.git"}},
-  {myapp, {hg, "https://othersite.com/user/myapp"}},
   {myapp, {git, "git://github.com/user/myapp.git", {ref, "aef728"}}},
-  {myapp, {git, "git://github.com/user/myapp.git", {branch, "master"}}},
-  {myapp, {git, "git://github.com/user/myapp.git", {tag, "3.0.0"}}}
+  {myapp, {git, "https://github.com/user/myapp.git", {branch, "master"}}},
+  {myapp, {hg, "https://othersite.com/user/myapp", {tag, "3.0.0"}}}
  ]}.
 \end{VerbatimText}
 
@@ -64,7 +57,7 @@ When making your application's source code public to the world, distribute it \e
 \subsection{OTP Releases}
 \label{subsec:building-otp-releases}
 
-For releases, the structure should can a bit different\footnote{I say \emph{can} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies, which is less than ideal for distribution purposes and risks conflicting with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Releases are collections of applications, and their structures may reflect that.
+For releases, the structure can a bit different. Releases are collections of applications, and their structures may reflect that.
 
 Instead of having a top-level app alone in \filename{src}, applications can be nested one level deeper in a \filename{apps} or \filename{lib} directory:
 
@@ -76,13 +69,13 @@ apps/
   - myapp2/
      - src/
 doc/
-deps/
 LICENSE.txt
 README.md
 rebar.config
+rebar.lock
 \end{VerbatimRaw}
 
-This structure lends itself to generating releases where multiple OTP applications under your control are used to generate them. Both \app{rebar3} and \app{erlang.mk} rely on the \app{relx} library to assemble releases. Other tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power if they do not like what they would get otherwise.
+This structure lends itself to generating releases where multiple OTP applications under your control under a single code repository. Both \app{rebar3} and \app{erlang.mk} rely on the \app{relx} library to assemble releases. Other tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power if they do not like what they would get otherwise.
 
 A \app{relx} configuration tuple (within \filename{rebar.config}) for the directory structure above would look like:
 
@@ -95,7 +88,8 @@ A \app{relx} configuration tuple (within \filename{rebar.config}) for the direct
 ]}
 \end{VerbatimText}
 
-Calling \command{rebar3 release} will build a release, to be found in the \filename{\_build/<profile>/rel/} directory. Calling \command{rebar3 tar} will generate a tarball ready to be deployed.
+Calling \command{rebar3 release} will build a release, to be found in the \filename{\_build/default/rel/} directory. Calling \command{rebar3 tar} will generate a tarball at\\
+\filename{\_build/default/rel/demo/demo-1.0.0.tar.gz}, ready to be deployed.
 
 \section{Supervisors and start\_link Semantics}
 \label{sec:supervisors-and-start-link-semantics}
