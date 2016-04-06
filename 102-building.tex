@@ -7,7 +7,7 @@ OTP applications are the vast majority of the open source code people will encou
 
 If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build an OTP application or release is left up to the Erlang introduction book you have at hand.}
 
-The main build tools supported are \app{rebar} and \app{erlang.mk}. The former is a portable Erlang script that will be used to wrap around a lot of standard functionality and add its own, while the latter is a very fancy makefile that does a bit less, but tends to be faster when it comes to compiling. In this chapter, I'll mostly focus on using \app{rebar} to build things, given it's the ad-hoc standard, is well-established, and \app{erlang.mk} applications tend to also be supported by \app{rebar} as dependencies.
+The main build tools supported are \app{rebar3} and \app{erlang.mk}. The former is a build tool and package manager trying to make it easy to develop and release Erlang libraries and systems in a repeatable manner, while the latter is a very fancy makefile that offers a bit less for production and releases but allows more flexibility. In this chapter, I'll mostly focus on using \app{rebar3} to build things, given it's the de-facto standard, is a tool I know well, and that \app{erlang.mk} applications tend to also be supported by \app{rebar3} as dependencies (the opposite is also true).
 
 \section{Project Structure}
 \label{sec:project-structure}
@@ -20,49 +20,61 @@ The structures of OTP applications and of OTP releases are different. An OTP app
 For OTP applications, the proper structure is pretty much the same as what was explained in \ref{sec:dive-otp-applications}:
 
 \begin{VerbatimText}
+_build/
 doc/
-deps/
-ebin/
 src/
 test/
 LICENSE.txt
 README.md
 rebar.config
+rebar.lock
 \end{VerbatimText}
 
-What's new in this one is the \filename{deps/} directory, which is fairly useful to have, but that will be generated automatically by \app{rebar}\footnote{A lot of people package \app{rebar} directly in their application. This was initially done to help people who had never used rebar before use libraries and projects in a boostrapped manner. Feel free to install rebar globally on your system, or keep a local copy if you require a specific version to build your system.} if necessary. That's because there is no canonical package management in Erlang. People instead adopted \app{rebar}, which fetches dependencies locally, on a per-project basis. This is fine and removes a truckload of conflicts, but means that each project you have may have to download its own set of dependencies.
+What's new in this one is the \filename{\_build/} directory and the \filename{rebar.lock} file, which will be generated automatically by \app{rebar3}\footnote{Some people package \app{rebar3} directly in their application. This was initially done to help people who had never used rebar3 or its predecessors use libraries and projects in a boostrapped manner. Feel free to install rebar3 globally on your system, or keep a local copy if you require a specific version to build your system.}. 
 
-This is accomplished with \app{rebar} by adding a few config lines to \filename{rebar.config}:
+This is the directory where \app{rebar3} places all build artifacts for a project, including local copies of libraries and packages required for it to work. No mainstream Erlang tool installs packages globally\footnote{except as a cache}, preferring to instead keep everything project-local to avoid inter-project conflicts.
+
+Such dependencies can be specified for \app{rebar3} by adding a few config lines to \filename{rebar.config}:
 
 \begin{VerbatimText}
-{deps,
- [{application_name, "1.0.*",
-   {git, "git://github.com/user/myapp.git", {branch,"master"}}},
-  {application_name, "2.0.1",
-   {git, "git://github.com/user/hisapp.git", {tag,"2.0.1"}}},
-  {application_name, "", 
-   {git, "https://bitbucket.org/user/herapp.git",  "7cd0aef4cd65"}},
-  {application_name, "my regex",
-   {hg, "https://bitbucket.org/user/theirapp.hg" {branch, "stable"}}}]}.
+{deps, [
+  %% Hex.pm Packages
+  myapp,
+  {myapp,"1.0.0"},
+  {myapp, {pkg, myapp_fork}}, % myapp under a different package name
+  {myapp, "1.0.0", {pkg, myapp_fork}},
+  %% source dependencies 
+  {myapp, {git, "git://github.com/user/myapp.git"}},
+  {myapp, {git, "http://github.com/user/myapp.git"}},
+  {myapp, {git, "https://github.com/user/myapp.git"}},
+  {myapp, {git, "git@github.com:user/myapp.git"}},
+  {myapp, {hg, "https://othersite.com/user/myapp"}},
+  {myapp, {git, "git://github.com/user/myapp.git", {ref, "aef728"}}},
+  {myapp, {git, "git://github.com/user/myapp.git", {branch, "master"}}},
+  {myapp, {git, "git://github.com/user/myapp.git", {tag, "3.0.0"}}}
+ ]}.
 \end{VerbatimText}
 
-Applications are fetched directly from a \app{git} (or \app{hg}, or \app{svn}) source, recursively. They can then be compiled, and specific compile options can be added with the \expression{\{erl\_opts, List\}.} option in the config file\footnote{More details by calling \command{rebar help compile}}. 
+Dependencies are fetched directly from a \app{git} (or \app{hg}) source or as a package from \href{https://hex.pm}{\app{hex.pm}} in a level-order traversal. They can then be compiled, and specific compile options can be added with the \expression{\{erl\_opts, List\}.} option in the config file\footnote{More details on \href{https://www.rebar3.org/docs/configuration}{https://www.rebar3.org/docs/configuration}}. 
 
-Within these directories, you can do your regular development of an OTP application. To compile them, call \command{rebar get-deps compile}, which will download all dependencies, and then build them and your app at once.
+You can call \command{rebar3 compile}, which will download all dependencies, and then build them and your app at once.
 
-When making your application public to the world, distribute it \emph{without} the dependencies. It's quite possible that other developers' applications depend on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar}) should be able to figure out duplicated entries and fetch everything necessary only once.
-
-%% erlang.mk downloads relx for releases, and runs it iff there's a relx file there
+When making your application's source code public to the world, distribute it \emph{without} the \filename{\_build/} directory. It's quite possible that other developers' applications depend on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar3}) should be able to figure out duplicated entries and fetch everything necessary only once.
 
 \subsection{OTP Releases}
 \label{subsec:building-otp-releases}
 
-For releases, the structure should be a bit different\footnote{I say \emph{should} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies (in \filename{deps}), which is less than ideal for distribution purposes and conflicts with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Releases are collections of applications, and their structures should reflect that.
+For releases, the structure should can a bit different\footnote{I say \emph{can} because many Erlang developers put their final system under a single top-level application (in \filename{src}) and a bunch of follower ones as dependencies, which is less than ideal for distribution purposes and risks conflicting with assumptions on directory structures made by OTP. People who do that tend to build from source on the production servers and run custom commands to boot their applications.}. Releases are collections of applications, and their structures may reflect that.
 
-Instead of having a top-level app, applications should be nested one level deeper and divided into two categories: apps and deps. The apps directory contains your applications' source code (say, internal business code), and the deps directory contains independently managed dependency applications.
+Instead of having a top-level app alone in \filename{src}, applications can be nested one level deeper in a \filename{apps} or \filename{lib} directory:
 
 \begin{VerbatimRaw}
+_build/
 apps/
+  - myapp1/
+     - src/
+  - myapp2/
+     - src/
 doc/
 deps/
 LICENSE.txt
@@ -70,29 +82,20 @@ README.md
 rebar.config
 \end{VerbatimRaw}
 
-This structure lends itself to generating releases. Tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power. An easier tool that recently appeared is \app{relx}\footnote{\href{https://github.com/erlware/relx/wiki}{https://github.com/erlware/relx/wiki}}.
+This structure lends itself to generating releases where multiple OTP applications under your control are used to generate them. Both \app{rebar3} and \app{erlang.mk} rely on the \app{relx} library to assemble releases. Other tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power if they do not like what they would get otherwise.
 
-A  \app{relx} configuration file for the directory structure above would look like:
-
-\begin{VerbatimText}
-{paths, ["apps", "deps"]}.
-{include_erts, false}. % will use currently installed Erlang
-{default_release, demo, "1.0.0"}.
-
-{release, {demo, "1.0.0"},
-    [members,
-     feedstore,
-     ...
-     recon]}.
-\end{VerbatimText}
-
-Calling \command{./relx} (if the executable is in the current directory) will build a release, to be found in the \filename{\_rel/} directory. If you really like using \app{rebar}, you can build a release as part of the project's compilation by using a rebar hook in \filename{rebar.config}:
+A \app{relx} configuration tuple (within \filename{rebar.config}) for the directory structure above would look like:
 
 \begin{VerbatimText}
-{post_hooks,[{compile, "./relx"}]}.
+{relx, [
+  {release, {demo, "1.0.0"},
+    [myapp1, myapp2, ..., recon]},
+     
+  {include_erts, false} % will use local Erlang install
+]}
 \end{VerbatimText}
 
-And every time \command{rebar compile} will be called, the release will be generated.
+Calling \command{rebar3 release} will build a release, to be found in the \filename{\_build/<profile>/rel/} directory. Calling \command{rebar3 tar} will generate a tarball ready to be deployed.
 
 \section{Supervisors and start\_link Semantics}
 \label{sec:supervisors-and-start-link-semantics}

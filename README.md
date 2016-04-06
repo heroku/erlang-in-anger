@@ -20,11 +20,22 @@ implications and subtleties, and while this repository is open source and under
 a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
 license, *it cannot be considered as Free as in Freedom*.
 
+## Build
+
+I Have TeXShop from MacTeX and I just press the 'Typeset' button when editing
+`text.tex`
+
+You can find a PDF copy at http://www.erlang-in-anger.com.
+
 ## Roadmap
 
-- Define contribution procedures for open sourcing the repository given the
-  copyright arrangement between the author and Heroku
-- Rework examples in early chapters to use rebar3
 - Update libraries links where appropriate
 - Support alternative formats (HTML, epub, mobi)
 - Document standalone build instructions that do not rely on MacTeX / TexShop
+
+## Changelog
+
+### 1.3.0
+
+- Updated chapters 1 and 2 to refer to rebar3 instead of rebar, and to include
+  content relative to hex and packages
