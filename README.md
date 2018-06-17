@@ -1,6 +1,9 @@
 # README
 Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
+# 最新版
+* [2018.06.18 00:04版](https://drive.google.com/file/d/1gxJT8RvxsxpT2D4zyhqUIVZsOuHiCtps/view?usp=sharing)
+
 # Contribution
 ## 雰囲気
 自分一人でやるのはしんどいのでpull-requestください。
