@@ -6,7 +6,7 @@ DEPS = 000-copyright.tex 101-diving.tex 103-overload.tex 105-runtime-metrics.tex
 
 LATEXMKFLAG_JA += -latex=uplatex -halt-on-error -pdfdvi
 SRC_JA = text-ja
-DEPS_JA = 000-copyright-ja.tex
+DEPS_JA = 000-copyright-ja.tex 001-introduction.tex
 
 .PHONY: english japanese clean
 
