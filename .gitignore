@@ -22,3 +22,5 @@ erl_crash.dump
 *-html*
 *.epub
 *.mobi
+*.dvi
+*.ps

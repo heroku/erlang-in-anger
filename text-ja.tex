@@ -1,0 +1,72 @@
+\documentclass[11pt, oneside]{book}   	% use "amsart" instead of "article" for AMSLaTeX format
+% !TEX encoding = UTF-8 Unicode
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{text}
+
+%%% Cover
+
+%\title{Stuff Goes Bad:\protect\\ Erlang in Anger}
+%\author{\includegraphics[width=150pt]{heroku-logo-light.pdf}\\
+%Fred Hébert}
+
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+%\maketitle
+
+\includepdf[fitpaper=true]{graphics/cover.pdf}
+
+\include{000-copyright}
+
+\clearpage
+%%%
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\tableofcontents
+
+\listoffigures
+
+%% Colors of figure refs for text
+\hypersetup{linkcolor=violet}
+
+\include{001-introduction.ja}
+
+\part{Writing Applications}
+\label{part:writing-applications}
+
+%\include{101-diving}
+%\include{102-building}
+%\include{103-overload}
+
+\part{Diagnosing Applications}
+\label{part:diagnosing-applictions}
+
+%\include{104-connecting}
+%\include{105-runtime-metrics}
+%\include{106-crash-dumps}
+%\include{107-memory-leaks}
+%\include{108-cpu}
+%\include{109-tracing}
+
+%%%
+%%% Tuning the VM: not a chapter yet.
+%%%
+
+
+%% locks!
+
+%% you usually want the lmbcs to be at least a 5 times (if not more) bigger than the perc95
+
+%% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
+
+%% Cache hits
+
+%% Kernel Polling
+
+%% 
+\bookmarksetup{startatroot} % Split conclusion from previous Part
+\addtocontents{toc}{\bigskip} % Add space in ToC
+%\include{201-conclusion}
+
+\end{document}
