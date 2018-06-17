@@ -2,7 +2,7 @@
 Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
 # 最新版
-* [2018.06.18 00:04版](https://drive.google.com/file/d/1gxJT8RvxsxpT2D4zyhqUIVZsOuHiCtps/view?usp=sharing)
+* [2018.06.18 00:21版](https://drive.google.com/file/d/1gxJT8RvxsxpT2D4zyhqUIVZsOuHiCtps/view?usp=sharing)
 
 # Contribution
 ## 雰囲気
@@ -34,4 +34,4 @@ $ make japanese  # -> text-ja.pdf: Japanese translation version
 - [ ] 107: Memory Leaks
 - [ ] 108: CPU and Scheduler Hogs
 - [ ] 109: Tracing
-- [ ] 201: Conclusion
+- [x] 201: Conclusion
