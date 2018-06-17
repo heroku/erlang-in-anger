@@ -16,7 +16,7 @@ $ make japanese  # -> text-ja.pdf: Japanese translation version
 ```
 
 # 進捗
-- [ ] 000: Copyright
+- [x] 000: Copyright
 - [ ] 001: Introduction
 - [ ] 101: How to Dive into a Code Base
 - [ ] 102: Building Open Source Erlang Software
