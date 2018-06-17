@@ -22,6 +22,12 @@ $ make english   # -> text.pdf: original English version
 $ make japanese  # -> text-ja.pdf: Japanese translation version
 ```
 
+また、Docker環境がある場合は次のコマンドでコンパイルすることもできる。
+
+```console
+$ docker-compose up
+```
+
 # 進捗
 - [x] 000: Copyright
 - [x] 001: Introduction
@@ -35,3 +41,4 @@ $ make japanese  # -> text-ja.pdf: Japanese translation version
 - [ ] 108: CPU and Scheduler Hogs
 - [ ] 109: Tracing
 - [x] 201: Conclusion
+
