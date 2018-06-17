@@ -25,3 +25,5 @@ erl_crash.dump
 *.dvi
 *.ps
 *.fdb_latexmk
+*.fls
+
