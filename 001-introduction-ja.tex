@@ -1,0 +1,64 @@
+%\chapter*{Introduction}
+\chapter*{はじめに}
+\markboth{\MakeUppercase{Introduction}}{}
+%\addcontentsline{toc}{chapter}{Introduction}
+\addcontentsline{toc}{chapter}{はじめに}
+\label{chap:introduction}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+%\section*{On Running Software}
+\section*{ソフトウェアを実行するにあたって}
+%\addcontentsline{toc}{section}{On Running Software}
+\label{sec:on-running-software}
+
+%There's something rather unique in Erlang in how it approaches failure compared to most other programming languages. There's this common way of thinking where the language, programming environment, and methodology do everything possible to prevent errors. Something going wrong at run-time is something that needs to be prevented, and if it cannot be prevented, then it's out of scope for whatever solution people have been thinking about.
+
+他のプログラミング言語と比較して、Erlangには障害が起きた場合の対処方法がかなり独特な部分があります。
+他のプログラミング言語には、その言語自体や開発環境、開発手法といったものがエラーを防ぐためにできる限りのことをしてくれる、という共通の考え方があります。
+実行時に何かがおかしくなるということは予防する必要があるもので、予防できなかった場合には、人々が考えてきたあらゆる解決策の範囲を超えてしまいます。
+
+%The program is written once, and after that, it's off to production, whatever may happen there. If there are errors, new versions will need to be shipped.
+プログラムは一度書かれると、本番環境に投入され、そこではあらゆることが発生するでしょう。
+エラーがあったら、新しいバージョンを投入する必要がでてきます。
+
+%Erlang, on the other hand, takes the approach that failures will happen no matter what, whether they're developer-, operator-, or hardware-related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
+一方で、Erlangでは障害というものは、それが開発者によるもの、運用者によるもの、あるいはハードウェアによるもの、それらのどれであろうとも起きるものである、という考え方に沿っています。
+プログラムやシステム内のすべてのエラーを取り除くというのは非実用的かつ不可能に近いものです。\footnote{生命に関わるシステムは通常この議論の対象外です。}
+エラーをあらゆるコストを払って予防するのではなく、エラーにうまく対処できれば、プログラムのたいていの予期せぬ動作もその「なんとかする」手法でうまく対応できるでしょう。
+
+%This is where the "Let it Crash"\footnote{Erlang people now seem to favour "let it fail", given it makes people far less nervous.} idea comes from: Because you can now deal with failure, and because the cost of weeding out all of the complex bugs from a system before it hits production is often prohibitive, programmers should only deal with the errors they know how to handle, and leave the rest for another process (a supervisor) or the virtual machine to deal with.
+これが「Let it Crash」\footnote{Erlang界隈の人々は、最近は不安がらせないようにということで「Let it Fail」のほうを好んで使うようです。}という考え方の元になっています。
+この考えを元にすると障害にうまく対処出来ること、かつシステム内のすべての複雑なバグが本番環境で発生する前に取り除くコストが極めて高いことから、プログラマーは対応方法がわかっているエラーだけ対処すべきで、それ以外は他のプロセス(やスーパーバイザー)や仮想マシンに任せるべきです。
+
+Given that most bugs are transient\footnote{131 out of 132 bugs are transient bugs (they're non-deterministic and go away when you look at them, and trying again may solve the problem entirely), according to Jim Gray in \href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}}, simply restarting processes back to a state known to be stable when encountering an error can be a surprisingly good strategy.
+
+Erlang is a programming environment where the approach taken is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Almost every environment offers varying degrees of hygiene. Nearly no other environment offers the immune system where errors at run time can be dealt with and seen as survivable.
+
+Because the system doesn't collapse the first time something bad touches it, Erlang/OTP also allows you to be a doctor. You can go in the system, pry it open right there in production, carefully observe everything inside as it runs, and even try to fix it interactively. To continue with the analogy, Erlang allows you to perform extensive tests to diagnose the problem and various degrees of surgery (even very invasive surgery), without the patients needing to sit down or interrupt their daily activities.
+
+This book intends to be a little guide about how to be the Erlang medic in a time of war. It is first and foremost a collection of tips and tricks to help understand where failures come from, and a dictionary of different code snippets and practices that helped developers debug production systems that were built in Erlang.
+
+\section*{Who is this for?}
+%\addcontentsline{toc}{section}{Who is this for?}
+\label{sec:who-is-this-for}
+
+This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment where they just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
+
+This book assumes that the reader is proficient in basic Erlang and the OTP framework. Erlang/OTP features are explained as I see fit — usually when I consider them tricky — and it is expected that a reader who feels confused by usual Erlang/OTP material will have an idea of where to look for explanations if necessary\footnote{I do recommend visiting \href{http://learnyousomeerlang.com}{Learn You Some Erlang} or the regular \href{http://www.erlang.org/erldoc}{Erlang Documentation} if a free resource is required}.
+
+What is not necessarily assumed is that the reader knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
+
+\section*{How To Read This Book}
+%\addcontentsline{toc}{section}{How To Read This Book}
+\label{sec:how-to-read-this-book}
+
+This book is divided in two parts. 
+
+Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), general tips on writing open source Erlang software (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
+
+Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics available (Chapter \ref{chap:runtime-metrics}). It also explains how to perform a system autopsy using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and fix memory leaks (Chapter \ref{chap:memory-leaks}), and how to find runaway CPU usage (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+
+Each chapter is followed up by a few optional exercises in the form of questions or hands-on things to try if you feel like making sure you understood everything, or if you want to push things further.
+
