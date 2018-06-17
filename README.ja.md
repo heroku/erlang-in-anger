@@ -8,16 +8,9 @@ Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[�
 # Build
 
 TeX Liveをとりあえずインストールしてビルド。オリジナルはpdfLaTeXを使って生成している。
+Latexmkを使ってビルドできるようになっているので各々次のようにビルドする。
 
 ```console
-$ pdflatex text.tex
-$ xdg-open text.pdf
-```
-
-日本語のほうはupLaTeXでとりあえず生成する。
-
-```console
-$ uplatex text-ja.tex
-$ dvipdfmx text-ja
-$ xdg-open text-ja.pdf
+$ make english   # -> text.pdf: original English version
+$ make japanese  # -> text-ja.pdf: Japanese translation version
 ```
