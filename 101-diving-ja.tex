@@ -76,21 +76,30 @@ appファイルには主に2つの種類があります。
 モジュールのソースを見ることで、少しの労力でモジュールがどのように動作するか理解できます。もしモジュールが特定のビヘイビア(\module{gen\_server}や\module{gen\_fsm}など)を何度も使っているようであれば、おそらくスーパーバイザーの下でプロセスを起動して、然るべき方法で呼び出すことが想定されているでしょう。
 ビヘイビアが一つもなければ、そこにあるのは関数のステートレスなライブラリです。この場合、モジュールのエクスポートされた関数を見ることで、このライブラリの目的を素早く理解できるでしょう。
 
-\subsection{Regular Applications}
+%\subsection{Regular Applications}
+\subsection{標準アプリケーション}
 \label{subsec:dive-regular-applications}
 
-For a regular OTP application, there are two potential modules that act as the entry point:
+%For a regular OTP application, there are two potential modules that act as the entry point:
+
+標準的なOTPアプリケーションでは、エントリーポイントとして機能する2つの潜在的なモジュールがあります。
 
 \begin{enumerate*}
 	\item \module{\emph{appname}}
 	\item \module{\emph{appname}\_app}
 \end{enumerate*}
 
-The first file should be similar in use to what we had in a library application (an entry point), while the second one will implement the \module{application} behaviour, and will represent the top of the application's process hierarchy. In some cases the first file will play both roles at once.
+%The first file should be similar in use to what we had in a library application (an entry point), while the second one will implement the \module{application} behaviour, and will represent the top of the application's process hierarchy. In some cases the first file will play both roles at once.
+最初のファイルはライブラリアプリケーションで見たものと似た使われ方(エントリーポイント)をします。一方で、2つめのファイルは \module{application} ビヘイビアを実装するもので、アプリケーションの階層構造の頂点を表すものになります。
+状況によっては最初のファイルは同時に両方の役割を果たします。
 
-If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
+%If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
+そのアプリケーションを単純にあなたのアプリケーションの依存先として追加しようとしているのであれば、\module{\emph{appname}}の中を詳しく見てみましょうう。
+そのアプリケーションの運用や修正を行う必要があるのであれば、かわりに\module{\emph{appname}\_app}の中を見てみましょう。
 
-The application will start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
+%The application will start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
+アプリケーションはトップレベルのスーパーバイザーを起動して、その \emph{pid} を返しますう。
+このトップレベルのスーパーバイザーはそれが自動で起動するすべての子プロセスの仕様を含んでいます。\footnote{場合によっては、そのスーパーバイザーが子プロセスをまったく指定しないこともあります。その場合、子プロセスはそのAPIの関数あるいはアプリケーションの起動プロセス内で動的に起動される、あるいはそのスーパーバイザーが(アプリケーションファイルの\expression{env}タプル内の)OTPの環境変数が読み込まれるのを許可するためだけに存在しているかのどちらかです。}
 
 The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on processes that were started earlier.
 
