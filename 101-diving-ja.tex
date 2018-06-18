@@ -27,10 +27,12 @@
 
 Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar3} and its earlier incarnations\footnote{\href{https://www.rebar3.org}{https://www.rebar3.org} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications.
 
-\section{OTP Applications}
+%\section{OTP Applications}
+\section{OTPアプリケーション}
 \label{sec:dive-otp-applications}
 
-Figuring out OTP applications is usually rather simple. They usually all share a directory structure that looks like:
+%Figuring out OTP applications is usually rather simple. They usually all share a directory structure that looks like:
+OTPアプリケーションを理解するのは通常かなり単純です。OTPアプリケーションはみな次のようなディレクトリ構造をしています。
 
 \begin{VerbatimRaw}
 doc/
@@ -42,24 +44,37 @@ README.md
 rebar.config
 \end{VerbatimRaw}
 
-There might be slight differences, but the general structure will be the same.
+%There might be slight differences, but the general structure will be the same.
+わずかな違いはあるかもしれませんが、一般的な構造は同じです。
 
-Each OTP application should contain an \emph{app file}, either \filename{ebin/<AppName>.app} or more often, \filename{src/<AppName>.app.src}\footnote{A build system generates the final file that goes in \filename{ebin}. Note that in these cases, many  \filename{src/<AppName>.app.src} files do not specify modules and let the build system take care of it.}. There are two main varieties of app files:
+%Each OTP application should contain an \emph{app file}, either \filename{ebin/<AppName>.app} or more often, \filename{src/<AppName>.app.src}\footnote{A build system generates the final file that goes in \filename{ebin}. Note that in these cases, many  \filename{src/<AppName>.app.src} files do not specify modules and let the build system take care of it.}. There are two main varieties of app files:
+各OTPアプリケーションは \emph{appファイル} を持っていて、\filename{ebin/<AppName>.app}か、あるいはしばしば \filename{src/<AppName>.app.src} という名前になっているはずです。\footnote{ビルドシステムが最終的に \filename{ebin} にファイルを生成します。この場合、多くの \filename{src/<AppName>.app.src} ファイルはモジュールを示すものではなく、ビルドシステムがモジュール化の面倒を見ることになります。}
+appファイルには主に2つの種類があります。
 
 \includecode[erlang]{useragent.app.src}
 
-And:
+%And:
+そして
 
 \includecode[erlang]{dispcount.app}
 
-This first case is called a \emph{library application}, while the second case is a regular \emph{application}.
+の2種類です。
 
-\subsection{Library Applications}
+%This first case is called a \emph{library application}, while the second case is a regular \emph{application}.
+最初のケースは \emph{ライブラリアプリケーション} と呼ばれていて、2つめのケースは標準 \emph{アプリケーション} と呼ばれています。
+
+%\subsection{Library Applications}
+\subsection{ライブラリアプリケーション}
 \label{subsec:dive-library-applications}
 
-Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality provided.
+%Library applications will usually have modules named \module{\emph{appname}\_something}, and one module named \module{\emph{appname}}. This will usually be the interface module that's central to the library and contains a quick way into most of the functionality provided.
+ライブラリアプリケーションは通常 \module{\emph{appname}\_something} というような名前のモジュールと、 \module{\emph{appname}} という名前のモジュールを持っています。
+これは通常ライブラリの中心となるインターフェースモジュールで、提供される大半の機能がそこに含まれています。
 
-By looking at the source of the module, you can figure out how it works with little effort: If the module adheres to any given behaviour (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If no behaviour is included, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purpose.
+%By looking at the source of the module, you can figure out how it works with little effort: If the module adheres to any given behaviour (\module{gen\_server}, \module{gen\_fsm}, etc.), you're most likely expected to start a process under one of your own supervisors and call it that way. If no behaviour is included, then you probably have a functional, stateless library on your hands. For this case, the module's exported functions should give you a quick way to understand its purpose.
+
+モジュールのソースを見ることで、少しの労力でモジュールがどのように動作するか理解できます。もしモジュールが特定のビヘイビア(\module{gen\_server}や\module{gen\_fsm}など)を何度も使っているようであれば、おそらくスーパーバイザーの下でプロセスを起動して、然るべき方法で呼び出すことが想定されているでしょう。
+ビヘイビアが一つもなければ、そこにあるのは関数のステートレスなライブラリです。この場合、モジュールのエクスポートされた関数を見ることで、このライブラリの目的を素早く理解できるでしょう。
 
 \subsection{Regular Applications}
 \label{subsec:dive-regular-applications}
