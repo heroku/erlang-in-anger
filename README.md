@@ -37,6 +37,17 @@ $ make japanese  # -> text-ja.pdf: Japanese translation version
 $ docker-compose up
 ```
 
+ビルドに成功すると、`text-ja.pdf` が作成されているはずです。
+
+## ビルド対象の追加
+
+どの tex ファイルを読み込むかは `text-ja.tex` ファイルの `\include` 行で指定します。例えば 109-tracing-ja.tex を追加する場合、下記のように記載します。
+
+```
+\include{109-tracing-ja}
+```
+
+
 # 進捗
 - [x] 000: Copyright
 - [x] 001: Introduction
