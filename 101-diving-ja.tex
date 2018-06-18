@@ -15,12 +15,15 @@
 世間にあるErlangのコードベースには主に3つの種類があります。1つめは生のErlangコードベース、2つめはOTPアプリケーション、3つめはOTPリリースです。
 この章ではこれら3つのそれぞれに見ていき、それぞれを読み込んでいくのに役立つ秘訣をお教えします。
 
-\section{Raw Erlang}
+%\section{Raw Erlang}
+\section{生のErlang}
 \label{sec:dive-raw-erlang}
 
-If you encounter a raw Erlang code base, you're pretty much on your own. These rarely follow any specific standard, and you have to dive in the old way to figure out whatever happens in there.
+%If you encounter a raw Erlang code base, you're pretty much on your own. These rarely follow any specific standard, and you have to dive in the old way to figure out whatever happens in there.
+生のErlangコードベースに遭遇したら、各自でなんとかしてください。こうしたコードはなにか特に標準に従っているわけでもないので、何が起きているかは自分で深い道に分け入っていかなければなりません。
 
-This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
+%This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
+つまり、\filename{README.md}ファイルの類がアプリケーションのエントリーポイントを示してくれていて、さらにいえば、ライブラリ作者に質問するための連絡先情報などがあることを願うのみということです。
 
 Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar3} and its earlier incarnations\footnote{\href{https://www.rebar3.org}{https://www.rebar3.org} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications.
 
