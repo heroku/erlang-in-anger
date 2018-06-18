@@ -16,5 +16,5 @@ if [[ "${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_BRANCH}" == "master" && "${TRA
   git stash pop
   git add text-ja.pdf
   git commit -a -m "auto commit on travis $TRAVIS_JOB_NUMBER $TRAVIS_COMMIT"
-  git push git@github.com:y-yu/erlang-in-anger.git gh-pages:gh-pages
+  git push git@github.com:ymotongpoo/erlang-in-anger.git gh-pages:gh-pages
 fi
