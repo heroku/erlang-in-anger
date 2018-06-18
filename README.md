@@ -10,6 +10,15 @@ Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[�
 翻訳するときはオリジナルのものをコメントアウトする形でやっていきます。
 詳しくは `NNN-foobar-ja.tex` で翻訳済みになっているファイルを参照してください。
 
+## 手順
+**注意** メインブランチは `japanese` です。 `master` はupstreamの追従用です。
+
+1. 参加する旨を @ymotongpoo に言う (Collaboratorsに追加します)
+2. [割り振り表](https://docs.google.com/spreadsheets/d/1jsGGbftXZmtHGe8J7nKy-xAsFErWUpHksGEn2Oolwvw/edit?usp=sharing)の「担当」のカラムで自分がやりたいところに記名する。(節単位で担当するのが望ましい。)
+3. featureブランチ(`japanese` 以外に適当にブランチ)を切ってそこで作業する。(自分のアカウントにフォークしてから作業してもらっても構いません)
+4. 担当部分が終わったら `japanese` ブランチにmerge。心配ならpull-requestを出してください。(みんなでレビューしましょう)
+5. 以下2-4の繰り返し。
+
 ## レビュー
 訳がおかしいなと思ったら適宜Issueを立ててください。(TODO: Issueテンプレートの作成)
 
