@@ -1,0 +1,29 @@
+dist: trusty
+language: generic
+sudo: required
+env:
+  global:
+    - IMAGE_NAME=yyupw/erlang-in-anger-pdf
+    - REGISTRY_USER=yyupw
+    - DOCKER_COMPOSE_VERSION=1.21.2
+    - secure: "Z6LYuXOzIjbeCI/hh5FrfKLVic+qwf9xA1nuQ/1iJK0vwLzcZ4oYuMQLWvBLRA1DVxtI8c+tUyWqSe8IrD+OKuYWx7OjmhR7xMoKoyFNjo7HWdHNcR2MuVyzNsAlHdc/tl4f5M8p7VK6mJNVtY1Ex83+e3inJrxsE4biPScKzhvw4lDQlH4qPuNKS+epHvCfLVdpu9dr/xnN2gUHNfDBLkXpG8IPqbk2yCKPvJD6pLNVCg20ABFn4jsNDhviD1a5ZPRyy8zCdWpBd45p4ebf5Qjk78uUyZNfHRofRBXeo5l9KN9jUp4a/bcPRn+w/wz9mS2P2zzFn3iXoQ1WGYifj3zZICfvUK2s/Lr5rQQxah1fKtdP0xwu/jU+uQ4tMvFkHj7ZirGQEOdkXf+W0+QSWYa7uphR+xMjRQy4Ro4H+pLqSXF3qbzlOyHdrVqGg9rxWMiNFcVYA7osZsUHh7p1Rk2TTt5wd9NpUP0a8JcIe6jM/EjnToor6q2V8KaLPBQiBqs7oHAQcyTOshyVGpCbj2QBxunf93OETKyhoR7OI8YgtPFLd3rUJDi31CLU43YmrQ+ZyfsALQ3nDwOuv/3jrmhVBsloYwD/DMFCUbFuMs0gex9kW5rKu6/ysQUCMdbMPpZYEvAL/C/kP4L0tpghOTwJSfyHNWy1X0IZY6VOLHs="
+    - secure: "hSAGZ1379J7ddtDoigshZiLZwJqvqWgyPIcevlHY9lzH6wJhQ2PYUfXw8Mse9yLcSpp8KDsrGZhZbBHJ/+7Kt+10MTzSnswuZNPEGlSHGcRYJKqOfFRTjfGV3bd6RQruht2prwyP+ncgEr/nqNSHnqXV9utzXYZjJGGqDlQoEEYmoPTy+O3uejTjaxe4rYQ2bVohuhEqcR9ayrx+ZbEyVLn+pta0YfcO+m1xKmJ9UUTeNFWj0w8gH/Wvpx+nkc9qKhe3YPVJlaROxX0z2e1w3Xc3/GNi3MkrB4ouXoepqajkxqosWd2gQopgNEAYqL3JLMSp6wCDSMV0QQBWHgXhwdLXJIxf8KYPhIlE3K3J2qaS4xk79971QnNc2OhzeLJy7G72lKf7o3GEXyHb6P0RSsiPtKlZqODqRKPyb4CDqGrsPfJLRUaOiwiW6aKsQyNjGFJyt+GkJgGD1vc94qnzmBuM+GK7MpZmVTskWXDgKfSWZPJpIu1gzY9E6TNAaQ3BwgJCIHbHZSKZFTyifaNoKPWoc+y2Pljo9sdMA319RavM1dAk/ryFOivJeehw3r6dHo0xOvfkj07vBDTaK5XZwJ8z/FMG+TBT4E8cJW+ND5RytIc7yhI7la1HDz4chMoESgooNSzWQf1c0tSVzbkvZj2FdNZQylK6wjDcBAZoDxA="
+services:
+  - docker
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+install:
+  - docker-compose pull
+  - docker-compose build
+script:
+  - docker-compose up
+after_success:
+  - ./travis/deploy_image.sh
+  - ./travis/deploy_pdf.sh
+after_failure:
+  - cat text-ja.log

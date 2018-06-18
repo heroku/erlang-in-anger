@@ -1,0 +1,11 @@
+version: '3.2'
+services:
+  erlang-in-anger-pdf-compile:
+    image: yyupw/erlang-in-anger-pdf:latest
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      cache_from:
+        - yyupw/erlang-in-anger-pdf:latest
+    volumes:
+      - .:/workdir
