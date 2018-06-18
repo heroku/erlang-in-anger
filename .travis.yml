@@ -10,9 +10,6 @@ env:
     - secure: "hSAGZ1379J7ddtDoigshZiLZwJqvqWgyPIcevlHY9lzH6wJhQ2PYUfXw8Mse9yLcSpp8KDsrGZhZbBHJ/+7Kt+10MTzSnswuZNPEGlSHGcRYJKqOfFRTjfGV3bd6RQruht2prwyP+ncgEr/nqNSHnqXV9utzXYZjJGGqDlQoEEYmoPTy+O3uejTjaxe4rYQ2bVohuhEqcR9ayrx+ZbEyVLn+pta0YfcO+m1xKmJ9UUTeNFWj0w8gH/Wvpx+nkc9qKhe3YPVJlaROxX0z2e1w3Xc3/GNi3MkrB4ouXoepqajkxqosWd2gQopgNEAYqL3JLMSp6wCDSMV0QQBWHgXhwdLXJIxf8KYPhIlE3K3J2qaS4xk79971QnNc2OhzeLJy7G72lKf7o3GEXyHb6P0RSsiPtKlZqODqRKPyb4CDqGrsPfJLRUaOiwiW6aKsQyNjGFJyt+GkJgGD1vc94qnzmBuM+GK7MpZmVTskWXDgKfSWZPJpIu1gzY9E6TNAaQ3BwgJCIHbHZSKZFTyifaNoKPWoc+y2Pljo9sdMA319RavM1dAk/ryFOivJeehw3r6dHo0xOvfkj07vBDTaK5XZwJ8z/FMG+TBT4E8cJW+ND5RytIc7yhI7la1HDz4chMoESgooNSzWQf1c0tSVzbkvZj2FdNZQylK6wjDcBAZoDxA="
 services:
   - docker
-branches:
-  only:
-    - master
 before_install:
   - sudo apt-get update
   - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
