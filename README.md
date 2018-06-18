@@ -2,7 +2,7 @@
 Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
 # 最新版
-* [2018.06.18 08:57版](https://drive.google.com/file/d/1gxJT8RvxsxpT2D4zyhqUIVZsOuHiCtps/view?usp=sharing)
+* https://github.com/ymotongpoo/erlang-in-anger/blob/gh-pages/text-ja.pdf
 
 # Contribution
 ## 雰囲気
@@ -14,15 +14,15 @@ Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[�
 訳がおかしいなと思ったら適宜Issueを立ててください。(TODO: Issueテンプレートの作成)
 
 # Build
-TeX Liveをとりあえずインストールしてビルド。オリジナルはpdfLaTeXを使って生成している。
-Latexmkを使ってビルドできるようになっているので各々次のようにビルドする。
+TeX Liveをとりあえずインストールしてビルド。オリジナルはpdfLaTeXを使って生成しています。
+Latexmkを使ってビルドできるようになっているので各々次のようにビルドします。
 
 ```console
 $ make english   # -> text.pdf: original English version
 $ make japanese  # -> text-ja.pdf: Japanese translation version
 ```
 
-また、Docker環境がある場合は次のコマンドでコンパイルすることもできる。
+また、Docker環境がある場合は次のコマンドでコンパイルすることもできます。
 
 ```console
 $ docker-compose up
@@ -41,4 +41,3 @@ $ docker-compose up
 - [ ] 108: CPU and Scheduler Hogs
 - [ ] 109: Tracing
 - [x] 201: Conclusion
-
