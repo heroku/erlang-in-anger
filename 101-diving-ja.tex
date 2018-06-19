@@ -1,3 +1,4 @@
+\usepackage{comment}
 %\chapter{How to Dive into a Code Base}
 \chapter{コードベースへの飛び込み方}
 \label{chap:how-to-dive-into-a-code-base}
@@ -25,7 +26,9 @@
 %This means hoping for a \filename{README.md} file or something similar that can point to an entry point in the application, and going from there, or hoping for some contact information that can be used to ask questions to the author(s) of the library.
 つまり、\filename{README.md}ファイルの類がアプリケーションのエントリーポイントを示してくれていて、さらにいえば、ライブラリ作者に質問するための連絡先情報などがあることを願うのみということです。
 
-Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar3} and its earlier incarnations\footnote{\href{https://www.rebar3.org}{https://www.rebar3.org} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications.
+%Fortunately, you should rarely encounter raw Erlang in the wild, and they are often beginner projects, or awesome projects that were once built by Erlang beginners and now need a serious rewrite. In general, the advent of tools such as \app{rebar3} and its earlier incarnations\footnote{\href{https://www.rebar3.org}{https://www.rebar3.org} — a build tool briefly introduced in Chapter \ref{chap:building-open-source-erlang-software}} made it so most people use OTP Applications.
+幸いにも、生のErlangに遭遇することは滅多にありません。あったとしても、だいたいが初心者のプロジェクトか、あるいはかつてErlang初心者によって書かれた素晴らしいプロジェクトで真剣に書き直しが必要になっているものです。
+一般的に、 \app{rebar3} やその前身 \footnote{\href{https://www.rebar3.org}{https://www.rebar3.org} ―― 第 \ref{chap:building-open-source-erlang-software} 章で簡単に紹介されるビルドツールです。} のようなツールの出現によって、ほとんどの人がOTPアプリケーションを使うようになりました。
 
 %\section{OTP Applications}
 \section{OTPアプリケーション}
@@ -94,38 +97,54 @@ appファイルには主に2つの種類があります。
 状況によっては最初のファイルは同時に両方の役割を果たします。
 
 %If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
-そのアプリケーションを単純にあなたのアプリケーションの依存先として追加しようとしているのであれば、\module{\emph{appname}}の中を詳しく見てみましょうう。
-そのアプリケーションの運用や修正を行う必要があるのであれば、かわりに\module{\emph{appname}\_app}の中を見てみましょう。
+そのアプリケーションを単純にあなたのアプリケーションの依存先として追加しようとしているのであれば、 \module{\emph{appname}}の中を詳しく見てみましょうう。
+そのアプリケーションの運用や修正を行う必要があるのであれば、かわりに \module{\emph{appname}\_app} の中を見てみましょう。
 
 %The application will start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
 アプリケーションはトップレベルのスーパーバイザーを起動して、その \emph{pid} を返しますう。
-このトップレベルのスーパーバイザーはそれが自動で起動するすべての子プロセスの仕様を含んでいます。\footnote{場合によっては、そのスーパーバイザーが子プロセスをまったく指定しないこともあります。その場合、子プロセスはそのAPIの関数あるいはアプリケーションの起動プロセス内で動的に起動される、あるいはそのスーパーバイザーが(アプリケーションファイルの\expression{env}タプル内の)OTPの環境変数が読み込まれるのを許可するためだけに存在しているかのどちらかです。}
+このトップレベルのスーパーバイザーはそれが自動で起動するすべての子プロセスの仕様を含んでいます。 \footnote{場合によっては、そのスーパーバイザーが子プロセスをまったく指定しないこともあります。その場合、子プロセスはそのAPIの関数あるいはアプリケーションの起動プロセス内で動的に起動される、あるいはそのスーパーバイザーが(アプリケーションファイルの \expression{env} タプル内の)OTPの環境変数が読み込まれるのを許可するためだけに存在しているかのどちらかです。}
 
-The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on processes that were started earlier.
+%The higher a process resides in the tree, the more likely it is to be vital to the survival of the application. You can also estimate how important a process is by the order it is started (all children in the supervision tree are started in order, depth-first). If a process is started later in the supervision tree, it probably depends on processes that were started earlier.
+プロセスが監視ツリーのより上位にあれば、アプリケーションの存続にとってより致命的になってきます。
+またプロセスの重要性は起動開始の早さによっても予測可能です。(監視ツリー内の子プロセスはすべて順番に深さ優先で起動されています。)
+プロセスが監視ツリー内であとの方で起動されたとしたら、おそらくそれより前に起動されたプロセスに依存しているでしょう。
 
-Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate, restarting both processes, rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
+%Moreover, worker processes that depend on each other within the same application (say, a process that buffers socket communications and relays them to a finite-state machine in charge of understanding the protocol) are likely to be regrouped under the same supervisor and to fail together when something goes wrong. This is a deliberate choice, as it is usually simpler to start from a blank slate, restarting both processes, rather than trying to figure out how to recuperate when one or the other loses or corrupts its state.
+さらに、同じアプリケーション内で依存しあっているワーカープロセス(たとえば、ソケット通信をバッファしているプロセスと、その通信プロトコルを理解するための有限ステートマシンにそのデータをリレーするプロセス)は、おそらく同じスーパーバイザーの下で再グループ化されていて、何かおかしなことが起きたらまとめて落ちるでしょう。
+これは熟慮の末の選択で、通常どちらかのプロセスがいなくなったり状態がおかしくなってしまったときに、両方のプロセスを再起動してまっさらな状態から始めるほうが、どう回復するかを考えるよりも単純だからです。
 
-The supervisor restart strategy reflects the relationship between processes under a supervisor:
-
-\begin{itemize*}
-	\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not dependent upon each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They require strict ordering to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
-	\item \expression{rest\_for\_one} will be used to represent processes that depend on each other in a linear manner.
-	\item \expression{one\_for\_all} is used for processes that entirely depend on each other.
-\end{itemize*}
-
-This structure means it is easiest to navigate OTP applications in a top-down manner by exploring supervision subtrees. 
-
-For each worker process supervised, the behaviour it implements will give a good clue about its purpose:
+%The supervisor restart strategy reflects the relationship between processes under a supervisor:
+スーパーバイザーの再起動戦略はスーパーバイザー以下のプロセス間での関係性に影響を与えます。
 
 \begin{itemize*}
-	\item a \module{gen\_server} holds resources and tends to follow client/server patterns (or more generally, request/response patterns)
-	\item a \module{gen\_fsm} will deal with a sequence of events or inputs and react depending on them, as a Finite State Machine. It will often be used to implement protocols.
-	\item a \module{gen\_event} will act as an event hub for callbacks, or as a way to deal with notifications of some sort.
+  %\item \expression{one\_for\_one} and \expression{simple\_one\_for\_one} are used for processes that are not dependent upon each other directly, although their failures will collectively be counted towards total application shutdown\footnote{Some developers will use \expression{one\_for\_one} supervisors when \expression{rest\_for\_one} is more appropriate. They require strict ordering to boot correctly, but forget about said order when restarting or if a predecessor dies.}.
+  \item \expression{one\_for\_one}と\expression{simple\_one\_for\_one}は、失敗は全体としてアプリケーションの停止に関係してくるものの、お互いに直接依存しあっていないプロセスに使われます。\footnote{開発者によっては\expression{rest\_for\_one}がより適切な場面で\expression{one\_for\_one}を使ったりします。起動順を正しく行うことを求めてそうするわけですが、先に言ったような再起動時や先に起動されたプロセスが死んだときの起動順については忘れてしまうのです。}
+  %\item \expression{rest\_for\_one} will be used to represent processes that depend on each other in a linear manner.
+  \item \expression{rest\_for\_one}はお互いに直列に依存しているプロセスを表現するうときに使われます。
+  %\item \expression{one\_for\_all} is used for processes that entirely depend on each other.
+  \item \expression{one\_for\_all}は全体がお互いに依存しあっているプロセスに使われます。
 \end{itemize*}
 
-All of these modules will contain the same kind of structure: exported functions that represent the user-facing interface, exported functions for the callback module, and private functions, usually in that order.
+%This structure means it is easiest to navigate OTP applications in a top-down manner by exploring supervision subtrees.
+この構造の意味するところは、OTPアプリケーションを見るときは監視ツリーを上から順にたどるのが最も簡単であるということです。
 
-Based on their supervision relationship and the typical role of each behaviour, looking at the interface to be used by other modules and the behaviours implemented should reveal a lot of information about the program you're diving into.
+%For each worker process supervised, the behaviour it implements will give a good clue about its purpose:
+監視された各ワーカープロセスでは、それが実装しているビヘイビアがそのプロセスの目的を知る上で良い手がかりとなります。
+
+\begin{itemize*}
+  %\item a \module{gen\_server} holds resources and tends to follow client/server patterns (or more generally, request/response patterns)
+  \item \module{gen\_server} はリソースを保持して、クライアント・サーバーパターン(より一般的にはリクエスト・レスポンスパターン)に沿っています。
+  %\item a \module{gen\_fsm} will deal with a sequence of events or inputs and react depending on them, as a Finite State Machine. It will often be used to implement protocols.
+  \item \module{gen\_fsm} は有限ステートマシンなので一連のイベントやイベントに依存する入力と反応を扱います。プロトコルを実装するときによく使われます。
+  %\item a \module{gen\_event} will act as an event hub for callbacks, or as a way to deal with notifications of some sort.
+  \item \module{gen\_event} はコールバック用のイベントのハブとして振る舞ったり、通知を扱う方法として使われます。
+\end{itemize*}
+
+%All of these modules will contain the same kind of structure: exported functions that represent the user-facing interface, exported functions for the callback module, and private functions, usually in that order.
+これらのモジュールはすべてある種の構造を持っています。通常はユーザーに晒されたインターフェースを表すエクスポートされた関数、コールバックモジュール用のエクスポートされた関数、プライベート関数の順です。
+
+%Based on their supervision relationship and the typical role of each behaviour, looking at the interface to be used by other modules and the behaviours implemented should reveal a lot of information about the program you're diving into.
+監視関係や各ビヘイビアの典型的な役割を下地に、他のモジュールに使われているインターフェースや実装されたビヘイビアを見ることで、いま読み込んでいるプログラムに関するたくさんの情報が明らかになります。
 
 \subsection{Dependencies}
 \label{subsec:dive-dependencies}
