@@ -21,7 +21,7 @@ install:
   - docker-compose pull
   - docker-compose build
 script:
-  - docker-compose up
+  - docker-compose up --exit-code-from erlang-in-anger-pdf-compile
 after_success:
   - ./travis/deploy_image.sh
   - ./travis/deploy_pdf.sh
