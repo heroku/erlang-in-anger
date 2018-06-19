@@ -31,30 +31,38 @@ ErlangとBEAM VMの機能で、およそどれぐらいのことをトレース�
 
 この章では \module{recon\_trace} によるトレースにフォーカスしていきますが、使われている用語やコンセプトの多くは、Erlang の他のトレースツールにも活用できます。
 
-\section{Tracing Principles}
+%\section{Tracing Principles}
+\section{トレースの原則}
 \label{sec:tracing-princples}
 
-The Erlang Trace BIFs allow to trace any Erlang code at all\footnote{In cases where processes contain sensitive information, data can be forced to be kept private by calling \expression{process\_flag(sensitive, true)}}. They work in two parts: \emph{pid specifications}, and \emph{trace patterns}.
+%The Erlang Trace BIFs allow to trace any Erlang code at all\footnote{In cases where processes contain sensitive information, data can be forced to be kept private by calling \expression{process\_flag(sensitive, true)}}. They work in two parts: \emph{pid specifications}, and \emph{trace patterns}.
+ErlangのトレースBIFは全てのErlangコードをトレースすることを可能にします\footnote{プロセスに機密情報が含まれている場合、\expression{process\_flag(sensitive, true)}を呼ぶことで、データを非公開にすることを強制できます}。BIFは\emph{pid指定}と\emph{トレースパターン}に分かれています。
 
-Pid specifications lets the user decide which processes to target. They can be specific pids, \expression{all} pids, \expression{existing} pids, or \expression{new} pids (those not spawned at the time of the function call).
+pid指定により、ユーザはどのプロセスをターゲットにするかを決めることができます。pidは、特定のpid, \expression{全ての}pid, \expression{既存の}pid, あるいは \expression{新規の}pid（関数呼び出しの時点ではまだ生成されていないプロセス）で指定できます。
 
-The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
+%The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
+トレースパターンは機能の代わりになります。機能の指定は２つに分かれており、MFA(モジュール、関数、アリティ）と Erlang のマッチの仕様で引数に制約を加えています\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}}
 
-What defines whether a specific function call gets traced or not is the intersection of both, as seen in Figure~\ref{fig:tracing-venn}.
+%What defines whether a specific function call gets traced or not is the intersection of both, as seen in Figure~\ref{fig:tracing-venn}.
+特定の関数呼び出しがトレースされるかどうかを定義している箇所は、~\ref{fig:tracing-venn}にあるように、両者の共通部分です。
 
 \begin{figure}
   \includegraphics[max height=7cm]{tracing-venn.pdf}%
   \centering%
-  \caption{What gets traced is the result of the intersection between the matching pids and the matching trace patterns}%
+%  \caption{What gets traced is the result of the intersection between the matching pids and the matching trace patterns}%
+  \caption{トレースされるのは、pid指定とトレースパターンの交差した箇所です}%
    \label{fig:tracing-venn}
 \end{figure}
 
-If either the pid specification excludes a process or a trace pattern excludes a given call, no trace will be received.
+%If either the pid specification excludes a process or a trace pattern excludes a given call, no trace will be received.
+pid指定がプロセスを除外、あるいはトレースパターンが指定の呼び出しを除外した場合、トレースは受信されません。
 
-Tools like \otpapp{dbg} (and trace BIFs) force you to work with this Venn diagram in mind. You specify sets of matching pids and sets of trace patterns independently, and whatever happens to be at the intersection of both sets gets to be displayed.
+%Tools like \otpapp{dbg} (and trace BIFs) force you to work with this Venn diagram in mind. You specify sets of matching pids and sets of trace patterns independently, and whatever happens to be at the intersection of both sets gets to be displayed.
+\otpapp{dbg}（およびトレースBIF）のようなツールは、このベン図を念頭に置いて作業することを前提としています。pid指定およびトレースパターンを別々に指定し、その結果が何であろうとも、両者の共通部分が表示されることになります。
 
-Tools like \otpapp{redbug} and \module{recon\_trace}, on the other hand, abstract this away.
+%Tools like \otpapp{redbug} and \module{recon\_trace}, on the other hand, abstract this away.
 \FloatBarrier
+一方で \otpapp{redbug}や\module{recon\_trace}のようなツールでは、これらを抽象化しています。
 
 \section{Tracing with Recon}
 
