@@ -20,7 +20,8 @@ ENV PERSISTENT_DEPS \
     make \
     perl \
     ghostscript \
-    bash
+    bash \
+    git
 
 ENV PATH $TEXLIVE_PATH/bin/x86_64-linuxmusl:$PATH
 

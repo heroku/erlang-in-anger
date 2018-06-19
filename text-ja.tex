@@ -4,12 +4,18 @@
 \usepackage{text}
 \usepackage{comment}
 
+% GitのコミットIDを埋め込む用
+\input{vc.tex}
+
 %%% Cover
 
 \title{Stuff Goes Bad:\protect\\ Erlang in Anger}
 \author{Fred Hébert 著、elixir.jp 訳}
 
-%\date{}							% Activate to display a given date or no date
+\date{%
+  \today \\
+  Git commit ID: \href{https://github.com/ymotongpoo/erlang-in-anger}{\GITAbrHash}
+}
 
 \begin{document}
 \frontmatter
