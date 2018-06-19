@@ -1,4 +1,4 @@
-\documentclass[autodetect-engine, dvipdfmx-if-dvi, base=11pt, oneside, ja=standard, jafont=sourcehan-jp]{bxjsbook}
+\documentclass[autodetect-engine, dvipdfmx-if-dvi, base=11pt, oneside, ja=standard, jafont=sourcehan-jp]{bxjsreport}
 % !TEX encoding = UTF-8 Unicode
 \usepackage{graphicx}
 \usepackage{text}
@@ -12,16 +12,16 @@
 %\date{}							% Activate to display a given date or no date
 
 \begin{document}
+\frontmatter
+
 \maketitle
 
-\includepdf[fitpaper=true]{graphics/cover.pdf}
+\includepdf[pagecommand={\thispagestyle{empty}}]{graphics/cover.pdf}
 
 \include{000-copyright-ja}
 
 \clearpage
 %%%
-\pagenumbering{roman}
-\setcounter{page}{1}
 
 \tableofcontents
 
@@ -31,6 +31,8 @@
 \hypersetup{linkcolor=violet}
 
 \include{001-introduction-ja}
+
+\mainmatter
 
 \part{Writing Applications}
 \label{part:writing-applications}
