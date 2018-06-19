@@ -38,7 +38,8 @@ ErlangとBEAM VMの機能で、およそどれぐらいのことをトレース�
 %The Erlang Trace BIFs allow to trace any Erlang code at all\footnote{In cases where processes contain sensitive information, data can be forced to be kept private by calling \expression{process\_flag(sensitive, true)}}. They work in two parts: \emph{pid specifications}, and \emph{trace patterns}.
 ErlangのトレースBIFは全てのErlangコードをトレースすることを可能にします\footnote{プロセスに機密情報が含まれている場合、\expression{process\_flag(sensitive, true)}を呼ぶことで、データを非公開にすることを強制できます}。BIFは\emph{pid指定}と\emph{トレースパターン}に分かれています。
 
-pid指定により、ユーザはどのプロセスをターゲットにするかを決めることができます。pidは、特定のpid, \expression{全ての}pid, \expression{既存の}pid, あるいは \expression{新規の}pid（関数呼び出しの時点ではまだ生成されていないプロセス）で指定できます。
+%Pid specifications lets the user decide which processes to target. They can be specific pids, \expression{all} pids, \expression{existing} pids, or \expression{new} pids (those not spawned at the time of the function call).
+pid指定により、ユーザはどのプロセスをターゲットにするかを決めることができます。pidは、特定のpid, \expression{全ての}pid, \expression{既存の}pid, あるいは \expression{new}pid（関数呼び出しの時点ではまだ生成されていないプロセス）で指定できます。
 
 %The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
 トレースパターンは機能の代わりになります。機能の指定は２つに分かれており、MFA(モジュール、関数、アリティ）と Erlang のマッチの仕様で引数に制約を加えています\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}}
@@ -64,83 +65,139 @@ pid指定がプロセスを除外、あるいはトレースパターンが指�
 \FloatBarrier
 一方で \otpapp{redbug}や\module{recon\_trace}のようなツールでは、これらを抽象化しています。
 
-\section{Tracing with Recon}
+%\section{Tracing with Recon}
+\section{Recon によるトレース}
 
-Recon, by default, will match all processes. This will often be good enough for a lot of debugging cases. The interesting part you'll want to play with most of the time is specification of trace patterns. Recon support a few basic ways to declare them. 
+%Recon, by default, will match all processes. This will often be good enough for a lot of debugging cases. The interesting part you'll want to play with most of the time is specification of trace patterns. Recon support a few basic ways to declare them. 
+デフォルトでは Recon は全てのプロセスにマッチしますが、デバッグ時のほとんどのケースはこれで問題ありません。多くの場合、あなたが遊びたいと思う面白い部分は、トレースするパターンの指定です。Recon ではいくつかの方法をサポートしています。
 
-The most basic form is \expression{\{Mod, Fun, Arity\}}, where \var{Mod} is a literal module, \var{Fun} is a function name, and \var{Arity} is the number of arguments of the function to trace. Any of these may also be replaced by wildcards (\expression{'\_'}). Recon will forbid forms that match too widely on everything (such as \expression{\{'\_','\_','\_'\}}), as they could be plain dangerous to run in production.
+%The most basic form is \expression{\{Mod, Fun, Arity\}}, where \var{Mod} is a literal module, \var{Fun} is a function name, and \var{Arity} is the number of arguments of the function to trace. Any of these may also be replaced by wildcards (\expression{'\_'}). Recon will forbid forms that match too widely on everything (such as \expression{\{'\_','\_','\_'\}}), as they could be plain dangerous to run in production.
+最も基本的な指定方法は \expression{\{Mod, Fun, Arity\}}で、\var {Mod} はモジュール名、\var{Fun}は関数名、\var{Arity} はアリティつまりトレース対象の関数の引数の数です。いずれもワイルドカードの（\expression{'\_'}）で置き換えることができます。本番環境の実行は明らかに危険なため、Recon は（\expression{\{'\_','\_','\_'\}}のように)あまりにも広範囲、あるいは全てにマッチするような指定は禁止しています。
 
-A fancier form will be to replace the arity by a function to match on lists of arguments. The function is limited to those usable by match specifications similar to what is available in ETS\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}. Finally, multiple patterns can be put into a list to broaden the matching scope.
+%A fancier form will be to replace the arity by a function to match on lists of arguments. The function is limited to those usable by match specifications similar to what is available in ETS\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}. Finally, multiple patterns can be put into a list to broaden the matching scope.
+より賢明な方法は、アリティを引数のリストにマッチする関数で置き換えることです。その関数はETSで利用できるもの\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}と同様に、マッチの指定で利用されるものに限定されています。また、複数のパターンをリストで指定して、マッチするパターンを増やすこともできます。
 
-It will also be possible to rate limit based on two manners: a static count, or a number of matches per time interval.
+%It will also be possible to rate limit based on two manners: a static count, or a number of matches per time interval.
+レート制限は２つの方法、静的な値によるカウントもしくは一定期間内にマッチした数、で行うことができます。
 
-Rather than going more in details, here's a list of examples and how to trace for them.
+%Rather than going more in details, here's a list of examples and how to trace for them.
+より詳細には立ち入らず、ここではいくつかの例と、どうトレースするのかを見ていきます。
+
+% \begin{VerbatimErl}
+% % %% All calls from the queue module, with 10 calls printed at most:
+% recon_trace:calls({queue, '_', '_'}, 10)
+% 
+% % %% All calls to lists:seq(A,B), with 100 calls printed at most:
+% recon_trace:calls({lists, seq, 2}, 100)
+% 
+% % %% All calls to lists:seq(A,B), with 100 calls per second at most:
+% recon_trace:calls({lists, seq, 2}, {100, 1000})
+% 
+% %% All calls to lists:seq(A,B,2) (all sequences increasing by two) with 100 calls
+% %% at most:
+% recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)
+% 
+% %% All calls to iolist_to_binary/1 made with a binary as an argument already
+% %% (a kind of tracking for useless conversions):
+% recon_trace:calls({erlang, iolist_to_binary,
+%                    fun([X]) when is_binary(X) -> ok end},
+%                   10)
+% 
+% %% Calls to the queue module only in a given process Pid, at a rate of 50 per
+% %% second at most:
+% recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
+% 
+% %% Print the traces with the function arity instead of literal arguments:
+% recon_trace:calls(TSpec, Max, [{args, arity}])
+% 
+% %% Matching the filter/2 functions of both dict and lists modules, across new
+% %% processes only:
+% recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])
+% 
+% %% Tracing the handle_call/3 functions of a given module for all new processes,
+% %% and those of an existing one registered with gproc:
+% recon_trace:calls({Mod,handle_call,3}, {1,100}, [{pid, [{via, gproc, Name}, new]}
+% 
+% %% Show the result of a given function call, the important bit being the
+% %% return_trace() call or the {return_trace} match spec value.
+% recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)
+% recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)
+% 
+% \end{VerbatimErl}
 
 \begin{VerbatimErl}
-%% All calls from the queue module, with 10 calls printed at most:
+%% queue モジュールからの全ての呼び出しを、最大で10回まで出力
 recon_trace:calls({queue, '_', '_'}, 10)
 
-%% All calls to lists:seq(A,B), with 100 calls printed at most:
+%% lists:seq(A,B) の全ての呼び出しを、最大で100回まで出力
 recon_trace:calls({lists, seq, 2}, 100)
 
-%% All calls to lists:seq(A,B), with 100 calls per second at most:
+%% lists:seq(A,B)の全ての呼び出しを、最大で1秒あたり100回まで出力
 recon_trace:calls({lists, seq, 2}, {100, 1000})
 
-%% All calls to lists:seq(A,B,2) (all sequences increasing by two) with 100 calls
-%% at most:
+%% lists:seq(A,B,2)の全ての呼び出し（2つずつ増えていきます）を、最大で100回まで出力
 recon_trace:calls({lists, seq, fun([_,_,2]) -> ok end}, 100)
 
-%% All calls to iolist_to_binary/1 made with a binary as an argument already
-%% (a kind of tracking for useless conversions):
+%% 引数としてバイナリを指定して呼び出されたiolist_to_binary/1への全ての呼び出し
+%% (意味のない変換をトラッキングしている一例）
 recon_trace:calls({erlang, iolist_to_binary,
                    fun([X]) when is_binary(X) -> ok end},
                   10)
 
-%% Calls to the queue module only in a given process Pid, at a rate of 50 per
-%% second at most:
+%% 指定 Pid から queue モジュールの呼び出しを、最大で1秒あたり50回まで
 recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
 
-%% Print the traces with the function arity instead of literal arguments:
+%% リテラル引数のかわりに、関数のアリティでトレースを出力
 recon_trace:calls(TSpec, Max, [{args, arity}])
 
-%% Matching the filter/2 functions of both dict and lists modules, across new
-%% processes only:
+%% dict と lists モジュールの filter/2 関数にマッチして、かつ new プロセスからの呼び出しのみ
 recon_trace:calls([{dict,filter,2},{lists,filter,2}], 10, [{pid, new}])
 
-%% Tracing the handle_call/3 functions of a given module for all new processes,
-%% and those of an existing one registered with gproc:
+%% 指定モジュールの handle_call/3 関数の、new プロセスおよび
+%% gproc で登録済の既存プロセスからの呼び出しをトレース
 recon_trace:calls({Mod,handle_call,3}, {1,100}, [{pid, [{via, gproc, Name}, new]}
 
-%% Show the result of a given function call, the important bit being the
-%% return_trace() call or the {return_trace} match spec value.
+%% 指定の関数呼び出しの結果を表示します。重要なポイントは、
+%% return_trace()の呼び出しもしくは {return_trace} へのマッチです
 recon_trace:calls({Mod,Fun,fun(_) -> return_trace() end}, Max, Opts)
 recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)
 
 \end{VerbatimErl}
 
-Each call made will override the previous one, and all calls can be cancelled with \function{recon\_trace:clear/0}.
+%Each call made will override the previous one, and all calls can be cancelled with \function{recon\_trace:clear/0}.
+各呼び出しはそれ以前の呼び出しを上書きし、また全ての呼び出しは \function{recon\_trace:clear/0} でキャンセルすることができます。
 
-There's a few more combination possible, with more options:
+%There's a few more combination possible, with more options:
+組み合わせることが可能なオプションはもう少しあります。
+
 
 \begin{description}
-	\item[\expression{\{pid, PidSpec\}}] \hfill
+  \item[\expression{\{pid, PidSpec\}}] \hfill
+%    Which processes to trace. Valid options is any of \term{all}, \term{new}, \term{existing}, or a process descriptor (\expression{\{A,B,C\}}, \expression{"<A.B.C>"}, an atom representing a name, \expression{\{global, Name\}}, \expression{\{via, Registrar, Name\}}, or a pid). It's also possible to specify more than one by putting them in a list.
 	
-		Which processes to trace. Valid options is any of \term{all}, \term{new}, \term{existing}, or a process descriptor (\expression{\{A,B,C\}}, \expression{"<A.B.C>"}, an atom representing a name, \expression{\{global, Name\}}, \expression{\{via, Registrar, Name\}}, or a pid). It's also possible to specify more than one by putting them in a list.
-		
-	\item[\expression{\{timestamp, formatter | trace\}}] \hfill
-	
-		By default, the formatter process adds timestamps to messages received. If accurate timestamps are required, it's possible to force the usage of timestamps within trace messages by adding the option \expression{\{timestamp, trace\}}.
-		
-	\item[\expression{\{args, arity | args\}}] \hfill
-	
-		Whether to print the arity in function calls or their (by default) literal representation.
-		
- 	\item[\expression{\{scope, global | local\}}] \hfill
-	
-		By default, only 'global' (fully qualified function calls) are traced, not calls made internally. To force tracing of local calls, pass in \expression{\{scope, local\}}. This is useful whenever you want to track the changes of code in a process that isn't called with \expression{Module:Fun(Args)}, but just \expression{Fun(Args)}.
+	トレースするプロセスの指定です。有効なオプションは \term{all}, \term{new}, \term{existing}, あるいはプロセスディスクリプタ(\expression{\{A,B,C\}}, \expression{"<A.B.C>"}, 名前をあらわすアトム、\expression{\{global, Name\}}, \expression{\{via, Registrar, Name\}}, あるいは pid)のどれかです。リストにすることで、複数指定することも可能です。
+
+  \item[\expression{\{timestamp, formatter | trace\}}] \hfill
+
+%    By default, the formatter process adds timestamps to messages received. If accurate timestamps are required, it's possible to force the usage of timestamps within trace messages by adding the option \expression{\{timestamp, trace\}}.
+デフォルトでは formatter プロセスは受信したメッセージにタイムスタンプを追加します。正確なタイムスタンプが必要な場合、\expression{\{timestamp, trace\}} オプションを追加することで、トレースするメッセージの中のタイムスタンプを使うことを強制できます。
+
+  \item[\expression{\{args, arity | args\}}] \hfill
+
+%    Whether to print the arity in function calls or their (by default) literal representation.
+    関数呼び出しでアリティを表示するか、(デフォルトの）リテラル表現を出力するか
+
+  \item[\expression{\{scope, global | local\}}] \hfill
+
+%		By default, only 'global' (fully qualified function calls) are traced, not calls made internally. To force tracing of local calls, pass in \expression{\{scope, local\}}. This is useful whenever you want to track the changes of code in a process that isn't called with \expression{Module:Fun(Args)}, but just \expression{Fun(Args)}.
+    デフォルトでは 'global'(明示的な関数呼び出し)だけがトレースされ、内部的な呼び出しはトレースされません。ローカルの呼び出しのトレースを強制するには、\expression{\{scope, local\}} を渡します。これは、\expression{Module:Fun(Args)}ではなく\expression{Fun(Args)}だけで呼び出される、プロセス内のコード変更をトラッキングしたいときに便利です。
+
 \end{description}
 
-With these options, the multiple ways to pattern match on specific calls for specific functions and whatnot, a lot of development and production issues can more quickly be diagnosed. If the idea ever comes to say "hm, maybe I should add more logging there to see what could cause that funny behaviour", tracing can usually be a very fast shortcut to get the data you need without deploying any code or altering its readability.
+%With these options, the multiple ways to pattern match on specific calls for specific functions and whatnot, a lot of development and production issues can more quickly be diagnosed. If the idea ever comes to say "hm, maybe I should add more logging there to see what could cause that funny behaviour", tracing can usually be a very fast shortcut to get the data you need without deploying any code or altering its readability.
+特定の関数の特定の呼び出しやらをパターンマッチするこれらのオプションにより、開発環境・本番環境の多くの問題点をより早く診断できます。
+
+「うーん、このおかしな挙動を引き起こしているのは何なのか、たぶんもっと多くのログを吐けばわかるかもしれない」という発想になったときには、通常はトレースすることが、デプロイや（ログを）読みやすいように変更しなくても必要なデータを入手することができる近道となります。
 
 
 \section{Example Sessions}
