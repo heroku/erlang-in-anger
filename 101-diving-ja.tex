@@ -145,20 +145,30 @@ appファイルには主に2つの種類があります。
 %Based on their supervision relationship and the typical role of each behaviour, looking at the interface to be used by other modules and the behaviours implemented should reveal a lot of information about the program you're diving into.
 監視関係や各ビヘイビアの典型的な役割を下地に、他のモジュールに使われているインターフェースや実装されたビヘイビアを見ることで、いま読み込んでいるプログラムに関するたくさんの情報が明らかになります。
 
-\subsection{Dependencies}
+%\subsection{Dependencies}
+\subsection{依存関係}
 \label{subsec:dive-dependencies}
 
-All applications have dependencies\footnote{At the very least on the \module{kernel} and \module{stdlib} applications}, and these dependencies will have their own dependencies. OTP applications usually share no state between them, so it's possible to know what bits of code depend on what other bits of code by looking at the app file only, assuming the developer wrote them in a mostly correct manner. Figure~\ref{fig:app-deps} shows a diagram that can be generated from looking at app files to help understand the structure of OTP applications.
-
+%All applications have dependencies\footnote{At the very least on the \module{kernel} and \module{stdlib} applications}, and these dependencies will have their own dependencies. OTP applications usually share no state between them, so it's possible to know what bits of code depend on what other bits of code by looking at the app file only, assuming the developer wrote them in a mostly correct manner. Figure~\ref{fig:app-deps} shows a diagram that can be generated from looking at app files to help understand the structure of OTP applications.
+すべてのアプリケーションには依存するものが存在します。\footnote{どんなに少なくとも\module{kernel}アプリケーションと\module{stdlib}アプリケーションに依存しています。}そして、これらの依存先にはそれぞれの依存が存在します。
+OTPアプリケーションには通常状態を共有するものはありません。したがって、コードのある部分が他の部分にどのように依存しているかは、アプリケーションの開発者が正しく実装していると想定すれば、アプリケーションファイルをみるだけで知ることが出来ます。
+図~\ref{fig:app-deps}は、アプリケーションファイルを見ることで生成できるダイアグラムで、OTPアプリケーションの構造の理解に役立ちます。
 
 \begin{figure}
   \includegraphics{app-deps-riak-cs.pdf}%
-  \caption{Dependency graph of riak\_cs, Basho's open source cloud library.
-  The graph ignores dependencies on common applications like kernel and stdlib. Ovals are applications, rectangles are library applications.}%
-   \label{fig:app-deps}
+  %\caption{Dependency graph of riak\_cs, Basho's open source cloud library.
+  %The graph ignores dependencies on common applications like kernel and stdlib. Ovals are applications, rectangles are library applications.}
+  \caption{Bashoのオープンソースクラウドライブラリである riak\_cs の依存関係を表したグラフです。
+    このグラフはkernelやstdlibといった必ず依存するようなものは除いています。楕円はアプリケーションで、四角はライブラリアプリケーションです。}
+  \label{fig:app-deps}
 \end{figure}
 
-Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find \app{recon}'s script directory and call \command{escript script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
+%Using such a hierarchy and looking at each application's short description might be helpful to draw a rough, general map of where everything is located. To generate a similar diagram, find \app{recon}'s script directory and call \command{escript script/app\_deps.erl}\footnote{This script depends on graphviz}. Similar hierarchies can be found using the \module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}} application, but for individual supervision trees. Put together, you may get an easy way to find out what does what in the code base.
+
+こうした依存関係を使って各アプリケーションの短い解説を見ることで、何がどこにあるかの大まかな地図を描くのに役立つでしょう。
+似たダイヤグラムを生成するためには、\app{recon}のscriptディレクトリ内のツールを使って\command{escript script/app\_deps.erl}を実行してみましょう。\footnote{このスクリプトはgraphvizに依存しています。}
+似たダイヤグラムが\module{observer}\footnote{\href{http://www.erlang.org/doc/apps/observer/observer\_ug.html}{http://www.erlang.org/doc/apps/observer/observer\_ug.html}}アプリケーションを使うことで得られますが、各監視ツリーのものになります。
+これらをまとめることで、コードベースの中で何が何をしているかを簡単に見つけられるようになるでしょう。
 
 \FloatBarrier
 
