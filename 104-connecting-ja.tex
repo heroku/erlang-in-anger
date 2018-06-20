@@ -79,21 +79,30 @@ User switch command
 %You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) to avoid connecting to an entire cluster automatically.
 全クラスタに自動的に接続することがないように、最初のシェルをhiddenモード(これには引数 \command{-hidden}が使えます)にしても良いですね。
 
+%\section{Remsh}
 \section{Remsh}
 
-There's a mechanism entirely similar to the one available through the JCL mode, although invoked in a different manner. The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
+%There's a mechanism entirely similar to the one available through the JCL mode, although invoked in a different manner.
+呼び出し方は異なりますが、ジョブ制御モードを通じた方法にきわめて似た仕組みがあります。
+%The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
+ジョブ制御モードの一連の手順は、ロングネームを使う場合、以下のようにシェルを起動することで省略することができます。
 
 \begin{VerbatimText}
 erl -name local@domain.name -remsh remote@domain.name
 \end{VerbatimText}
 
-And as follows for short names:
+ショートネームを使う場合は、以下のようになります。
 
 \begin{VerbatimText}
 erl -sname local@domain -remsh remote@domain
 \end{VerbatimText}
 
-All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local). \command{\^{}G}  remains the safest way to exit the remote shell.
+%All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid.
+その他の引数(例えば \command{-hidden} や \command{-setcookie \$COOKIE})も利用可能です。
+%The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
+下で動いている仕組みはジョブ制御モードの時と同じですが、最初のシェルはローカルではなくリモートで立ち上がります（ジョブ制御モードではローカルでした）。
+%\command{\^{}G}  remains the safest way to exit the remote shell.
+リモートシェルから抜ける際にも最も安全な方法は先ほどと変わらず、\command{\^{}G}です。
 
 \section{SSH Daemon}
 
