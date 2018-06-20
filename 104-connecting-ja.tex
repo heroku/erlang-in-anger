@@ -34,9 +34,13 @@ cookieを利用しない方法もいくつかあります。
 % Most usages will also require the use of named nodes, and all of them will require \emph{a priori} measures to make sure you can contact the node.
 多くの方法では名前付きノードが必要で、どんな方法でも\emph{アプリオリな} 接続確認手段は必要です。
 
-\section{Job Control Mode}
+%\section{Job Control Mode}
+\section{ジョブ制御モード}
 
-The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. From that menu, there is an option allowing you to connect to a remote shell:
+%The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. 
+ジョブ制御モード(Job Control Mode, JCL mode)は、Erlangシェルで \command{\^{}G} を押した時に得られるメニューのことです。
+%From that menu, there is an option allowing you to connect to a remote shell:
+このメニューの中に、リモートシェルの接続を許可するオプションがあります。
 
 \begin{VerbatimEshell}
 (somenode@ferdmbp.local)1>
@@ -56,9 +60,15 @@ Eshell Vx.x.x  (abort with ^G)
 (server@ferdmbp.local)1>
 \end{VerbatimEshell}
 
-When that happens, the local shell runs all the line editing and job management locally, but the evaluation is actually done remotely. All output coming from said remote evaluation will be forwarded to the local shell.
+%When that happens, the local shell runs all the line editing and job management locally, but the evaluation is actually done remotely.
+こうすると、ジョブ管理や行編集はローカルシェルにより実行されますが、実際の評価はリモートで行われます。
+%All output coming from said remote evaluation will be forwarded to the local shell.
+このリモートシェルが評価を行った結果、出力はすべて、ローカルシェルに転送されます。
 
-To quit the shell, go back in the JCL mode with \command{\^{}G}. This job management is, as I said, done locally, and it is thus safe to quit with \command{\^{}G q}:
+%To quit the shell, go back in the JCL mode with \command{\^{}G}. 
+シェルを終了するには\command{\^{}G}を再び押して、ジョブ制御モードに戻ってください。
+%This job management is, as I said, done locally, and it is thus safe to quit with \command{\^{}G q}:
+先程も行ったように、ジョブ制御はローカルで行われますから、\command{\^{}G q}により終了させても安全です。
 
 \begin{VerbatimEshell}
 (server@ferdmbp.local)1>
@@ -66,7 +76,8 @@ User switch command
  --> q
 \end{VerbatimEshell}
 
-You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) to avoid connecting to an entire cluster automatically.
+%You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) to avoid connecting to an entire cluster automatically.
+全クラスタに自動的に接続することがないように、最初のシェルをhiddenモード(これには引数 \command{-hidden}が使えます)にしても良いですね。
 
 \section{Remsh}
 
