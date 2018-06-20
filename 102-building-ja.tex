@@ -146,10 +146,14 @@ Erlangのスーバーバイザーとその監視ツリーの非常に重要な�
 多くのErlang開発者がスーパーバイザーにクールダウン期間を持たせるほうがいいという方向の主張をします。
 私は一つの単純な理由からそれにいは反対です。その理由とは\emph{保証がすべて}ということです。
 
-\subsection{It's About the Guarantees}
+%\subsection{It's About the Guarantees}
+\subsection{すべては保証のため}
 \label{subsec:start-link-guarantees}
 
-Restarting a process is about bringing it back to a stable, known state. From there, things can be retried. When the initialization isn't stable, supervision is worth very little. An initialized process should be stable no matter what happens. That way, when its siblings and cousins get started later on, they can be booted fully knowing that the rest of the system that came up before them is healthy.
+%Restarting a process is about bringing it back to a stable, known state. From there, things can be retried. When the initialization isn't stable, supervision is worth very little. An initialized process should be stable no matter what happens. That way, when its siblings and cousins get started later on, they can be booted fully knowing that the rest of the system that came up before them is healthy.
+プロセスを再起動するということは、プロセスを安定した、既知の状態に戻すことです。そこから、再度処理を試します。
+もし初期化が安定していなければ、監視の価値は非常に低いでしょう。初期化プロセスは何が起きても安定しているべきです。
+そのような理由から、あるプロセスの兄弟プロセスや従兄弟プロセスが後に起動したときに、それらのプロセスはシステムに置いて自分が起動する以前に立ち上がった部分は健康であると知った状態で立ち上げられるでしょう。
 
 If you don't provide that stable state, or if you were to start the entire system asynchronously, you would get very little benefit from this structure that a \expression{try ... catch} in a loop wouldn't provide.
 
