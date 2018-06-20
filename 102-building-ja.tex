@@ -17,15 +17,21 @@
 サポートされている主なビルドツールは\app{rebar3}と\app{erlang.mk}です。前者はビルドツールでありパッケージマネージャーで、ErlangライブラリとErlang製システムを繰り返し使える形で簡単に開発してリリースできるようにしてくれるものです。一方で後者は特殊なmakefileで本番用やリリースにはそれほど向いていませんが、より柔軟な記述が出来るようになっています。
 本章では、\app{rebar3}がデファクトスタンダードになっていること、自分がよく知っていること、また\app{erlang.mk}は\app{rebar3}の依存先としてサポートされている事が多いといった理由から、\app{rebar3}を使ったビルドに焦点をあてます。
 
-\section{Project Structure}
+%\section{Project Structure}
+\section{プロジェクト構造}
 \label{sec:project-structure}
 
-The structures of OTP applications and of OTP releases are different. An OTP application can be expected to have one top-level supervisor (if any) and possibly a bunch of dependencies that sit below it. An OTP release will usually be composed of multiple OTP applications, which may or may not depend on each other. This will lead to two major ways to lay out applications.
+%The structures of OTP applications and of OTP releases are different. An OTP application can be expected to have one top-level supervisor (if any) and possibly a bunch of dependencies that sit below it. An OTP release will usually be composed of multiple OTP applications, which may or may not depend on each other. This will lead to two major ways to lay out applications.
+OTPアプリケーションとOTPリリースのプロジェクト構造は異なります。OTPアプリケーションは（あるとすれば）トップレベルスーパーバイザーを1つ持っていると想定できます。そしておそらく依存しているものがその下に固まってぶら下がっていると想定できます。
+OTPリリースは通常複数のOTPアプリケーションから成り、それらがお互いに依存していることもあればそうでないこともあります。
+これらの事実からアプリケーションの構成をする際に主に2つの方法に落ち着きます。
 
-\subsection{OTP Applications}
+%\subsection{OTP Applications}
+\subsection{OTPアプリケーション}
 \label{subsec:building-otp-applications}
 
-For OTP applications, the proper structure is pretty much the same as what was explained in \ref{sec:dive-otp-applications}:
+%For OTP applications, the proper structure is pretty much the same as what was explained in \ref{sec:dive-otp-applications}:
+OTPアプリケーションでは、適切な構造は\ref{sec:dive-otp-applications}の節で説明したとおりです。
 
 \begin{VerbatimText}
 _build/
@@ -38,11 +44,16 @@ rebar.config
 rebar.lock
 \end{VerbatimText}
 
-What's new in this one is the \filename{\_build/} directory and the \filename{rebar.lock} file, which will be generated automatically by \app{rebar3}\footnote{Some people package \app{rebar3} directly in their application. This was initially done to help people who had never used rebar3 or its predecessors use libraries and projects in a boostrapped manner. Feel free to install rebar3 globally on your system, or keep a local copy if you require a specific version to build your system.}. 
+%What's new in this one is the \filename{\_build/} directory and the \filename{rebar.lock} file, which will be generated automatically by \app{rebar3}\footnote{Some people package \app{rebar3} directly in their application. This was initially done to help people who had never used rebar3 or its predecessors use libraries and projects in a boostrapped manner. Feel free to install rebar3 globally on your system, or keep a local copy if you require a specific version to build your system.}.
+ここで新しいのは\filename{\_build/}ディレクトリと\filename{rebar.lock}ファイルです。
+これらは\app{rebar3}によって自動的に生成されます。\footnote{人によっては\app{rebar3}をアプリケーション内に直接パッケージします。これはrebar3やその前身を使ったことがない人がライブラリやプロジェクトとブートストラップできるようになされていたものです。自分のシステムのグローバルにrebar3をインストールして問題ありません。自分のシステムをビルドするのに特定のバージョンが必要であればローカルにコピーを持っておいても良いでしょう。}
 
-This is the directory where \app{rebar3} places all build artifacts for a project, including local copies of libraries and packages required for it to work. No mainstream Erlang tool installs packages globally\footnote{Except as a local cache of unbuilt packages.}, preferring to instead keep everything project-local to avoid inter-project conflicts.
+%This is the directory where \app{rebar3} places all build artifacts for a project, including local copies of libraries and packages required for it to work. No mainstream Erlang tool installs packages globally\footnote{Except as a local cache of unbuilt packages.}, preferring to instead keep everything project-local to avoid inter-project conflicts.
+このディレクトリに\app{rebar3}がプロジェクトのすべてのビルドアーティファクトを置きます。動作させるのに必要なライブラリやパッケージのローカルコピーなどもそこに含まれます。
+主要なErlangツールはパッケージをグローバルにはインストールせず、\footnote{まだビルドされていないパッケージのローカルキャッシュは除きます。}かわりにプロジェクト間での衝突を避けるためにすべてをプロジェクトローカルに保存します。
 
-Such dependencies can be specified for \app{rebar3} by adding a few config lines to \filename{rebar.config}:
+%Such dependencies can be specified for \app{rebar3} by adding a few config lines to \filename{rebar.config}:
+このような依存関係は\filename{rebar.config}に数行設定を追加するだけで\app{rebar3}に指定できます。
 
 \begin{VerbatimText}
 {deps, [
@@ -56,11 +67,17 @@ Such dependencies can be specified for \app{rebar3} by adding a few config lines
  ]}.
 \end{VerbatimText}
 
-Dependencies are fetched directly from a \app{git} (or \app{hg}) source or as a package from \href{https://hex.pm}{\app{hex.pm}} in a level-order traversal. They can then be compiled, and specific compile options can be added with the \expression{\{erl\_opts, List\}.} option in the config file\footnote{More details on \href{https://www.rebar3.org/docs/configuration}{https://www.rebar3.org/docs/configuration}}. 
+%Dependencies are fetched directly from a \app{git} (or \app{hg}) source or as a package from \href{https://hex.pm}{\app{hex.pm}} in a level-order traversal. They can then be compiled, and specific compile options can be added with the \expression{\{erl\_opts, List\}.} option in the config file\footnote{More details on \href{https://www.rebar3.org/docs/configuration}{https://www.rebar3.org/docs/configuration}}.
+依存するものは\app{git}（または\app{hg}）のソースあるいは\href{https://hex.pm}{\app{hex.pm}}からレベル順の幅優先探索で直接取得されます。
+その後コンパイルされて、特定のコンパイルオプションが設定ファイルの\expression{\{erl\_opts, List\}.}オプションとともに追加されます。\footnote{より詳しい話はこちらを参照してください。\href{https://www.rebar3.org/docs/configuration}{https://www.rebar3.org/docs/configuration}}
 
-You can call \command{rebar3 compile}, which will download all dependencies, and then build them and your app at once.
+%You can call \command{rebar3 compile}, which will download all dependencies, and then build them and your app at once.
+\command{rebar3 compile}を呼んで、すべての依存物をダウンロードし、一度にそれらとあなたのアプリをビルドします。
 
-When making your application's source code public to the world, distribute it \emph{without} the \filename{\_build/} directory. It's quite possible that other developers' applications depend on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar3}) should be able to figure out duplicated entries and fetch everything necessary only once.
+%When making your application's source code public to the world, distribute it \emph{without} the \filename{\_build/} directory. It's quite possible that other developers' applications depend on the same applications yours do, and it's no use shipping them all multiple times. The build system in place (in this case, \app{rebar3}) should be able to figure out duplicated entries and fetch everything necessary only once.
+あなたのアプリケーションのコードを公開するときは、\filename{\_build/}ディレクトリを\emph{含まずに}配布しましょう。
+他の開発社があなたのアプリケーションと同じものに依存している可能性は高く、何度もそれを配布するのは意味がありません。
+その場にあるビルドシステム（この場合は\app{rebar3}）が重複した項目を見つけ出して、必要なものは1度だけしか取得しないようにしてくれるでしょう。
 
 \subsection{OTP Releases}
 \label{subsec:building-otp-releases}
