@@ -156,18 +156,25 @@ Eshell Vx.x.x  (abort with ^G)
 %If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} option to \app{ssh} to get debug output.
 もし接続する際に問題が発生したら、\app{ssh}にオプションとして\command{-oLogLevel=DEBUG}をつければ、デバッグ出力が見られます。
 
-If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} option to \app{ssh} to get debug output.
+%\section{Named Pipes}
+\section{名前付きパイプ}
 
-\section{Named Pipes}
+% A little known way to connect with an Erlang node that requires no explicit distribution is through named pipes.
+明示的な割り付けを利用せずにErlangノードに接続する方法として、あまり知られてはいませんが、名前付きパイプを利用するものがあります。
+%This can be done by starting Erlang with \app{run\_erl}, which wraps Erlang in a named pipe\footnote{\command{"erl"} is the command being run. Additional arguments can be added after it. For example \command{"erl +K true"} will turn kernel polling on.}:
+これはErlangを\app{run\_erl}使って起動すれば実現できます。\app{run\_erl}が名前付きパイプ用にErlangをラップしてくれます\footnote{\command{"erl"}が実行されるコマンドです。引数はその後に追加できます。例えば\command{"erl +K true"}でカーネルポーリングが有効になります。}。
 
-A little known way to connect with an Erlang node that requires no explicit distribution is through named pipes. This can be done by starting Erlang with \app{run\_erl}, which wraps Erlang in a named pipe\footnote{\command{"erl"} is the command being run. Additional arguments can be added after it. For example \command{"erl +K true"} will turn kernel polling on.}:
 \begin{VerbatimEshell}
 $ run_erl /tmp/erl_pipe /tmp/log_dir "erl"
 \end{VerbatimEshell}
 
-The first argument is the name of the file that will act as the named pipe. The second one is where logs will be saved\footnote{Using this method ends up calling fsync for each piece of output, which may give quite a performance hit if a lot of IO is taking place over standard output}.
+%The first argument is the name of the file that will act as the named pipe.
+第一引数は名前付きパイプとして振る舞うファイル名です。
+% The second one is where logs will be saved\footnote{Using this method ends up calling fsync for each piece of output, which may give quite a performance hit if a lot of IO is taking place over standard output}.
+第二引数はログの保存場所になります\footnote{この方法を使うと出力のたびにfsyncが呼びだされますので、標準出力を介して多くの入出力が発生する場合は、性能にかなり影響するかもしれません。}
 
-To connect to the node, you use the \app{to\_erl} program:
+%To connect to the node, you use the \app{to\_erl} program:
+ノードに接続するには、\app{to\_erl}プログラムを使います。
 
 \begin{VerbatimEshell}
 $ to_erl /tmp/erl_pipe
@@ -176,7 +183,10 @@ Attaching to /tmp/erl_pipe (^D to exit)
 1>
 \end{VerbatimEshell}
 
-And the shell is connected. Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
+%And the shell is connected. 
+シェルに接続できました。
+%Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
+標準入出力を閉じる(コマンドは\command{\^{}D})ことで、シェルを実行させたまま切断ができます。
 
 
 \section{Exercises}
