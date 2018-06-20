@@ -181,12 +181,19 @@ Erlangのスーバーバイザーとその監視ツリーの非常に重要な�
 外部サービスが落ちることが予想されるのであれば、システムでそのサービスの存在を保証すべきではありません。
 私たちが扱っているのは現実世界であって、外部依存先に障害が起きることは常にあり得るのです。
 
-\subsection{Side Effects}
+%\subsection{Side Effects}
+\subsection{副作用}
 \label{subsec:start-link-side-effects}
 
-Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, one that depends on your business rules and what you can or can't do to a client, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
+%Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, one that depends on your business rules and what you can or can't do to a client, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole.
+もちろん、そのようなクライアントを呼ぶライブラリやプロセスは、データベースなしに動作することを想定していなければ、その後エラーを吐きます。
+それはまったく異なる問題空間のまったく異なる問題で、ビジネスルールやクライアントで何が出来て何が出来ないかなどに依存するものです。しかし、ワークアラウンド可能なものでもあります。
+たとえば、運用系のメトリクスを保存するサービスのクライアントを考えましょう。---クライアントを呼び出すコードはシステム全体に悪影響を及ぼすことなくエラーを無視できるでしょう。
 
-The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
+%The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
+初期化と監視での手法の違いは、クライアント自身ではなくクライアントの呼び出し側が障害にどの程度耐えられるか決められるという点です。
+障害耐性のあるシステムを設計する場合にこの点は非常に重要な特徴です。
+そうです、スーバーバイザーとは再起動についてですが、それは既知の安定した状態への再起動であるべきです。
 
 \subsection{Example: Initializing without guaranteeing connections}
 \label{subsec:start-link-initializing-without-guaranteeing-connections}
