@@ -125,16 +125,26 @@ SystoolやReltolといった他のツールも以前はカバーされていて\
 \command{rebar3 release}を呼ぶとリリースをビルドして、\filename{\_build/default/rel/}ディレクトリに置かれます。
 \command{rebar3 tar}を呼ぶとtarballを\filename{\_build/default/rel/demo/demo-1.0.0.tar.gz}に配置し、デプロイ可能となります。
 
-\section{Supervisors and start\_link Semantics}
+%\section{Supervisors and start\_link Semantics}
+\section{スーパーバイザーとstart\_linkセマンティクス}
 \label{sec:supervisors-and-start-link-semantics}
 
-In complex production systems, most faults and errors are transient, and retrying an operation is a good way to do things — Jim Gray's paper\footnote{\href{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}} quotes \emph{Mean Times Between Failures} (MTBF) of systems handling transient bugs being better by a factor of 4 when doing this. Still, supervisors aren't just about restarting.
+%In complex production systems, most faults and errors are transient, and retrying an operation is a good way to do things — Jim Gray's paper\footnote{\href{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}} quotes \emph{Mean Times Between Failures} (MTBF) of systems handling transient bugs being better by a factor of 4 when doing this. Still, supervisors aren't just about restarting.
+複雑な本番システムでは、多くの障害やエラーは一時的なもので、処理を再実行するのは良いことです――Jim Grayの
+論文\footnote{\href{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}{http://mononcqc.tumblr.com/post/35165909365/why-do-computers-stop}}では、一時的なバグを扱う場合、システムの\emph{Mean Times Between Failures（障害間隔平均時間）} (MTBF)で見た時の4回に1回程度行うのが良いと引用していました。
+スーバーバイザーは再起動を行うだけではありません。
 
-One very important part of Erlang supervisors and their supervision trees is that \emph{their start phases are synchronous}. Each OTP process has the potential to prevent its siblings and cousins from booting. If the process dies, it's retried again, and again, until it works, or fails too often.
+%One very important part of Erlang supervisors and their supervision trees is that \emph{their start phases are synchronous}. Each OTP process has the potential to prevent its siblings and cousins from booting. If the process dies, it's retried again, and again, until it works, or fails too often.
+Erlangのスーバーバイザーとその監視ツリーの非常に重要な点の一つに、\emph{起動フェーズが同期的に行われる}こと、があります。
+各OTPプロセスは兄弟や従兄弟のプロセスの起動を妨げる可能性があります。もしプロセスが死んだら、起動を何度も何度も繰り返され、最終的に起動できるようになる、さもなければ頻繁に失敗することになります。
 
-That's where people make a very common mistake. There isn't a backoff or cooldown period before a supervisor restarts a crashed child. When a network-based application tries to set up a connection during its initialization phase and the remote service is down, the application fails to boot after too many fruitless restarts. Then the system may shut down.
+%That's where people make a very common mistake. There isn't a backoff or cooldown period before a supervisor restarts a crashed child. When a network-based application tries to set up a connection during its initialization phase and the remote service is down, the application fails to boot after too many fruitless restarts. Then the system may shut down.
+この点が人々がよくある間違いをおかしがちなところです。クラッシュした子プロセスを再起動する前にバックオフやクールダウンの期間はありません。
+ネットワーク系アプリケーションが初期化フェーズで接続を確立しようとしてリモートサービスが落ちているとき、アプリケーションは無意味な再起動を多数繰り返した後に失敗します。そしてシステムが停止します。
 
-Many Erlang developers end up arguing in favor of a supervisor that has a cooldown period. I strongly oppose the sentiment for one simple reason: \emph{it's all about the guarantees}.
+%Many Erlang developers end up arguing in favor of a supervisor that has a cooldown period. I strongly oppose the sentiment for one simple reason: \emph{it's all about the guarantees}.
+多くのErlang開発者がスーパーバイザーにクールダウン期間を持たせるほうがいいという方向の主張をします。
+私は一つの単純な理由からそれにいは反対です。その理由とは\emph{保証がすべて}ということです。
 
 \subsection{It's About the Guarantees}
 \label{subsec:start-link-guarantees}
