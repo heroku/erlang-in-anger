@@ -60,7 +60,7 @@ $ docker-compose up
 - [ ] 106: Reading Crash Dumps
 - [ ] 107: Memory Leaks
 - [ ] 108: CPU and Scheduler Hogs
-- [ ] 109: Tracing
+- [x] 109: Tracing
 - [x] 201: Conclusion
 
 
