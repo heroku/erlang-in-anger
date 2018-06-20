@@ -79,12 +79,15 @@ rebar.lock
 他の開発社があなたのアプリケーションと同じものに依存している可能性は高く、何度もそれを配布するのは意味がありません。
 その場にあるビルドシステム（この場合は\app{rebar3}）が重複した項目を見つけ出して、必要なものは1度だけしか取得しないようにしてくれるでしょう。
 
-\subsection{OTP Releases}
+%\subsection{OTP Releases}
+\subsection{OTPリリース}
 \label{subsec:building-otp-releases}
 
-For releases, the structure can a bit different. Releases are collections of applications, and their structures may reflect that.
+%For releases, the structure can a bit different. Releases are collections of applications, and their structures may reflect that.
+OTPリリースの場合、構造は少し異なります。リリースはアプリケーションの集まりで、その構造はそれを反映したものになっています。
 
-Instead of having a top-level app alone in \filename{src}, applications can be nested one level deeper in a \filename{apps} or \filename{lib} directory:
+%Instead of having a top-level app alone in \filename{src}, applications can be nested one level deeper in a \filename{apps} or \filename{lib} directory:
+\filename{src}にトップレベルアプリケーションを持つ代わりに、アプリケーションは\filename{app}や\filename{lib}内で一階層下にあります。
 
 \begin{VerbatimRaw}
 _build/
@@ -100,9 +103,13 @@ rebar.config
 rebar.lock
 \end{VerbatimRaw}
 
-This structure lends itself to generating releases where multiple OTP applications under your control under a single code repository. Both \app{rebar3} and \app{erlang.mk} rely on the \app{relx} library to assemble releases. Other tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power if they do not like what they would get otherwise.
+%This structure lends itself to generating releases where multiple OTP applications under your control under a single code repository. Both \app{rebar3} and \app{erlang.mk} rely on the \app{relx} library to assemble releases. Other tools such as Systool and Reltool have been covered before\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word}}, and can allow the user plenty of power if they do not like what they would get otherwise.
+この構造は複数のOTPアプリケーションが1つのコードレポジトリで管理されているようなOTPリリースを生成するときに役立っています。
+\app{rebar3}と\app{erlang.mk}はともにリリースをまとめるときに\app{relx}ライブラリに依存しています。
+SystoolやReltolといった他のツールも以前はカバーされていて\footnote{\href{http://learnyousomeerlang.com/release-is-the-word}{http://learnyousomeerlang.com/release-is-the-word} 訳註: 日本語訳版は \href{https://www.ymotongpoo.com/works/lyse-ja/ja/24\_release\_is\_the\_word.html}{https://www.ymotongpoo.com/works/lyse-ja/ja/24\_release\_is\_the\_word.html}}、ユーザーに多くの力を提供します。
 
-A \app{relx} configuration tuple (within \filename{rebar.config}) for the directory structure above would look like:
+%A \app{relx} configuration tuple (within \filename{rebar.config}) for the directory structure above would look like:
+（\filename{rebar.config}内の）上のようなディレクトリ構造の場合の\app{relx}設定タプルは次のようになります。
 
 \begin{VerbatimText}
 {relx, [
@@ -113,8 +120,10 @@ A \app{relx} configuration tuple (within \filename{rebar.config}) for the direct
 ]}
 \end{VerbatimText}
 
-Calling \command{rebar3 release} will build a release, to be found in the \filename{\_build/default/rel/} directory. Calling \command{rebar3 tar} will generate a tarball at\\
-\filename{\_build/default/rel/demo/demo-1.0.0.tar.gz}, ready to be deployed.
+%Calling \command{rebar3 release} will build a release, to be found in the \filename{\_build/default/rel/} directory. Calling \command{rebar3 tar} will generate a tarball at\\
+%\filename{\_build/default/rel/demo/demo-1.0.0.tar.gz}, ready to be deployed.
+\command{rebar3 release}を呼ぶとリリースをビルドして、\filename{\_build/default/rel/}ディレクトリに置かれます。
+\command{rebar3 tar}を呼ぶとtarballを\filename{\_build/default/rel/demo/demo-1.0.0.tar.gz}に配置し、デプロイ可能となります。
 
 \section{Supervisors and start\_link Semantics}
 \label{sec:supervisors-and-start-link-semantics}
