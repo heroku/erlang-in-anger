@@ -3,7 +3,7 @@
 \label{chap:overload}
 
 %By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
-私が実際に遭遇した最も一般的な障害原因は、圧倒的に稼働中ノードのOutOfMemoryです。さらにそれは通常、境界外に出るメッセージキューに関連します。 \footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} これに対処する方法はたくさんありますが、自身が開発しているシステムを適切に理解することで、どう対処するかを決めることができます。
+私が実際に遭遇した最も一般的な障害原因は、圧倒的に稼働中ノードのOutOfMemoryです。さらにそれは通常、境界外に出るメッセージキューに関連します。 \footnote{メッセージキューが問題になる事例は \ref{chap:crash-dumps} 章、特に \ref{sec:crash-full-mailboxes} 節で説明されます。} これに対処する方法はたくさんありますが、自身が開発しているシステムを適切に理解することで、どう対処するかを決めることができます。
 
 %To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
 事象をとても単純化するために、私が取り組むプロジェクトのほとんどは、大きな浴室のシンクとして視覚化することができます。ユーザーとデータ入力が蛇口から流れています。Erlangシステム自体はシンクとパイプであり、出力（データベース、外部API、外部サービスなど）は下水道です。
