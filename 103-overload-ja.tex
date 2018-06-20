@@ -1,9 +1,12 @@
-\chapter{Planning for Overload}
+%\chapter{Planning for Overload}
+\chapter{過負荷のための計画をたてる}
 \label{chap:overload}
 
-By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
+%By far, the most common cause of failure I've encountered in real-world scenarios is due to the node running out of memory. Furthermore, it is usually related to message queues going out of bounds.\footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} There are plenty of ways to deal with this, but knowing which one to use will require a decent understanding of the system you're working on.
+私が実際に遭遇した最も一般的な障害原因は、圧倒的に稼働中ノードのOutOfMemoryです。さらにそれは通常、境界外に出るメッセージキューに関連します。 \footnote{Figuring out that a message queue is the problem is explained in Chapter \ref{chap:crash-dumps}, specifically in Section \ref{sec:crash-full-mailboxes}} これに対処する方法はたくさんありますが、自身が開発しているシステムを適切に理解することで、どう対処するかを決めることができます。
 
-To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
+%To oversimplify things, most of the projects I end up working on can be visualized as a very large bathroom sink. User and data input are flowing from the faucet. The Erlang system itself is the sink and the pipes, and wherever the output goes (whether it's a database, an external API or service, and so on) is the sewer system.
+事象をとても単純化するために、私が取り組むプロジェクトのほとんどは、大きな浴室のシンクとして視覚化することができます。ユーザーとデータ入力が蛇口から流れています。Erlangシステム自体はシンクとパイプであり、出力（データベース、外部API、外部サービスなど）は下水道です。
 
 \begin{figure}[h!]
   \includegraphics[max height=7cm]{sink.pdf}%
@@ -12,21 +15,29 @@ To oversimplify things, most of the projects I end up working on can be visualiz
    \label{fig:tracing-venn}
 \end{figure}
 
-When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much water in the sink? Are the sewer systems backing up? Did you just design too small a pipe?
+%When an Erlang node dies because of a queue overflowing, figuring out who to blame is crucial. Did someone put too much water in the sink? Are the sewer systems backing up? Did you just design too small a pipe?
+キューがオーバーフローしてErlangノードが死んでしまった場合、誰の責任かを解明できます。誰かがシンクに水を入れすぎましたか？ 下水道が渋滞していますか？ あまりにも小さなパイプを設計しましたか？
 
-Determining what queue blew up is not necessarily hard. This is information that can be found in a crash dump. Finding out why it blew up is trickier. Based on the role of the process or run-time inspection, it's possible to figure out whether causes include fast flooding, blocked processes that won't process messages fast enough, and so on.
+%Determining what queue blew up is not necessarily hard. This is information that can be found in a crash dump. Finding out why it blew up is trickier. Based on the role of the process or run-time inspection, it's possible to figure out whether causes include fast flooding, blocked processes that won't process messages fast enough, and so on.
+どのキューが爆発したかを判断することは必ずしも困難ではありません。これはクラッシュダンプから見つけられる情報です。ただし爆破原因の解明は少し複雑です。プロセスやruntimeの調査に基づいて、高速にキューが溢れたのか、ブロックされたプロセスがメッセージを十分高速に処理できないか、などの原因を把握することができます。
 
-The most difficult part is to decide how to fix it. When the sink gets clogged up by too much waste, we will usually start by trying to make the bathroom sink itself larger (the part of our program that crashed, at the edge). Then we figure out the sink's drain is too small, and optimize that. Then we find out the pipes themselves are too narrow, and optimize that. The overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add sinks or add bathrooms to help with the global input level.
+%The most difficult part is to decide how to fix it. When the sink gets clogged up by too much waste, we will usually start by trying to make the bathroom sink itself larger (the part of our program that crashed, at the edge). Then we figure out the sink's drain is too small, and optimize that. Then we find out the pipes themselves are too narrow, and optimize that. The overload gets pushed further down the system, until the sewers can't take it anymore. At that point, we may try to add sinks or add bathrooms to help with the global input level.
+最も難しい部分は、それをどのように修正するか決めることです。シンクがあまりにも詰まると、私たちは通常、浴室をもっと大きくすることから始めます（クラッシュしたプログラムの近辺から）。次に、シンクのドレインが小さすぎると分かり、それを最適化します。それから、パイプそのものが狭すぎることが分かり、それを最適化します。下水道がそれ以上受け取ることができなくなるまで過負荷はシステムのさらに下に押し込まれます。そのタイミングで、システム全体への入力処理を助けるために、シンクを追加したり、浴槽を追加したりすることもあります。
 
-Then there's a point where things can't be improved anymore at the bathroom's level. There are too many logs sent around, there's a bottleneck on databases that \emph{need} the consistency, or there's simply not enough knowledge or manpower in your organization to improve things there.
+%Then there's a point where things can't be improved anymore at the bathroom's level. There are too many logs sent around, there's a bottleneck on databases that \emph{need} the consistency, or there's simply not enough knowledge or manpower in your organization to improve things there.
+あと、その浴室レベルでは事象を改善できないこともあります。あまりにも多くのログが送信されるため、一貫性を必要とするデータベースにボトルネックがあったり、または単に事象を解決するための組織内の知識や人材が不足していることもあります。
 
-By finding that point, we identified what the \emph{true bottleneck} of the system was, and all the prior optimization was nice (and likely expensive), but it was more or less in vain.
+%By finding that point, we identified what the \emph{true bottleneck} of the system was, and all the prior optimization was nice (and likely expensive), but it was more or less in vain.
+こういった点を見つけることで、システムの \emph{真のボトルネック} が何であるかを特定し、過去の全ての良いと思っていた（そして高いかもしれない）最適化は、多かれ少なかれは無駄であることも特定できます。
 
-We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on).
+%We need to be more clever, and so things are moved back up a level. We try to massage the information going in the system to make it either lighter (whether it is through compression, better algorithms and data representation, caching, and so on).
+私たちはより賢くなる必要があります。そして、世もレベルアップしています。私たちは、システムに入る情報をより軽いもの(圧縮、より良いアルゴリズムとデータ表現、キャッシングなど)に変換しようとします。
 
-Even then, there are times where the overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash. These mechanisms fall into two broad strategies: back-pressure and load-shedding.
+%Even then, there are times where the overload will be too much, and we have to make the hard decisions between restricting the input to the system, discarding it, or accepting that the system will reduce its quality of service up to the point it will crash. These mechanisms fall into two broad strategies: back-pressure and load-shedding.
+それでもあまりの過負荷が来ることがあります、そしてシステムへの入力を制限するか、入力を廃棄するか、システムがクラッシュするサービスレベルを受け入れるか、を決めなければなりません。これらのメカニズムは、2つの幅広いストラテジーに分類されます：バックプレッシャーと負荷分散。
 
-We'll explore them in this chapter, along with common events that end up causing Erlang systems to blow up.
+%We'll explore them in this chapter, along with common events that end up causing Erlang systems to blow up.
+この章では、Erlangシステムの爆発を引き起こす一般的なイベントとともに、それらを追求します。
 
 \section{Common Overload Sources}
 
