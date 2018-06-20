@@ -257,18 +257,26 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
 その理由は、もし通常の処理の最中に障害が何度も起きることが予想されるのであれば、それが始めに起きるか後で起きるかに違いはありません。
 いずれにせよその対応をしなければならないことに変わりはなく、またシステムのその部分に関して、保証の厳格さが少ないほうがしばしば良い解決策になります。
 
-\subsection{Application Strategies}
+%\subsection{Application Strategies}
+\subsection{アプリケーション戦略}
 \label{subsec:start-link-application-strategies}
 
-No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
+%No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
+何があろううとも、ノードで障害が連続して起きることはノードの死刑ではありません。
+システムが様々なOTPアプリケーションに分割されてしまえば、ノードにとってどのアプリケーションが致命的でどれがそうでないかを決められるようになります。
+各OTPアプリケーションは3つの方法で起動できます。temporary (一時的)、transient (暫定的)、permanent (永続的)のどれか一つを選択でき、\expression{application:start(Name, Type)}と手動で起動するか、あるいはリリース内の設定ファイルに書くことで可能です。
 
 \begin{itemize*}
-	\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
-	\item \term{transient}: if the app terminates for reason \term{normal}, that's ok. Any other reason for termination shuts down the entire system.
-	\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
+  %\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
+  \item \term{permanent}: \function{application:stop/1}を手動で実行した場合を除いて、アプリケーションが終了したとき、システム全体が落ちます。
+  %\item \term{transient}: if the app terminates for reason \term{normal}, that's ok. Any other reason for termination shuts down the entire system.
+  \item \term{transient}: アプリケーションが\term{normal}が原因で終了した場合は問題ありません。他の理由で終了した場合はシステム全体を終了させます。
+  %\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
+  \item \term{temporary}: アプリケーションはいかなる理由でも停止できます。停止したことは報告されますが、何も悪いことは起きません。  
 \end{itemize*}
 
-It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+%It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+また\emph{インクルードされたアプリケーション}としてアプリケーションを起動することも可能です。これは自分のスーバーバイザーの下で起動し、再起動も独自の戦略で行います。
 
 \section{Exercises}
 
