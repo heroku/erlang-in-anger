@@ -275,32 +275,51 @@ ok
 %In doubt, start with the most restrictive tracing possible, with low limits, and progressively increase your scope.
 よくわからない場合、最も制限した量でトレースを開始し、少しずつ増やしていってください。
 
-\section{Exercises}
+%\section{Exercises}
+\section{演習}
 
-\subsection*{Review Questions}
+#\subsection*{Review Questions}
+\subsection*{復習問題}
 
 \begin{enumerate}
-	\item Why is debugger use generally limited on Erlang?
-	\item What are the options you can use to trace OTP processes?
-	\item What determines whether a given set of functions or processes get traced?
-	\item How can you stop tracing with \module{recon\_trace}? With other tools?
-	\item How can you trace non-exported function calls?
+	%\item Why is debugger use generally limited on Erlang?
+	\item Erlangでは通常なぜデバッガの使用が制限されていますか？
+	%\item What are the options you can use to trace OTP processes?
+	\item OTPプロセスをトレースする時に使用できるオプションは？
+	%\item What determines whether a given set of functions or processes get traced?
+	\item 指定の関数やプロセスがトレースされるかどうかを決めるのは何？
+	%\item How can you stop tracing with \module{recon\_trace}? With other tools?
+	%\item \module{recon\_trace}あるいはその他のツールで、トレースを止める方法は？
+	%\item How can you trace non-exported function calls?
+	\item エクスポートされていない関数の呼び出しをトレースする方法は？
 \end{enumerate}
 
-\subsection*{Open-ended Questions}
+%\subsection*{Open-ended Questions}
+\subsection*{自由回答}
 
 \begin{enumerate}
-	\item When would you want to move time stamping of traces to the VM's trace mechanisms directly? What would be a possible downside of doing this?	
-	\item Imagine that traffic sent out of a node does so over SSL, over a multi-tenant system. However, due to wanting to validate data sent (following a customer complain), you need to be able to inspect what was seen clear text. Can you think up a plan to be able to snoop in the data sent to their end through the \module{ssl} socket, without snooping on the data sent to any other customer?
+	%\item When would you want to move time stamping of traces to the VM's trace mechanisms directly? What would be a possible downside of doing this?	
+	\item トレースにタイムスタンプを記録する時に、VMのトレース機能を直接利用するようにしたくなるのはどういう時ですか？ これによる欠点は何ですか？
+
+	%\item Imagine that traffic sent out of a node does so over SSL, over a multi-tenant system. However, due to wanting to validate data sent (following a customer complain), you need to be able to inspect what was seen clear text. Can you think up a plan to be able to snoop in the data sent to their end through the \module{ssl} socket, without snooping on the data sent to any other customer?
+	\item ノードから送信されるトラフィックがSSL経由の、マルチテナントシステムを想像してみてください。ただし、（顧客からのクレームに対応するため）送信されるデータをバリデートしたいので、平文で中身を参照できる必要があります。\module{ssl}ソケット経由で送信されたデータを覗くための方法を考えられますか？ しかも、その他の顧客宛のデータは覗かずにです。
 \end{enumerate}
 
-\subsection*{Hands-On}
+%\subsection*{Hands-On}
+\subsection*{ハンズオン}
 
-Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo} (these may require a decent understanding of the code there):
+%Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo} (these may require a decent understanding of the code there):
+\href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}にあるコードを利用してください（コードの中身をきちんと理解している必要があるかもしれません）
 
 \begin{enumerate}
-	\item Can chatty processes (\module{council\_member}) message themselves? (\emph{hint: can this work with registered names? Do you need to check the chattiest process and see if it messages itself?})
-	\item Can you estimate the overall frequency at which messages are sent globally?
-	\item Can you crash a node using any of the tracing tools? (\emph{hint: dbg makes it easier due to its greater flexibility})
+	%\item Can chatty processes (\module{council\_member}) message themselves? (\emph{hint: can this work with registered names? Do you need to check the chattiest process and see if it messages itself?})
+  \item メッセージを吐きまくるプロセス(\module{council\_member})は自身にメッセージを送ることができますか？ （\emph{ヒント：これは登録された名前(register_name)で動作しますか？ その吐きまくるプロセスを確認、また、自身にメッセージを送ったかを知る必要はありますか？})
+
+	%\item Can you estimate the overall frequency at which messages are sent globally?
+	\item 全体で送られるメッセージの頻度を見積もることはできますか？
+
+	%\item Can you crash a node using any of the tracing tools? (\emph{hint: dbg makes it easier due to its greater flexibility})
+  \item いずれかのトレースツールを使って、ノードをクラッシュさせることはできますか？（\emph{ヒント：非常に柔軟性が高いので、dbg を使うと簡単です})
+
 \end{enumerate}
 
