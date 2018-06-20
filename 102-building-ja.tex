@@ -6,11 +6,16 @@
 多くのErlangに関する書籍はErlang/OTPアプリケーションのビルド方法に関しては説明していますが、Erlangのコミュニティが開発しているオープンソースとの連携方法まで含めた深い解説を行っているものはほとんどありません。
 中には意図的にその話題を避けているものさえあります。本章ではErlangでのオープンソースとの連携に関して簡単に案内します。
 
-OTP applications are the vast majority of the open source code people will encounter. In fact, many people who would need to build an OTP release would do so as one umbrella OTP application. 
+%OTP applications are the vast majority of the open source code people will encounter. In fact, many people who would need to build an OTP release would do so as one umbrella OTP application.
+世間で見かけるオープンソースコードの大半がOTPアプリケーションです。事実、OTPリリースをビルドする多くの人はひとかたまりのOTPアプリケーションとしてビルドしています。
 
-If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build an OTP application or release is left up to the Erlang introduction book you have at hand.}
+%If what you're writing is a stand-alone piece of code that could be used by someone building a product, it's likely an OTP application. If what you're building is a product that stands on its own and should be deployed by users as-is (or with a little configuration), what you should be building is an OTP release.\footnote{The details of how to build an OTP application or release is left up to the Erlang introduction book you have at hand.}
+あなたが書いているものがプロジェクトを作っている誰かに使われる可能性がある独立したコードであれば、おそらくそれはOTPアプリケーションでしょう。
+あなたが作っているものがユーザーがそのままの形でデプロイするような単独で動作するプロダクトであれば、それはOTPリリースでしょう。\footnote{OTPアプリケーションとOTPリリースのビルドの仕方についてはお手元にあるErlangの入門書に譲ります。}
 
-The main build tools supported are \app{rebar3} and \app{erlang.mk}. The former is a build tool and package manager trying to make it easy to develop and release Erlang libraries and systems in a repeatable manner, while the latter is a very fancy makefile that offers a bit less for production and releases but allows more flexibility. In this chapter, I'll mostly focus on using \app{rebar3} to build things, given it's the de-facto standard, is a tool I know well, and that \app{erlang.mk} applications tend to also be supported by \app{rebar3} as dependencies (the opposite is also true).
+%The main build tools supported are \app{rebar3} and \app{erlang.mk}. The former is a build tool and package manager trying to make it easy to develop and release Erlang libraries and systems in a repeatable manner, while the latter is a very fancy makefile that offers a bit less for production and releases but allows more flexibility. In this chapter, I'll mostly focus on using \app{rebar3} to build things, given it's the de-facto standard, is a tool I know well, and that \app{erlang.mk} applications tend to also be supported by \app{rebar3} as dependencies (the opposite is also true).
+サポートされている主なビルドツールは\app{rebar3}と\app{erlang.mk}です。前者はビルドツールでありパッケージマネージャーで、ErlangライブラリとErlang製システムを繰り返し使える形で簡単に開発してリリースできるようにしてくれるものです。一方で後者は特殊なmakefileで本番用やリリースにはそれほど向いていませんが、より柔軟な記述が出来るようになっています。
+本章では、\app{rebar3}がデファクトスタンダードになっていること、自分がよく知っていること、また\app{erlang.mk}は\app{rebar3}の依存先としてサポートされている事が多いといった理由から、\app{rebar3}を使ったビルドに焦点をあてます。
 
 \section{Project Structure}
 \label{sec:project-structure}
