@@ -195,10 +195,12 @@ Erlangのスーバーバイザーとその監視ツリーの非常に重要な�
 障害耐性のあるシステムを設計する場合にこの点は非常に重要な特徴です。
 そうです、スーバーバイザーとは再起動についてですが、それは既知の安定した状態への再起動であるべきです。
 
-\subsection{Example: Initializing without guaranteeing connections}
+%\subsection{Example: Initializing without guaranteeing connections}
+\subsection{例: 接続を保証しない初期化}
 \label{subsec:start-link-initializing-without-guaranteeing-connections}
 
-The following code attempts to guarantee a connection as part of the process' state:
+%The following code attempts to guarantee a connection as part of the process' state:
+次のコードはプロセスの状態として接続を保証しようとしています。
 
 \begin{VerbatimText}
 init(Args) ->
@@ -209,20 +211,21 @@ init(Args) ->
 [...]
 
 handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
-    %% try reconnecting in a loop
+    %% ループで再接続を試みる
     case connect(Opts) of
         {ok, New} -> {noreply, S#state{sock=New}};
          _ -> self() ! reconnect, {noreply, S}
     end;
 \end{VerbatimText}
 
-Instead, consider rewriting it as:
+%Instead, consider rewriting it as:
+かわりに、次のように書き換えることを検討してみましょう。
 
 \begin{VerbatimText}
 init(Args) ->
     Opts = parse_args(Args),
-    %% you could try connecting here anyway, for a best
-    %% effort thing, but be ready to not have a connection.
+    %% いずれにせよここでベストエフォートで接続を試みて
+    %% 接続が出来なかった場合には備えましょう。
     self() ! reconnect,
     {ok, #state{sock=undefined, opts=Opts}}.
 
@@ -236,7 +239,8 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
     end;
 \end{VerbatimText}
 
-You now allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
+%You now allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
+初期化をより少ない保証で行えます。つまり\emph{接続可能}から\emph{接続マネージャー利用可能}という保証に変わりました。
 
 \subsection{In a nutshell}
 \label{subsec:start-link-in-a-nutshell}
