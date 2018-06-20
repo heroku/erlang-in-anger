@@ -181,17 +181,26 @@ Erlangのスーバーバイザーとその監視ツリーの非常に重要な�
 外部サービスが落ちることが予想されるのであれば、システムでそのサービスの存在を保証すべきではありません。
 私たちが扱っているのは現実世界であって、外部依存先に障害が起きることは常にあり得るのです。
 
-\subsection{Side Effects}
+%\subsection{Side Effects}
+\subsection{副作用}
 \label{subsec:start-link-side-effects}
 
-Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, one that depends on your business rules and what you can or can't do to a client, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole. 
+%Of course, the libraries and processes that call such a client will then error out if they don't expect to work without a database. That's an entirely different issue in a different problem space, one that depends on your business rules and what you can or can't do to a client, but one that is possible to work around. For example, consider a client for a service that stores operational metrics — the code that calls that client could very well ignore the errors without adverse effects to the system as a whole.
+もちろん、そのようなクライアントを呼ぶライブラリやプロセスは、データベースなしに動作することを想定していなければ、その後エラーを吐きます。
+それはまったく異なる問題空間のまったく異なる問題で、ビジネスルールやクライアントで何が出来て何が出来ないかなどに依存するものです。しかし、ワークアラウンド可能なものでもあります。
+たとえば、運用系のメトリクスを保存するサービスのクライアントを考えましょう。---クライアントを呼び出すコードはシステム全体に悪影響を及ぼすことなくエラーを無視できるでしょう。
 
-The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
+%The difference in both initialization and supervision approaches is that the client's callers make the decision about how much failure they can tolerate, not the client itself. That's a very important distinction when it comes to designing fault-tolerant systems. Yes, supervisors are about restarts, but they should be about restarts to a stable known state.
+初期化と監視での手法の違いは、クライアント自身ではなくクライアントの呼び出し側が障害にどの程度耐えられるか決められるという点です。
+障害耐性のあるシステムを設計する場合にこの点は非常に重要な特徴です。
+そうです、スーバーバイザーとは再起動についてですが、それは既知の安定した状態への再起動であるべきです。
 
-\subsection{Example: Initializing without guaranteeing connections}
+%\subsection{Example: Initializing without guaranteeing connections}
+\subsection{例: 接続を保証しない初期化}
 \label{subsec:start-link-initializing-without-guaranteeing-connections}
 
-The following code attempts to guarantee a connection as part of the process' state:
+%The following code attempts to guarantee a connection as part of the process' state:
+次のコードはプロセスの状態として接続を保証しようとしています。
 
 \begin{VerbatimText}
 init(Args) ->
@@ -202,20 +211,21 @@ init(Args) ->
 [...]
 
 handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
-    %% try reconnecting in a loop
+    %% ループで再接続を試みる
     case connect(Opts) of
         {ok, New} -> {noreply, S#state{sock=New}};
          _ -> self() ! reconnect, {noreply, S}
     end;
 \end{VerbatimText}
 
-Instead, consider rewriting it as:
+%Instead, consider rewriting it as:
+かわりに、次のように書き換えることを検討してみましょう。
 
 \begin{VerbatimText}
 init(Args) ->
     Opts = parse_args(Args),
-    %% you could try connecting here anyway, for a best
-    %% effort thing, but be ready to not have a connection.
+    %% いずれにせよここでベストエフォートで接続を試みて
+    %% 接続が出来なかった場合には備えましょう。
     self() ! reconnect,
     {ok, #state{sock=undefined, opts=Opts}}.
 
@@ -229,50 +239,76 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
     end;
 \end{VerbatimText}
 
-You now allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
+%You now allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
+初期化をより少ない保証で行えます。つまり\emph{接続可能}から\emph{接続マネージャー利用可能}という保証に変わりました。
 
-\subsection{In a nutshell}
+%\subsection{In a nutshell}
+\subsection{要約}
 \label{subsec:start-link-in-a-nutshell}
 
-Production systems I have worked with have been a mix of both approaches.
+%Production systems I have worked with have been a mix of both approaches.
+私が関わってきた本番システムは両方の手法が混ざったものでした。
 
-Things like configuration files, access to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+%Things like configuration files, access to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+設定ファイル、ファイルシステムへのアクセス(たとえばログ目的)、依存しているローカルのリソース(ログ用にUDPポートを開ける)、ディスクやネットワークから安定した状態を復元するなどといったものはスーパーバイザーの要件として、どれだけ長時間かかっても同期的に読み込むことに決めるでしょう。(アプリケーションによってはまれに起動に10分以上かかることもあるでしょうが、それはおそらく間違った情報を配信してしないよう、基準の状態として動作するために\emph{必要な}ギガバイト単位のデータを同期しているので構わないのです。)
 
-On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations,
-then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
+%On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations, then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
+一方で、ローカルではないデータベースや外部のサービスに依存しているコードは、より素早い監視ツリーのブートとともに部分的な起動を適用させるでしょう。
+その理由は、もし通常の処理の最中に障害が何度も起きることが予想されるのであれば、それが始めに起きるか後で起きるかに違いはありません。
+いずれにせよその対応をしなければならないことに変わりはなく、またシステムのその部分に関して、保証の厳格さが少ないほうがしばしば良い解決策になります。
 
-\subsection{Application Strategies}
+%\subsection{Application Strategies}
+\subsection{アプリケーション戦略}
 \label{subsec:start-link-application-strategies}
 
-No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
+%No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
+何があろううとも、ノードで障害が連続して起きることはノードの死刑ではありません。
+システムが様々なOTPアプリケーションに分割されてしまえば、ノードにとってどのアプリケーションが致命的でどれがそうでないかを決められるようになります。
+各OTPアプリケーションは3つの方法で起動できます。temporary (一時的)、transient (暫定的)、permanent (永続的)のどれか一つを選択でき、\expression{application:start(Name, Type)}と手動で起動するか、あるいはリリース内の設定ファイルに書くことで可能です。
 
 \begin{itemize*}
-	\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
-	\item \term{transient}: if the app terminates for reason \term{normal}, that's ok. Any other reason for termination shuts down the entire system.
-	\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
+  %\item \term{permanent}: if the app terminates, the entire system is taken down, excluding manual termination of the app with \function{application:stop/1}.
+  \item \term{permanent}: \function{application:stop/1}を手動で実行した場合を除いて、アプリケーションが終了したとき、システム全体が落ちます。
+  %\item \term{transient}: if the app terminates for reason \term{normal}, that's ok. Any other reason for termination shuts down the entire system.
+  \item \term{transient}: アプリケーションが\term{normal}が原因で終了した場合は問題ありません。他の理由で終了した場合はシステム全体を終了させます。
+  %\item \term{temporary}: the application is allowed to stop for any reason. It will be reported, but nothing bad will happen.
+  \item \term{temporary}: アプリケーションはいかなる理由でも停止できます。停止したことは報告されますが、何も悪いことは起きません。  
 \end{itemize*}
 
-It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+%It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
+また\emph{インクルードされたアプリケーション}としてアプリケーションを起動することも可能です。これは自分のスーバーバイザーの下で起動し、再起動も独自の戦略で行います。
 
-\section{Exercises}
+%\section{Exercises}
+\section{演習}
 
-\subsection*{Review Questions}
+%\subsection*{Review Questions}
+\subsection*{復習問題}
 
 \begin{enumerate}
-	\item  Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
-	\item What are the three application strategies? What do they do?
-	\item What are the main differences between the directory structure of an app and a release?
-	\item When should you use a release?
-	\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
+  %\item Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
+  \item Erlangの監視ツリーは深さ優先で起動されますか。それとも幅優先ですか。同期的ですか、非同期ですか。
+  %\item What are the three application strategies? What do they do?
+  \item 3つのアプリケーション戦略はなんでしょうか。それぞれ何をするものでしょう。  
+  %\item What are the main differences between the directory structure of an app and a release?
+  \item アプリケーションとリリースのディレクトリ構造の主な違いはなんでしょうか。  
+  %\item When should you use a release?
+  \item リリースを使うべき場面はいつでしょう。  
+  %\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
+  \item プロセスのinit関数に含まれるべき状態の例を2つ挙げてください。また含まれるべきでない状態の例も2つ挙げてください。
 \end{enumerate}
 
-\subsection*{Hands-On}
+%\subsection*{Hands-On}
+\subsection*{ハンズオン}
 
-Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+%Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+\href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}にあるコードを使って次に答えてください。
 
 \begin{enumerate}
-	\item Extract the main application hosted in the release to make it independent, and includable in other projects.
-	\item Host the application somewhere (Github, Bitbucket, local server), and build a release with that application as a dependency.
-	\item The main application's workers (\module{council\_member}) starts a server and connects to it in its \function{init/1} function. Can you make this connection happen outside of the init function's? Is there a benefit to doing so in this specific case?
+  %\item Extract the main application hosted in the release to make it independent, and includable in other projects.
+  \item リリースにホストされているmainアプリケーションを抜き出して独立したアプリケーションにして、他のプロジェクトにインクルード可能にしてください。
+  %\item Host the application somewhere (Github, Bitbucket, local server), and build a release with that application as a dependency.
+  \item アプリケーションをどこかにホストしてください。(GitHub、Bitbukect、ローカルサーバーなど)そしてそのアプリケーションに依存するリリースをビルドしてください。
+  %\item The main application's workers (\module{council\_member}) starts a server and connects to it in its \function{init/1} function. Can you make this connection happen outside of the init function's? Is there a benefit to doing so in this specific case?
+  \item mainアプリケーションのワーカー(\module{council\_member})はサーバーの起動とそこへの接続を自身の\function{init/1}関数で行っています。この接続をinit関数の外で行なえますか。このアプリの用途においてそうすることの利点はあるでしょうか。 
 \end{enumerate}
 
