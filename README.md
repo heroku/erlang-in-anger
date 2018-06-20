@@ -51,7 +51,7 @@ $ docker-compose up
 # 進捗
 - [x] 000: Copyright
 - [x] 001: Introduction
-- [ ] 101: How to Dive into a Code Base
+- [x] 101: How to Dive into a Code Base
 - [ ] 102: Building Open Source Erlang Software
 - [ ] 103: Planning for Overload
 - [ ] 104: Connecting to Remote Nodes
