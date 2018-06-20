@@ -278,25 +278,37 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
 %It is also possible to start an application as an \emph{included application}, which starts it under your own OTP supervisor with its own strategy to restart it.
 また\emph{インクルードされたアプリケーション}としてアプリケーションを起動することも可能です。これは自分のスーバーバイザーの下で起動し、再起動も独自の戦略で行います。
 
-\section{Exercises}
+%\section{Exercises}
+\section{演習}
 
-\subsection*{Review Questions}
+%\subsection*{Review Questions}
+\subsection*{復習問題}
 
 \begin{enumerate}
-	\item  Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
-	\item What are the three application strategies? What do they do?
-	\item What are the main differences between the directory structure of an app and a release?
-	\item When should you use a release?
-	\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
+  %\item Are Erlang supervision trees started depth-first? breadth-first? Synchronously or asynchronously?
+  \item Erlangの監視ツリーは深さ優先で起動されますか。それとも幅優先ですか。同期的ですか、非同期ですか。
+  %\item What are the three application strategies? What do they do?
+  \item 3つのアプリケーション戦略はなんでしょうか。それぞれ何をするものでしょう。  
+  %\item What are the main differences between the directory structure of an app and a release?
+  \item アプリケーションとリリースのディレクトリ構造の主な違いはなんでしょうか。  
+  %\item When should you use a release?
+  \item リリースを使うべき場面はいつでしょう。  
+  %\item Give two examples of the type of state that can go in a process' init function, and two examples of the type of state that shouldn't go in a process' init function
+  \item プロセスのinit関数に含まれるべき状態の例を2つ挙げてください。また含まれるべきでない状態の例も2つ挙げてください。
 \end{enumerate}
 
-\subsection*{Hands-On}
+%\subsection*{Hands-On}
+\subsection*{ハンズオン}
 
-Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+%Using the code at \href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}:
+\href{https://github.com/ferd/recon\_demo}{https://github.com/ferd/recon\_demo}にあるコードを使って次に答えてください。
 
 \begin{enumerate}
-	\item Extract the main application hosted in the release to make it independent, and includable in other projects.
-	\item Host the application somewhere (Github, Bitbucket, local server), and build a release with that application as a dependency.
-	\item The main application's workers (\module{council\_member}) starts a server and connects to it in its \function{init/1} function. Can you make this connection happen outside of the init function's? Is there a benefit to doing so in this specific case?
+  %\item Extract the main application hosted in the release to make it independent, and includable in other projects.
+  \item リリースにホストされているmainアプリケーションを抜き出して独立したアプリケーションにして、他のプロジェクトにインクルード可能にしてください。
+  %\item Host the application somewhere (Github, Bitbucket, local server), and build a release with that application as a dependency.
+  \item アプリケーションをどこかにホストしてください。(GitHub、Bitbukect、ローカルサーバーなど)そしてそのアプリケーションに依存するリリースをビルドしてください。
+  %\item The main application's workers (\module{council\_member}) starts a server and connects to it in its \function{init/1} function. Can you make this connection happen outside of the init function's? Is there a benefit to doing so in this specific case?
+  \item mainアプリケーションのワーカー(\module{council\_member})はサーバーの起動とそこへの接続を自身の\function{init/1}関数で行っています。この接続をinit関数の外で行なえますか。このアプリの用途においてそうすることの利点はあるでしょうか。 
 \end{enumerate}
 
