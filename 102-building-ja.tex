@@ -242,15 +242,20 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
 %You now allow initializations with fewer guarantees: they went from \emph{the connection is available} to \emph{the connection manager is available}.
 初期化をより少ない保証で行えます。つまり\emph{接続可能}から\emph{接続マネージャー利用可能}という保証に変わりました。
 
-\subsection{In a nutshell}
+%\subsection{In a nutshell}
+\subsection{要約}
 \label{subsec:start-link-in-a-nutshell}
 
-Production systems I have worked with have been a mix of both approaches.
+%Production systems I have worked with have been a mix of both approaches.
+私が関わってきた本番システムは両方の手法が混ざったものでした。
 
-Things like configuration files, access to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+%Things like configuration files, access to the file system (say for logging purposes), local resources that can be depended on (opening UDP ports for logs), restoring a stable state from disk or network, and so on, are things I'll put into requirements of a supervisor and may decide to synchronously load no matter how long it takes (some applications may just end up having over 10 minute boot times in rare cases, but that's okay because we're possibly syncing gigabytes that we \emph{need} to work with as a base state if we don't want to serve incorrect information.)
+設定ファイル、ファイルシステムへのアクセス(たとえばログ目的)、依存しているローカルのリソース(ログ用にUDPポートを開ける)、ディスクやネットワークから安定した状態を復元するなどといったものはスーパーバイザーの要件として、どれだけ長時間かかっても同期的に読み込むことに決めるでしょう。(アプリケーションによってはまれに起動に10分以上かかることもあるでしょうが、それはおそらく間違った情報を配信してしないよう、基準の状態として動作するために\emph{必要な}ギガバイト単位のデータを同期しているので構わないのです。)
 
-On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations,
-then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
+%On the other hand, code that depends on non-local databases and external services will adopt partial startups with quicker supervision tree booting because if the failure is expected to happen often during regular operations, then there's no difference between now and later. You have to handle it the same, and for these parts of the system, far less strict guarantees are often the better solution.
+一方で、ローカルではないデータベースや外部のサービスに依存しているコードは、より素早い監視ツリーのブートとともに部分的な起動を適用させるでしょう。
+その理由は、もし通常の処理の最中に障害が何度も起きることが予想されるのであれば、それが始めに起きるか後で起きるかに違いはありません。
+いずれにせよその対応をしなければならないことに変わりはなく、またシステムのその部分に関して、保証の厳格さが少ないほうがしばしば良い解決策になります。
 
 \subsection{Application Strategies}
 \label{subsec:start-link-application-strategies}
