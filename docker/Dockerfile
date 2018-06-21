@@ -64,7 +64,9 @@ RUN apk add --no-cache --virtual .texlive-deps $TEXLIVE_DEPS && \
       -profile /tmp/install-tl-unx/texlive.profile && \
     tlmgr install latexmk collection-luatex collection-langjapanese \
       collection-fontsrecommended type1cm mdframed needspace fontaxes \
-      boondox everyhook svn-prov framed placeins adjustbox collectbox comment && \
+      boondox everyhook svn-prov framed placeins adjustbox \
+      collectbox comment fncychap && \
+    luaotfload-tool -u -vvv && \
     apk del .texlive-deps
 
 VOLUME ["/workdir"]

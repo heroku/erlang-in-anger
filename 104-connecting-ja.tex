@@ -91,6 +91,7 @@ User switch command
 erl -name local@domain.name -remsh remote@domain.name
 \end{VerbatimText}
 
+%And as follows for short names:
 ショートネームを使う場合は、以下のようになります。
 
 \begin{VerbatimText}
@@ -100,7 +101,7 @@ erl -sname local@domain -remsh remote@domain
 %All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid.
 その他の引数(例えば \command{-hidden} や \command{-setcookie \$COOKIE})も利用可能です。
 %The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
-下で動いている仕組みはジョブ制御モードの時と同じですが、最初のシェルはローカルではなくリモートで立ち上がります（ジョブ制御モードではローカルでした）。
+下で動いている仕組みはジョブ制御モードの時と同じですが、最初のシェルはローカルではなくリモートで立ち上がります（ジョブ制御では依然としてローカルです）。
 %\command{\^{}G}  remains the safest way to exit the remote shell.
 リモートシェルから抜ける際にも最も安全な方法は先ほどと変わらず、\command{\^{}G}です。
 

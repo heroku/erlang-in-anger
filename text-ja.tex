@@ -1,8 +1,32 @@
-\documentclass[autodetect-engine, dvipdfmx-if-dvi, base=11pt, oneside, ja=standard, jafont=sourcehan-jp]{bxjsreport}
+\documentclass[autodetect-engine, dvipdfmx-if-dvi, base=11pt, oneside, ja=standard]{bxjsreport}
 % !TEX encoding = UTF-8 Unicode
 \usepackage{graphicx}
 \usepackage{text}
 \usepackage{comment}
+
+% 日本語フォント設定
+\usepackage[sourcehan-jp, nfssonly, deluxe]{luatexja-preset}
+
+% 強調（\emph）をボールドゴシックに設定
+\let\emph\relax
+\DeclareTextFontCommand{\emph}{\gtfamily\bfseries}
+
+% チャプタータイトルの設定
+\usepackage[Glenn]{fncychap}
+\ChTitleVar{\bfseries\Large\mcfamily\rmfamily}
+\makeatletter
+\renewcommand{\DOCH}{%
+  \settoheight{\myhi}{\CTV\FmTi{Test}}
+  \setlength{\py}{\baselineskip}
+  \addtolength{\py}{\RW}
+  \addtolength{\py}{\myhi}
+  \setlength{\pyy}{\py}
+  \addtolength{\pyy}{-1\RW}
+  \raggedright
+  \CNV\FmN{\@chapapp}\space\CNoV\thechapter\CNV\FmN{\@chappos}
+  \hskip 3pt\mghrulefill{\RW}\rule[-1\pyy]{2\RW}{\py}\par\nobreak
+}
+\makeatother
 
 % GitのコミットIDを埋め込む用
 \input{vc.tex}
