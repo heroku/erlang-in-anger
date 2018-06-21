@@ -6,7 +6,7 @@
 ErlangとBEAM VMの機能で、およそどれぐらいのことをトレースできるかはあまり知られておらず、また全然使われていません。
 
 %Forget your debuggers, their use is too limited.\footnote{One common issue with debuggers that let you insert break points and step through a program is that they are incompatible with many Erlang programs: put a break point in one process and the ones around keep going. In practice, this turns debugging into a very limited activity because as soon as a process needs to interact with the one you're debugging, its calls start timing out and crashing, possibly taking down the entire node with it. Tracing, on the other hand, doesn't interfere with program execution, but still gives you all the data you need.} Tracing makes sense in Erlang at all steps of your system's life cycle, whether it's for development or for diagnosing a running production system.
-使えるところが限られているので、デバッガのことは忘れてください。\footnote{デバッガでブレークポイントを追加してステップ実行する時の代表的な問題は、多くのErlangプログラムとうまくやりとりができないことです。あるプロセスがブレークポイントで止まっても、その他のプロセスは動作し続けます。そのため、プロセスがデバッグ対象のプロセスとやりとりが必要なときにはすぐに、プロセス呼び出しがタイムアウトしてクラッシュし、おそらくノード全体を落としてしまいます。ですから、デバックは非常に限定的なものとなります。一方でトレースはプログラムの実行を邪魔することは無く、また必要なデータをすべて取得することができます。} Erlangでは開発中あるいは稼働中の本番システムの診断であっても、システムのライフサイクルのすべての場所において、トレースは有効です。
+使えるところが限られているので、デバッガのことは忘れてください\footnote{デバッガでブレークポイントを追加してステップ実行する時の代表的な問題は、多くのErlangプログラムとうまくやりとりができないことです。あるプロセスがブレークポイントで止まっても、その他のプロセスは動作し続けます。そのため、プロセスがデバッグ対象のプロセスとやりとりが必要なときにはすぐに、プロセス呼び出しがタイムアウトしてクラッシュし、おそらくノード全体を落としてしまいます。ですから、デバックは非常に限定的なものとなります。一方でトレースはプログラムの実行を邪魔することは無く、また必要なデータをすべて取得することができます。}。Erlangでは、トレースは開発中あるいは稼働中の本番システムの診断など、システムのライフサイクルのどこでも便利です。
 
 %There are a few options available to trace Erlang programs:
 トレースを行ういくつかのErlangプログラムがあります。
@@ -14,7 +14,7 @@ ErlangとBEAM VMの機能で、およそどれぐらいのことをトレース�
 
 \begin{itemize}
 %	\item \module{sys}\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} comes standard with OTP and allows the user to set custom tracing functions, log all kinds of events, and so on. It's generally complete and fine to use for development. It suffers a bit in production because it doesn't redirect IO to remote shells, and doesn't have rate-limiting capabilities for trace messages. It is still recommended to read the documentation for the module.
-	\item \module{sys}\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} はOTPに標準で付属されており、利用者はカスタマイズしたトレース機能や、あらゆる種類のイベントのロギングなどができます。多くの場合、開発用として完全かつ最適です。一方で、IOをリモートシェルにリダイレクトしないですし、メッセージのトレースのレート制限機能を持たないため、本番環境にはあまり向きません。このモジュールのドキュメントを読むことをお勧めします。
+	\item \module{sys}\footnote{\href{http://www.erlang.org/doc/man/sys.html}{http://www.erlang.org/doc/man/sys.html}} はOTPに標準で付属されており、利用者はトレース機能のカスタマイズや、あらゆる種類のイベントのロギングなどができます。多くの場合、開発用として完全かつ最適です。一方で、IOをリモートシェルにリダイレクトしないですし、メッセージのトレースのレート制限機能を持たないため、本番環境にはあまり向きません。このモジュールのドキュメントを読むことをお勧めします。
 
 %	\item \otpapp{dbg}\footnote{\href{http://www.erlang.org/doc/man/dbg.html}{http://www.erlang.org/doc/man/dbg.html}} also comes standard with Erlang/OTP. Its interface is a bit clunky in terms of usability, but it's entirely good enough to do what you need. The problem with it is that you \emph{have to know what you're doing}, because \otpapp{dbg} can log absolutely everything on the node and kill one in under two seconds.
 \item \otpapp{dbg}\footnote{\href{http://www.erlang.org/doc/man/dbg.html}{http://www.erlang.org/doc/man/dbg.html}}も Erlang/OTPに標準で付属しています。使い勝手の面ではインターフェースは少しイケてませんが、必要なことをやるには充分です。問題点としては、\emph{何をやっているのか知らないといけない}ということです。なぜなら \otpapp{dbg} はノードのすべてをロギングすることや、2秒もかからずにノードを落とすこともできるからです。
@@ -39,10 +39,10 @@ ErlangとBEAM VMの機能で、およそどれぐらいのことをトレース�
 ErlangのトレースBIFは全てのErlangコードをトレースすることを可能にします\footnote{プロセスに機密情報が含まれている場合、\expression{process\_flag(sensitive, true)}を呼ぶことで、データを非公開にすることを強制できます}。BIFは\emph{pid指定}と\emph{トレースパターン}に分かれています。
 
 %Pid specifications lets the user decide which processes to target. They can be specific pids, \expression{all} pids, \expression{existing} pids, or \expression{new} pids (those not spawned at the time of the function call).
-pid指定により、ユーザはどのプロセスをターゲットにするかを決めることができます。pidは、特定のpid, \expression{全ての}pid, \expression{既存の}pid, あるいは \expression{new}pid（関数呼び出しの時点ではまだ生成されていないプロセス）で指定できます。
+pid指定により、ユーザはどのプロセスをターゲットにするかを決めることができます。pidは、特定のpid, \expression{全ての}pid, \expression{既存の}pid, あるいは \expression{new} pid（関数呼び出しの時点ではまだ生成されていないプロセス）で指定できます。
 
 %The trace patterns represent functions. Functions can be specified in two parts: specifying the modules, functions, and arity, and then with Erlang match specifications\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}} to add constraints to arguments.
-トレースパターンは機能の代わりになります。機能の指定は２つに分かれており、MFA(モジュール、関数、アリティ）と Erlang のマッチの仕様で引数に制約を加えています\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}}
+トレースパターンは関数の代わりになります。関数の指定は２つに分かれており、MFA(モジュール、関数、アリティ）と Erlang のマッチの仕様で引数に制約を加えています\footnote{\href{http://www.erlang.org/doc/apps/erts/match\_spec.html}{http://www.erlang.org/doc/apps/erts/match\_spec.html}}
 
 %What defines whether a specific function call gets traced or not is the intersection of both, as seen in Figure~\ref{fig:tracing-venn}.
 特定の関数呼び出しがトレースされるかどうかを定義している箇所は、~\ref{fig:tracing-venn}にあるように、両者の共通部分です。
@@ -69,19 +69,19 @@ pid指定がプロセスを除外、あるいはトレースパターンが指�
 \section{Recon によるトレース}
 
 %Recon, by default, will match all processes. This will often be good enough for a lot of debugging cases. The interesting part you'll want to play with most of the time is specification of trace patterns. Recon support a few basic ways to declare them. 
-デフォルトでは Recon は全てのプロセスにマッチしますが、デバッグ時のほとんどのケースはこれで問題ありません。多くの場合、あなたが遊びたいと思う面白い部分は、トレースするパターンの指定です。Recon ではいくつかの方法をサポートしています。
+デフォルトでは Recon は全てのプロセスにマッチしますが、デバッグ時のほとんどのケースはこれで問題ありません。多くの場合、あなたがいじくりたいと思う面白い部分は、トレースするパターンの指定です。Recon ではいくつかの方法をサポートしています。
 
 %The most basic form is \expression{\{Mod, Fun, Arity\}}, where \var{Mod} is a literal module, \var{Fun} is a function name, and \var{Arity} is the number of arguments of the function to trace. Any of these may also be replaced by wildcards (\expression{'\_'}). Recon will forbid forms that match too widely on everything (such as \expression{\{'\_','\_','\_'\}}), as they could be plain dangerous to run in production.
-最も基本的な指定方法は \expression{\{Mod, Fun, Arity\}}で、\var {Mod} はモジュール名、\var{Fun}は関数名、\var{Arity} はアリティつまりトレース対象の関数の引数の数です。いずれもワイルドカードの（\expression{'\_'}）で置き換えることができます。本番環境の実行は明らかに危険なため、Recon は（\expression{\{'\_','\_','\_'\}}のように)あまりにも広範囲、あるいは全てにマッチするような指定は禁止しています。
+最も基本的な指定方法は \expression{\{Mod, Fun, Arity\}}で、\var {Mod} はモジュール名、\var{Fun}は関数名、\var{Arity} はアリティつまりトレース対象の関数の引数の数です。いずれもワイルドカードの（\expression{'\_'}）で置き換えることができます。本番環境での実行は明らかに危険なため、Recon は（\expression{\{'\_','\_','\_'\}}のように)あまりにも広範囲あるいは全てにマッチするような指定は禁止しています。
 
 %A fancier form will be to replace the arity by a function to match on lists of arguments. The function is limited to those usable by match specifications similar to what is available in ETS\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}. Finally, multiple patterns can be put into a list to broaden the matching scope.
 より賢明な方法は、アリティを引数のリストにマッチする関数で置き換えることです。その関数はETSで利用できるもの\footnote{\href{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}{http://www.erlang.org/doc/man/ets.html\#fun2ms-1}}と同様に、マッチの指定で利用されるものに限定されています。また、複数のパターンをリストで指定して、マッチするパターンを増やすこともできます。
 
 %It will also be possible to rate limit based on two manners: a static count, or a number of matches per time interval.
-レート制限は２つの方法、静的な値によるカウントもしくは一定期間内にマッチした数、で行うことができます。
+レート制限は静的な値によるカウントか、一定期間内にマッチした数の２つの方法で行うことができます。
 
 %Rather than going more in details, here's a list of examples and how to trace for them.
-より詳細には立ち入らず、ここではいくつかの例と、どうトレースするのかを見ていきます。
+より詳細には立ち入らず、ここではいくつかの例と、トレースの方法を見ていきます。
 
 % \begin{VerbatimErl}
 % % %% All calls from the queue module, with 10 calls printed at most:
@@ -144,7 +144,7 @@ recon_trace:calls({erlang, iolist_to_binary,
                    fun([X]) when is_binary(X) -> ok end},
                   10)
 
-%% 指定 Pid から queue モジュールの呼び出しを、最大で1秒あたり50回まで
+%% 指定の Pid から queue モジュールの呼び出しを、最大で1秒あたり50回まで
 recon_trace:calls({queue, '_', '_'}, {50,1000}, [{pid, Pid}])
 
 %% リテラル引数のかわりに、関数のアリティでトレースを出力
@@ -165,7 +165,7 @@ recon_trace:calls({Mod,Fun,[{'_', [], [{return_trace}]}]}, Max, Opts)
 \end{VerbatimErl}
 
 %Each call made will override the previous one, and all calls can be cancelled with \function{recon\_trace:clear/0}.
-各呼び出しはそれ以前の呼び出しを上書きし、また全ての呼び出しは \function{recon\_trace:clear/0} でキャンセルすることができます。
+各々の呼び出しはそれ以前の呼び出しを上書きし、また全ての呼び出しは \function{recon\_trace:clear/0} でキャンセルすることができます。
 
 %There's a few more combination possible, with more options:
 組み合わせることが可能なオプションはもう少しあります。
