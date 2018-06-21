@@ -1,6 +1,7 @@
 # README
-![PDF Build on Travis CI](https://travis-ci.org/ymotongpoo/erlang-in-anger.svg?branch=japanese)
-Erlang in Angarの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
+[![Build Status](https://travis-ci.org/ymotongpoo/erlang-in-anger.svg?branch=japanese)](https://travis-ci.org/ymotongpoo/erlang-in-anger)
+
+Erlang in Angerの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
 # 最新版
 * https://github.com/ymotongpoo/erlang-in-anger/blob/gh-pages/text-ja.pdf
