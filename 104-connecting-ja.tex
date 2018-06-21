@@ -160,9 +160,9 @@ Eshell Vx.x.x  (abort with ^G)
 \section{名前付きパイプ}
 
 % A little known way to connect with an Erlang node that requires no explicit distribution is through named pipes.
-明示的な割り付けを利用せずにErlangノードに接続する方法として、あまり知られてはいませんが、名前付きパイプを利用するものがあります。
+あまり知られてはいませんが、分散Erlangを明示的に用いずにErlangノードに接続する方法として、名前付きパイプを利用するものがあります。
 %This can be done by starting Erlang with \app{run\_erl}, which wraps Erlang in a named pipe\footnote{\command{"erl"} is the command being run. Additional arguments can be added after it. For example \command{"erl +K true"} will turn kernel polling on.}:
-これはErlangを\app{run\_erl}使って起動すれば実現できます。\app{run\_erl}が名前付きパイプ用にErlangをラップしてくれます\footnote{\command{"erl"}が実行されるコマンドです。引数はその後に追加できます。例えば\command{"erl +K true"}でカーネルポーリングが有効になります。}。
+これはErlangを\app{run\_erl}で起動すれば実現できます。\app{run\_erl}が名前付きパイプの中にErlangをラップしてくれます\footnote{\command{"erl"}が実行されるコマンドです。引数はその後に追加できます。例えば\command{"erl +K true"}でカーネルポーリングが有効になります。}。
 
 \begin{VerbatimEshell}
 $ run_erl /tmp/erl_pipe /tmp/log_dir "erl"
