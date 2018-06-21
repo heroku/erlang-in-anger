@@ -70,25 +70,42 @@
 ユーザーが送ったメッセージのサイズが非常に大きくかつワンオフのプロセスからやってくる、というような非常に固有の状況には対応出来ません。
 しかしながら、これは他の状況に比べるとずっと起こりにくいもので、プログラマーがずっと管理しやすい状況です。
 
-\subsection{Locks and Blocking Operations}
+%\subsection{Locks and Blocking Operations}
+\subsection{ロックとブロック操作}
 
-Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
+%Locking and blocking operations will often be problematic when they're taking unexpectedly long to execute in a process that's constantly receiving new tasks.
+ロック操作とブロック操作は新しいタスクを継続的に受け取るプロセス内で予想外に実行が長くなってしまうときに、しばしば問題になります。
 
-One of the most common examples I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
+%One of the most common examples I've seen is a process blocking while accepting a connection or waiting for messages with TCP sockets. During blocking operations of this kind, messages are free to pile up in the message queue.
+私が経験してきたもっともよくある例は、接続を受け入れる間、あるいはTCPソケットでメッセージを待つ間プロセスがブロックするというものです。
+このようなブロック操作の間、メッセージは好きなだけメッセージキューに積み上がっていきます。
 
-One particularly bad example was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. After a few weeks of perfect uptime, the HTTP client pool caused an outage when one of the remote servers went down.
+%One particularly bad example was in a pool manager for HTTP connections that I had written in a fork of the \href{https://github.com/ferd/lhttpc}{\module{lhttpc}} library. It worked fine in most test cases we had, and we even had a connection timeout set to 10 milliseconds to be sure it never took too long\footnote{10 milliseconds is very short, but was fine for collocated servers used for real-time bidding.}. After a few weeks of perfect uptime, the HTTP client pool caused an outage when one of the remote servers went down.
+特に悪い状況の例が、\href{https://github.com/ferd/lhttpc}{\module{lhttpc}}ライブラリのフォークの中で私が書いたHTTP接続用のプールマネージャー内にありました。
+私達の運用状況においてはたいていはうまく動いていて、さらに接続のタイムアウトも10ミリ秒に設定して、接続待ちが長くなりすぎないようにしていました。\footnote{10ミリ秒は非常に短いですが、リアルタイムビッディングに使われる共用サーバーでは問題ありません。}
+数週間完璧に稼働したあとに、リモートサーバーの一つが落ちたときにHTTPクライアントプールが供給できない状態になりました。
 
-The reason behind this degradation was that when the remote server would go down, all of a sudden, all connecting operations would take at least 10 milliseconds, the time before which the connection attempt is given up on. With around 9,000 messages per second to the central process, each usually taking under 5 milliseconds, the impact became similar to roughly 18,000 messages a second and things got out of hand.
+%The reason behind this degradation was that when the remote server would go down, all of a sudden, all connecting operations would take at least 10 milliseconds, the time before which the connection attempt is given up on. With around 9,000 messages per second to the central process, each usually taking under 5 milliseconds, the impact became similar to roughly 18,000 messages a second and things got out of hand.
+このデグレの背後にある原因は、リモートサーバーが落ちたときに、突然すべての接続操作が最低10ミリ秒かかるようになりました。この10ミリ秒は接続試行がまだ断念されるよりも短い時間です。中央のプロセスに秒間9,000メッセージが届くようになったあたりでは、各接続試行は通常5ミリ秒以下で、この障害と同様の状況になったのは、およそ秒間18,000メッセージが届くようになったあたりで、このあたりで手に負えなくなりました。
 
-The solution we came up with was to leave the task of connecting to the caller process, and enforce the limits as if the manager had done it on its own. The blocking operations were now distributed to all users of the library, and even less work was required to be done by the manager, now free to accept more requests.
+%The solution we came up with was to leave the task of connecting to the caller process, and enforce the limits as if the manager had done it on its own. The blocking operations were now distributed to all users of the library, and even less work was required to be done by the manager, now free to accept more requests.
+私達がいたった解決策は呼び出し元のプロセスに接続のタスクを譲って、プールマネージャーが自動で制限したかのように制限を強制することにしました。
+これでブロック操作はライブラリの全ユーザーに分散され、プールマネージャーによって行われるべき仕事はずっと少なくなり、より多くのリクエストを受け付けられるようになりました。
 
-When there is \emph{any} point of your program that ends up being a central hub for receiving messages, lengthy tasks should be moved out of there if possible. Handling predictable overload\footnote{Something you know for a fact gets overloaded in production} situations by adding more processes — which either handle the blocking operations or instead act as a buffer while the "main" process blocks — is often a good idea.
+%When there is \emph{any} point of your program that ends up being a central hub for receiving messages, lengthy tasks should be moved out of there if possible. Handling predictable overload\footnote{Something you know for a fact gets overloaded in production} situations by adding more processes — which either handle the blocking operations or instead act as a buffer while the "main" process blocks — is often a good idea.
+プログラム内でメッセージを受信するための中央的なハブになっている場所が\emph{一つでも}あれば、できれば時間がかかるタスクはそこから取り除くべきでしょう。
+より多くのプロセスを追加することで予測可能な過負荷\footnote{本番環境で事実に基づいて過負荷になるもの}に対応する---ブロック操作に対処する、またはかわりに''main''プロセスがブロックする間のバッファとして機能する---のは良いアイデアです。
 
-There will be increased complexity in managing more processes for activities that aren't intrinsically concurrent, so make sure you need them before programming defensively.
+%There will be increased complexity in managing more processes for activities that aren't intrinsically concurrent, so make sure you need them before programming defensively.
+本質的には並行ではない処理に対してより多くのプロセスを管理する複雑さが増すので、守りのプログラミングを始める前に確実にその実装が必要であることを確認しましょう。
 
-Another option is to transform the blocking task into an asynchronous one. If the type of work allows it, start the long-running job and keep a token that identifies it uniquely, along with the original requester you're doing work for. When the resource is available, have it send a message back to the server with the aforementioned token. The server will eventually get the message, match the token to the requester, and answer back, without being blocked by other requests in the mean time.\footnote{The \otpapp{redo} application is an example of a library doing this, in its \href{https://github.com/heroku/redo/blob/master/src/redo\_block.erl}{redo\_block} module. The [under-documented] module turns a pipelined connection into a blocking one, but does so while maintaining pipeline aspects to the caller — this allows the caller to know that only one call failed when a timeout occurs, not all of the in-transit ones, without having the server stop accepting requests.}
+%Another option is to transform the blocking task into an asynchronous one. If the type of work allows it, start the long-running job and keep a token that identifies it uniquely, along with the original requester you're doing work for. When the resource is available, have it send a message back to the server with the aforementioned token. The server will eventually get the message, match the token to the requester, and answer back, without being blocked by other requests in the mean time.\footnote{The \otpapp{redo} application is an example of a library doing this, in its \href{https://github.com/heroku/redo/blob/master/src/redo\_block.erl}{redo\_block} module. The [under-documented] module turns a pipelined connection into a blocking one, but does so while maintaining pipeline aspects to the caller — this allows the caller to know that only one call failed when a timeout occurs, not all of the in-transit ones, without having the server stop accepting requests.}
+他の選択肢としては、ブロッキングタスクを非同期なものに変形させることです。もし処理がそうした変更を受け入れられるものであれば、長時間実行されるジョブを起動して、そのジョブの一意な識別子としてのトークンともともとのリクエスト元を保持します。
+リソースが使えるようになったら、リソースからサーバーに対して先述のトークンと一緒にメッセージを送り返させます。
+結果サーバーはメッセージを受け取り、トークンとリクエスト元を対応させ、その間他のリクエストにブロックされることなく結果を返します。\footnote{\otpapp{redo}アプリケーションはこうした処理を行うライブラリの例です。redoの\href{https://github.com/heroku/redo/blob/master/src/redo\_block.erl}{redo\_block}モジュールにその処理があります。このあまりドキュメント化されていないモジュールは、パイプライン接続をブロッキングう接続にしますが、呼び出し元に対してパイプラインの面を維持している間だけそうします。---これによって呼び出し元はタイムアウトが発生したときに、サーバーがリクエストの受け入れを止めることなく、すべての未達の呼び出しが失敗したわけでなく1つの呼び出しだけが失敗したとわかります。}
 
-This option tends to be more obscure than using many processes and can quickly devolve into callback hell, but may use fewer resources.
+%This option tends to be more obscure than using many processes and can quickly devolve into callback hell, but may use fewer resources.
+この選択肢は多くのプロセスを使う方法に比べてあいまいなものになりがちで、すぐにコールバック地獄になりえますが、使うリソースは少なくなるでしょう。
 
 \subsection{Unexpected Messages}
 
