@@ -96,7 +96,7 @@ appファイルには主に2つの種類があります。
 状況によっては最初のファイルは同時に両方の役割を果たします。
 
 %If you plan on simply adding the application as a dependency to your own app, then look inside \module{\emph{appname}} for details and information. If you need to maintain and/or fix the application, go for \module{\emph{appname}\_app} instead.
-そのアプリケーションを単純にあなたのアプリケーションの依存先として追加しようとしているのであれば、 \module{\emph{appname}}の中を詳しく見てみましょうう。
+そのアプリケーションを単純にあなたのアプリケーションの依存先として追加しようとしているのであれば、 \module{\emph{appname}}の中を詳しく見てみましょう。
 そのアプリケーションの運用や修正を行う必要があるのであれば、かわりに \module{\emph{appname}\_app} の中を見てみましょう。
 
 %The application will start a top-level supervisor and return its \emph{pid}. This top-level supervisor will then contain the specifications of all the child processes it will start on its own\footnote{In some cases, the supervisor specifies no children: they will either be started dynamically by some function of the API or in a start phase of the application, or the supervisor is only there to allow OTP environment variables (in the \expression{env} tuple of the app file) to be loaded.}.
