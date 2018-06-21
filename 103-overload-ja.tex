@@ -107,11 +107,15 @@
 %This option tends to be more obscure than using many processes and can quickly devolve into callback hell, but may use fewer resources.
 この選択肢は多くのプロセスを使う方法に比べてあいまいなものになりがちで、すぐにコールバック地獄になりえますが、使うリソースは少なくなるでしょう。
 
-\subsection{Unexpected Messages}
+%\subsection{Unexpected Messages}
+\subsection{予期せぬメッセージ}
 
-Messages you didn't know about tend to be rather rare when using OTP applications. Because OTP behaviours pretty much expect you to handle anything with some clause in \function{handle\_info/2}, unexpected messages will not accumulate much.
+%Messages you didn't know about tend to be rather rare when using OTP applications. Because OTP behaviours pretty much expect you to handle anything with some clause in \function{handle\_info/2}, unexpected messages will not accumulate much.
+OTPアプリケーションを使っている場合は知らないメッセージを受け取ることはまれです。
+なぜならOTPビヘイビアはすべてを\function{handle\_info/2}にある節で処理することを期待しているので、予期せぬメッセージがたまることはあまりないでしょう。
 
-However, all kinds of OTP-compliant systems end up having processes that may not implement a behaviour, or processes that go in a non-behaviour stretch where it overtakes message handling. If you're lucky enough, monitoring tools\footnote{See Section \ref{sec:global-view}} will show a constant memory increase, and inspecting for large queue sizes\footnote{See Subsection \ref{subsec:digging-procs}} will let you find which process is at fault. You can then fix the problem by handling the messages as required.
+%However, all kinds of OTP-compliant systems end up having processes that may not implement a behaviour, or processes that go in a non-behaviour stretch where it overtakes message handling. If you're lucky enough, monitoring tools\footnote{See Section \ref{sec:global-view}} will show a constant memory increase, and inspecting for large queue sizes\footnote{See Subsection \ref{subsec:digging-procs}} will let you find which process is at fault. You can then fix the problem by handling the messages as required.
+しかしながら、あらゆるOTP互換システムはビヘイビアを実装していないプロセスやメッセージハンドリングを頑張るビヘイビアではない方向で実装してしまったプロセスを持つことになります。あなたが十分に幸運であれば、監視ツール\footnote{\ref{sec:global-view}の節を見ましょう}が定常的なメモリ増加を示していて、大きなキューサイズを点検することで\footnote{\ref{subsec:digging-procs}の節を見ましょう}どのプロセスに問題があるかわかるでしょう。そのあと、メッセージを必要なように処理することで問題を修正できます。
 
 \section{Restricting Input}
 
