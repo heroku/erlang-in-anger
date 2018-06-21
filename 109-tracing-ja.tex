@@ -47,7 +47,7 @@ pid指定により、ユーザはどのプロセスをターゲットにする�
 %What defines whether a specific function call gets traced or not is the intersection of both, as seen in Figure~\ref{fig:tracing-venn}.
 特定の関数呼び出しがトレースされるかどうかを定義している箇所は、~\ref{fig:tracing-venn}にあるように、両者の共通部分です。
 
-\begin{figure}
+\begin{figure}[H]
   \includegraphics[max height=7cm]{tracing-venn.pdf}%
   \centering%
 %  \caption{What gets traced is the result of the intersection between the matching pids and the matching trace patterns}%
@@ -62,7 +62,6 @@ pid指定がプロセスを除外、あるいはトレースパターンが指�
 \otpapp{dbg}（およびトレースBIF）のようなツールは、このベン図を念頭に置いて作業することを前提としています。pid指定およびトレースパターンを別々に指定し、その結果が何であろうとも、両者の共通部分が表示されることになります。
 
 %Tools like \otpapp{redbug} and \module{recon\_trace}, on the other hand, abstract this away.
-\FloatBarrier
 一方で \otpapp{redbug}や\module{recon\_trace}のようなツールでは、これらを抽象化しています。
 
 %\section{Tracing with Recon}
