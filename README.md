@@ -21,6 +21,10 @@ Erlang in Angerの翻訳用レポジトリです。オリジナルのREADMEは[�
 4. 担当部分が終わったら `japanese` ブランチにmerge。心配ならpull-requestを出してください。(みんなでレビューしましょう)
 5. 以下2-4の繰り返し。
 
+また、pull-requestを出してCIに通った場合は次のリポジトリにPDFがアップロードされます。
+
+- https://github.com/y-yu/erlang-in-anger-pr
+
 ## レビュー
 訳がおかしいなと思ったら適宜Issueを立ててください。(TODO: Issueテンプレートの作成)
 
