@@ -37,7 +37,7 @@ cookieを利用しない方法もいくつかあります。
 %\section{Job Control Mode}
 \section{ジョブ制御モード}
 
-%The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell. 
+%The Job Control Mode (JCL mode) is the menu you get when you press \command{\^{}G} in the Erlang shell.
 ジョブ制御モード(Job Control Mode, JCL mode)は、Erlangシェルで \command{\^{}G} を押した時に得られるメニューのことです。
 %From that menu, there is an option allowing you to connect to a remote shell:
 このメニューの中に、リモートシェルの接続を許可するオプションがあります。
@@ -65,7 +65,7 @@ Eshell Vx.x.x  (abort with ^G)
 %All output coming from said remote evaluation will be forwarded to the local shell.
 このリモートシェルが評価を行った結果、出力はすべて、ローカルシェルに転送されます。
 
-%To quit the shell, go back in the JCL mode with \command{\^{}G}. 
+%To quit the shell, go back in the JCL mode with \command{\^{}G}.
 シェルを終了するには\command{\^{}G}を再び押して、ジョブ制御モードに戻ってください。
 %This job management is, as I said, done locally, and it is thus safe to quit with \command{\^{}G q}:
 先程も行ったように、ジョブ制御はローカルで行われますから、\command{\^{}G q}により終了させても安全です。
@@ -79,21 +79,31 @@ User switch command
 %You may choose to start the initial shell in hidden mode (with the argument \command{-hidden}) to avoid connecting to an entire cluster automatically.
 全クラスタに自動的に接続することがないように、最初のシェルをhiddenモード(これには引数 \command{-hidden}が使えます)にしても良いですね。
 
+%\section{Remsh}
 \section{Remsh}
 
-There's a mechanism entirely similar to the one available through the JCL mode, although invoked in a different manner. The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
+%There's a mechanism entirely similar to the one available through the JCL mode, although invoked in a different manner.
+呼び出し方は異なりますが、ジョブ制御モードを通じた方法にきわめて似た仕組みがあります。
+%The entire JCL mode sequence can by bypassed by starting the shell as follows for long names:
+ジョブ制御モードの一連の手順は、ロングネームを使う場合、以下のようにシェルを起動することで省略することができます。
 
 \begin{VerbatimText}
 erl -name local@domain.name -remsh remote@domain.name
 \end{VerbatimText}
 
-And as follows for short names:
+%And as follows for short names:
+ショートネームを使う場合は、以下のようになります。
 
 \begin{VerbatimText}
 erl -sname local@domain -remsh remote@domain
 \end{VerbatimText}
 
-All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid. The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local). \command{\^{}G}  remains the safest way to exit the remote shell.
+%All other Erlang arguments (such as \command{-hidden} and \command{-setcookie \$COOKIE}) are also valid.
+その他の引数(例えば \command{-hidden} や \command{-setcookie \$COOKIE})も利用可能です。
+%The underlying mechanisms are the same as when using JCL mode, but the initial shell is started remotely instead of locally (JCL is still local).
+下で動いている仕組みはジョブ制御モードの時と同じですが、最初のシェルはローカルではなくリモートで立ち上がります（ジョブ制御では依然としてローカルです）。
+%\command{\^{}G}  remains the safest way to exit the remote shell.
+リモートシェルから抜ける際にも最も安全な方法は先ほどと変わらず、\command{\^{}G}です。
 
 \section{SSH Daemon}
 
