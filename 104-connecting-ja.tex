@@ -1,15 +1,38 @@
-\chapter{Connecting to Remote Nodes}
+%\chapter{Connecting to Remote Nodes}
+\chapter{リモートノードへの接続}
 \label{chap:connecting}
 
-Interacting with a running server program is traditionally done in one of two ways. One is to do it through an interactive shell kept available by using a \app{screen} or \app{tmux} session that runs in the background and letting someone connect to it. The other is to program management functions or comprehensive configuration files that can be dynamically reloaded.
+%Interacting with a running server program is traditionally done in one of two ways.
+旧来、稼働中のサーバープログラムとやり取りする方法は二つあります。
+%One is to do it through an interactive shell kept available by using a \app{screen} or \app{tmux} session that runs in the background and letting someone connect to it.
+一つは、インタラクティブシェルを利用可能にした\app{screen} や \app{tmux} のセッションをバックグラウンドに残しておき、それに接続することです。
+%The other is to program management functions or comprehensive configuration files that can be dynamically reloaded.
+もう一つは、管理関数や、動的にリロードする一括設定ファイルを実装する方法です。
 
-The interactive session approach is usually okay for software that runs in a strict Read-Eval-Print-Loop (REPL). The programmed management and configuration approach requires careful planning in whatever tasks you think you'll need to do, and hopefully getting it right. Pretty much all systems can try that approach, so I'll skip it given I'm somewhat more interested in the cases where stuff is already bad and no function exists for it.
+%The interactive session approach is usually okay for software that runs in a strict Read-Eval-Print-Loop (REPL).
+インタラクティブセッションを利用する方法は通常、ソフトウェアが厳密なREPL(Read-Eval-Print-Loop, 対話型評価環境)で動作している限りは問題のない方法です。
+%The programmed management and configuration approach requires careful planning in whatever tasks you think you'll need to do, and hopefully getting it right.
+プログラムによる管理・設定を行う方法では、あなたが必要と思うどんなタスクであっても慎重に計画し、またそれを正しく理解している必要があります。
+%Pretty much all systems can try that approach, so I'll skip it given I'm somewhat more interested in the cases where stuff is already bad and no function exists for it.
+ほとんどすべてのシステムで後者の方法は試されていますので、説明は飛ばすことにします。
+私がもっと興味があるのは、事態が既に悪化していて、その事態に対処する関数が存在しない場合です。
 
-Erlang uses something closer to an "interactor" than a REPL. Basically, a regular Erlang virtual machine does not need a REPL, and will happily run byte code and stick with that, no shell needed. However, because of how it works with concurrency and multiprocessing, and good support for distribution, it is possible to have in-software REPLs that run as arbitrary Erlang processes.
+%Erlang uses something closer to an "interactor" than a REPL.
+ErlangはREPLというより"インタラクタ"に近いものを使っています。
+%Basically, a regular Erlang virtual machine does not need a REPL, and will happily run byte code and stick with that, no shell needed.
+基本的には、Erlang仮想マシンはREPLを必要とせず、バイトコードがうまい具合に動作するよう専念すれば良いのです。シェルの必要はありませんね。
+%However, because of how it works with concurrency and multiprocessing, and good support for distribution, it is possible to have in-software REPLs that run as arbitrary Erlang processes.
+しかしながら、同時実行とマルチプロセッシングを可能にする仕組みや素晴らしい分散サポートのおかげで、Erlangでは任意のErlangプロセスで動作するソフトウェア内包のREPLを利用できます。
 
-This means that, unlike a single screen session with a single shell, it's possible to have as many Erlang shells connected and interacting with one virtual machine as you want at a time\footnote{More details on the mechanisms at \href{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}}.
+%This means that, unlike a single screen session with a single shell, it's possible to have as many Erlang shells connected and interacting with one virtual machine as you want at a time\footnote{More details on the mechanisms at \href{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}}.
+これはつまり、一つのscreenセッションと一つのシェルを使うのとは異なり、たくさんのErlangシェルを好きなだけ同時につかって、一つの仮想マシンとのやり取りを行えるということです。
+\footnote{このメカニズムの詳細は\href{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}{http://ferd.ca/repl-a-bit-more-and-less-than-that.html}参照}
 
-Most common usages will depend on a cookie being present on the two nodes you want to connect together\footnote{More details at \href{http://learnyousomeerlang.com/distribunomicon\#cookies}{http://learnyousomeerlang.com/distribunomicon\#cookies} or \href{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}}, but there are ways to do it that do not include it. Most usages will also require the use of named nodes, and all of them will require \emph{a priori} measures to make sure you can contact the node.
+%Most common usages will depend on a cookie being present on the two nodes you want to connect together\footnote{More details at \href{http://learnyousomeerlang.com/distribunomicon\#cookies}{http://learnyousomeerlang.com/distribunomicon\#cookies} or \href{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}}, but there are ways to do it that do not include it.
+この機能のもっとも一般的な利用方法は、接続したい二ノードが持つcookieを利用する方法\footnote{詳細は\href{http://learnyousomeerlang.com/distribunomicon\#cookies}{http://learnyousomeerlang.com/distribunomicon\#cookies} か \href{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}{http://www.erlang.org/doc/reference\_manual/distributed.html\#id83619}参照}ですが、
+cookieを利用しない方法もいくつかあります。
+% Most usages will also require the use of named nodes, and all of them will require \emph{a priori} measures to make sure you can contact the node.
+多くの方法では名前付きノードが必要で、どんな方法でも\emph{アプリオリな} 接続確認手段は必要です。
 
 \section{Job Control Mode}
 
@@ -87,7 +110,7 @@ To connect to the daemon, any SSH client will do:
 \begin{VerbatimEshell}
 $ ssh -p 8989 ferd@127.0.0.1
 Eshell Vx.x.x  (abort with ^G)
-1> 
+1>
 \end{VerbatimEshell}
 
 And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. \emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.\footnote{This is true for all methods of interacting with a remote Erlang node.}
