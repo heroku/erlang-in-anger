@@ -105,11 +105,17 @@ erl -sname local@domain -remsh remote@domain
 %\command{\^{}G}  remains the safest way to exit the remote shell.
 リモートシェルから抜ける際にも最も安全な方法は先ほどと変わらず、\command{\^{}G}です。
 
-\section{SSH Daemon}
+%\section{SSH Daemon}
+\section{SSHデーモン}
 
-Erlang/OTP comes shipped with an SSH implementation that can both act as a server and a client. Part of it is a demo application providing a remote shell working in Erlang.
+%Erlang/OTP comes shipped with an SSH implementation that can both act as a server and a client.
+Erlang/OTPにはSSHの実装が標準で備わっており、サーバーとクライアントのどちらの方式でも動作します。
+%Part of it is a demo application providing a remote shell working in Erlang.
+SSHの実装の一部として用意されているデモアプリケーションは、Erlangで動作するリモートシェルを提供します。
 
-To get this to work, you usually need to have your keys to have access to SSH stuff remotely in place already, but for quick test purposes, you can get things working by doing:
+%To get this to work, you usually need to have your keys to have access to SSH stuff remotely in place already, but for quick test purposes, you can get things working by doing:
+これを起動するには普通、SSHリモート接続を行うためにあなたの鍵を所定の位置に配置しなければなりませんが、
+簡単なテスト目的なら、以下のようにして実行することができます。
 
 \begin{VerbatimEshell}
 $ mkdir /tmp/ssh
@@ -124,9 +130,15 @@ $ erl
 {ok,<0.52.0>}
 \end{VerbatimEshell}
 
-I've only set a few options here, namely \expression{system\_dir}, which is where the host files are, and \expression{user\_dir}, which contains SSH configuration files. There are plenty of other options available to allow for specific passwords, customize handling of public keys, and so on\footnote{Complete instructions with all options to get this set up are available at \href{http://www.erlang.org/doc/man/ssh.html\#daemon-3}{http://www.erlang.org/doc/man/ssh.html\#daemon-3}.}.
+%I've only set a few options here, namely \expression{system\_dir}, which is where the host files are, and \expression{user\_dir}, which contains SSH configuration files.
+ここではほんの少しオプションを設定しただけです。
+\expression{system\_dir}はホストファイルの置き場、\expression{user\_dir}はSSH設定ファイルの置き場を設定しています。
+%There are plenty of other options available to allow for specific passwords, customize handling of public keys, and so on\footnote{Complete instructions with all options to get this set up are available at \href{http://www.erlang.org/doc/man/ssh.html\#daemon-3}{http://www.erlang.org/doc/man/ssh.html\#daemon-3}.}.
+この他にも多くのオプションがあり、特定のパスワードを許可したり、公開鍵の取り扱いを変えたりすることが可能です\footnote{ちゃんとしたSSHリモート接続を行うには、詳細な手順と全オプションの説明 \href{http://www.erlang.org/doc/man/ssh.html\#daemon-3}{http://www.erlang.org/doc/man/ssh.html\#daemon-3}を参照してください。}。
 
-To connect to the daemon, any SSH client will do:
+
+%To connect to the daemon, any SSH client will do:
+デーモンに接続するには、どんなSSHクライアントでも、以下のようにします。
 
 \begin{VerbatimEshell}
 $ ssh -p 8989 ferd@127.0.0.1
@@ -134,7 +146,15 @@ Eshell Vx.x.x  (abort with ^G)
 1>
 \end{VerbatimEshell}
 
-And with this you can interact with an Erlang installation without having it installed on the current machine. Just disconnecting from the SSH session (closing the terminal) will be enough to leave. \emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.\footnote{This is true for all methods of interacting with a remote Erlang node.}
+% And with this you can interact with an Erlang installation without having it installed on the current machine.
+こうすれば、Erlangを手元のマシンでインストールしていなくても、Erlangを利用できますね。
+%Just disconnecting from the SSH session (closing the terminal) will be enough to leave.
+シェルから立ち去るときには、(ターミナルを閉じて）SSHセッションを切れば十分です。
+%\emph{Do not run} functions such as \expression{q()} or \expression{init:stop()}, which will terminate the remote host.  \footnote{This is true for all methods of interacting with a remote Erlang node.}
+\expression{q()}や\expression{init:stop()}のような関数は\emph{実行しない}でください。リモートホストが終了してしまいます\footnote{これは、どんな方法を使うにせよ、リモートのErlangノードとやり取りする際には共通です。}。
+
+%If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} option to \app{ssh} to get debug output.
+もし接続する際に問題が発生したら、\app{ssh}にオプションとして\command{-oLogLevel=DEBUG}をつければ、デバッグ出力が見られます。
 
 If you have trouble connecting, you can add the \command{-oLogLevel=DEBUG} option to \app{ssh} to get debug output.
 
