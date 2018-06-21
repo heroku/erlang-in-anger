@@ -1,16 +1,22 @@
-\chapter{Reading Crash Dumps}
+%\chapter{Reading Crash Dumps}
+\chapter{クラッシュダンプを読む}
 \label{chap:crash-dumps}
 
-Whenever an Erlang node crashes, it will generate a crash dump\footnote{If it isn't killed by the OS for violating ulimits while dumping or didn't segfault.}.
+%Whenever an Erlang node crashes, it will generate a crash dump\footnote{If it isn't killed by the OS for violating ulimits while dumping or didn't segfault.}.
+Erlangノードはクラッシュすると、クラッシュダンプを出力します。\footnote{ダンプ中にulimitsの制限を超えてOSに殺されたり、セグメンテーションフォールトしない限りは}.
 
-The format is mostly documented in Erlang's official documentation\footnote{\href{http://www.erlang.org/doc/apps/erts/crash\_dump.html}{http://www.erlang.org/doc/apps/erts/crash\_dump.html}}, and anyone willing to dig deeper inside of it will likely be able to figure out what data means by looking at that documentation. There will be specific data that is hard to understand without also understanding the part of the VM they refer to, but that might be too complex for this document.
+%The format is mostly documented in Erlang's official documentation\footnote{\href{http://www.erlang.org/doc/apps/erts/crash\_dump.html}{http://www.erlang.org/doc/apps/erts/crash\_dump.html}}, and anyone willing to dig deeper inside of it will likely be able to figure out what data means by looking at that documentation. There will be specific data that is hard to understand without also understanding the part of the VM they refer to, but that might be too complex for this document.
+フォーマットについてはErlangのオフィシャルドキュメントにほとんど書かれており\footnote{\href{http://www.erlang.org/doc/apps/erts/crash\_dump.html}{http://www.erlang.org/doc/apps/erts/crash\_dump.html}}、深く掘り下げたい人は誰でもそのドキュメントを見ることで、データが意味していることを把握することができるでしょう。特定のデータについては更にVMの一部についても理解していないと理解することが難しいものがありますが、このドキュメントに載せるには複雑過ぎます。
 
-The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{Heroku's Routing and Telemetry teams use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app to set the path and name of the crash dumps. It can be added to a project to name the dumps by boot time and put them in a pre-set location}.
+%The crash dump is going to be named \filename{erl\_crash.dump} and be located wherever the Erlang process was running by default. This behaviour (and the file name) can be overridden by specifying the \command{ERL\_CRASH\_DUMP} environment variable\footnote{Heroku's Routing and Telemetry teams use the \otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}} app to set the path and name of the crash dumps. It can be added to a project to name the dumps by boot time and put them in a pre-set location}.
+クラッシュダンプはデフォルトで\filename{erl\_crash.dump}という名前で、Erlangプロセスが動いている場所へ出力されます。この挙動(ファイル名も含めて)は\command{ERL\_CRASH\_DUMP}環境変数\footnote{Herokuのルーティングとテレメトリチームは\otpapp{\href{https://github.com/heroku/heroku\_crashdumps}{heroku\_crashdumps}}アプリケーションを使ってクラッシュダンプのパスと名前を設定しています。これをプロジェクトに追加して、起動時にダンプの名前をつけ、それらを事前に指定した場所に置くことができます。}を指定することで上書きできます。
 
-\section{General View}
+%\section{General View}
+\section{一般的な見方}
 \label{sec:crashdump-general-view}
 
-Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
+%Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
+クラッシュダンプを読むことは\emph{事後}にノードが死んだ可能性のある理由を理解するのに役立つことがあります。それらを素早く見るために1つreconの\app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}}を使う方法があり、それをクラッシュダンプに対して実行します。
 
 %% Show debugging here with output
 \begin{VerbatimRaw}
@@ -82,17 +88,23 @@ Process States when crashing (sum):
   36421 Waiting
 \end{VerbatimRaw}
 
-This data dump won't point out a problem directly to your face, but will be a good clue as to where to look. For example, the node here ran out of memory and had 11079 Mb out of 15 Gb used (I know this because that's the max instance size we were using!) This can be a symptom of:
+%This data dump won't point out a problem directly to your face, but will be a good clue as to where to look. For example, the node here ran out of memory and had 11079 Mb out of 15 Gb used (I know this because that's the max instance size we were using!) This can be a symptom of:
+このデータダンプはあなたの直面する問題を直接指摘してはくれませんが、どこを見れば良いのかの良い手がかりとなります。例えば、ここではこのノードはメモリ不足となりましたが、15GBあるうちの11079MBを使用していました(我々が使っていた最大のインスタンスサイズだったので私はこれを覚えています!)。これは以下のような症状を示しています。
 
 \begin{itemize*}
-	\item memory fragmentation;
-	\item memory leaks in C code or drivers;
-	\item lots of memory that got to be garbage-collected before generating the crash dump\footnote{Notably here is reference-counted binary memory, which sits in a global heap, but ends up being garbage-collected before generating the crash dump. The binary memory can therefore be underreported. See Chapter \ref{chap:memory-leaks} for more details}.
+%	\item memory fragmentation;
+	\item メモリフラグメンテーション;
+%	\item memory leaks in C code or drivers;
+	\item Cコードまたはドライバーのメモリリーク;
+%	\item lots of memory that got to be garbage-collected before generating the crash dump\footnote{Notably here is reference-counted binary memory, which sits in a global heap, but ends up being garbage-collected before generating the crash dump. The binary memory can therefore be underreported. See Chapter \ref{chap:memory-leaks} for more details}.
+	\item クラッシュダンプを生成する前にガベージコレクトされなければならない大量のメモリ\footnote{特にここでは参照カウンタされたバイナリメモリです。これはグローバルのヒープ領域に格納されるますが、クラッシュダンプを生成する前にガベージコレクトされ消えます。従ってそのバイナリメモリはレポートされません。より詳しくは\ref{chap:memory-leaks}を参照}.
 \end{itemize*}
 
-More generally, look for anything surprising for memory there. Correlate it with the number of processes and the size of mailboxes. One may explain the other. 
+%More generally, look for anything surprising for memory there. Correlate it with the number of processes and the size of mailboxes. One may explain the other. 
+より一般的にメモリに関して驚くべきものを探すには、それをプロセスの数とメールボックスのサイズに相関させます。どちらか一方が他方を説明してくれるかもしれません。
 
-In this particular dump, one process had 5 million messages in its mailbox. That's telling. Either it doesn't match on all it can get, or it is getting overloaded. There are also dozens of processes with hundreds of messages queued up — this can point towards overload or contention. It's hard to have general advice for your generic crash dump, but there still are a few pointers to help figure things out.
+%In this particular dump, one process had 5 million messages in its mailbox. That's telling. Either it doesn't match on all it can get, or it is getting overloaded. There are also dozens of processes with hundreds of messages queued up — this can point towards overload or contention. It's hard to have general advice for your generic crash dump, but there still are a few pointers to help figure things out.
+この特定のダンプでは、1つのプロセスのメールボックスに5百万のメッセージが格納されていたと示されています。これは取得できるすべてのメッセージがパターンマッチしないか、過負荷になっています。そこには数百のメッセージをキューに溜めた数十のプロセスも存在しています。--- これは過負荷または競合を指すことがあります。あなたの一般的なクラッシュダンプについて一般的なアドバイスをすることは難しいですが、これらを理解するのに役立つ方法はまだいくつかあります。
 
 \section{Full Mailboxes}
 \label{sec:crash-full-mailboxes}
