@@ -262,7 +262,7 @@ handle_info(reconnect, S = #state{sock=undefined, opts=Opts}) ->
 \label{subsec:start-link-application-strategies}
 
 %No matter what, a sequence of failures is not a death sentence for the node. Once a system has been divided into various OTP applications, it becomes possible to choose which applications are vital or not to the node. Each OTP application can be started in 3 ways: temporary, transient, permanent, either by doing it manually in \expression{application:start(Name, Type)}, or in the config file for your release:
-何があろううとも、ノードで障害が連続して起きることはノードの死刑ではありません。
+何があろうとも、ノードで障害が連続して起きることはノードの死刑ではありません。
 システムが様々なOTPアプリケーションに分割されてしまえば、ノードにとってどのアプリケーションが致命的でどれがそうでないかを決められるようになります。
 各OTPアプリケーションは3つの方法で起動できます。temporary (一時的)、transient (暫定的)、permanent (永続的)のどれか一つを選択でき、\expression{application:start(Name, Type)}と手動で起動するか、あるいはリリース内の設定ファイルに書くことで可能です。
 
