@@ -135,11 +135,14 @@ Kernel pid terminated (application_controller)
 このような場合、そのアプリケーション(\expression{AppName})がスーパバイザ内で再起動制限に引っかかったため、ノードがシャットダウンを行ったことが原因です。一連の問題の原因を詳しく調べるにはエラーログが役に立ちます。
 
 
-\section{Too Many Ports}
+%\section{Too Many Ports}
+\section{大量のポート数}
 
-Similarly to the process count, the port count is simple and mostly useful when you know your usual values\footnote{See subsection \ref{subsec:global-ports} for details}.
+%Similarly to the process count, the port count is simple and mostly useful when you know your usual values\footnote{See subsection \ref{subsec:global-ports} for details}.
+プロセス数のカウントと同様に、ポート数も通常時の数を把握している時にはシンプルでとても有用です\footnote{詳細は \ref{subsec:global-ports}  を参照のこと}。
 
-A high count may be the result of overload, Denial of Service attacks, or plain old resource leaks. Looking at the type of port leaked (TCP, UDP, or files) can also help reveal if there was contention on specific resources, or if the code using them is just wrong.
+%A high count may be the result of overload, Denial of Service attacks, or plain old resource leaks. Looking at the type of port leaked (TCP, UDP, or files) can also help reveal if there was contention on specific resources, or if the code using them is just wrong.
+ポート数が多い場合、DoS攻撃や使わなくなったリソースのリークなどに、過負荷になっている可能性があります。リークしているポートの種類（TCP, UTP, ファイル)を見てみることで、リソースの競合やそれらのリソースを使っているコードが間違っているかどうかが分かる可能性があります。
 
 \section{Can't Allocate Memory}
 
