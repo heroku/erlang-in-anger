@@ -1,0 +1,104 @@
+\documentclass[autodetect-engine, dvipdfmx-if-dvi, base=11pt, oneside, ja=standard]{bxjsreport}
+% !TEX encoding = UTF-8 Unicode
+\usepackage{graphicx}
+\usepackage{text}
+\usepackage{comment}
+
+% 日本語フォント設定
+\usepackage[sourcehan-jp, nfssonly, deluxe]{luatexja-preset}
+
+% 強調（\emph）をボールドゴシックに設定
+\let\emph\relax
+\DeclareTextFontCommand{\emph}{\gtfamily\bfseries}
+
+% チャプタータイトルの設定
+\usepackage[Glenn]{fncychap}
+\ChTitleVar{\bfseries\Large\mcfamily\rmfamily}
+\makeatletter
+\renewcommand{\DOCH}{%
+  \settoheight{\myhi}{\CTV\FmTi{Test}}
+  \setlength{\py}{\baselineskip}
+  \addtolength{\py}{\RW}
+  \addtolength{\py}{\myhi}
+  \setlength{\pyy}{\py}
+  \addtolength{\pyy}{-1\RW}
+  \raggedright
+  \CNV\FmN{\@chapapp}\space\CNoV\thechapter\CNV\FmN{\@chappos}
+  \hskip 3pt\mghrulefill{\RW}\rule[-1\pyy]{2\RW}{\py}\par\nobreak
+}
+\makeatother
+
+% GitのコミットIDを埋め込む用
+\input{vc.tex}
+
+%%% Cover
+
+\title{Stuff Goes Bad:\protect\\ Erlang in Anger}
+\author{Fred Hébert 著、elixir.jp 訳}
+
+\date{%
+  \today \\
+  Git commit ID: \href{https://github.com/ymotongpoo/erlang-in-anger}{\GITAbrHash}
+}
+
+\begin{document}
+\frontmatter
+
+\maketitle
+
+\includepdf[pagecommand={\thispagestyle{empty}}]{graphics/cover.pdf}
+
+\include{000-copyright-ja}
+
+\clearpage
+%%%
+
+\tableofcontents
+
+\listoffigures
+
+%% Colors of figure refs for text
+\hypersetup{linkcolor=violet}
+
+\include{001-introduction-ja}
+
+\mainmatter
+
+\part{Writing Applications}
+\label{part:writing-applications}
+
+\include{101-diving-ja}
+\include{102-building-ja}
+\include{103-overload-ja}
+
+\part{Diagnosing Applications}
+\label{part:diagnosing-applictions}
+
+\include{104-connecting-ja}
+\include{105-runtime-metrics-ja}
+\include{106-crash-dumps-ja}
+\include{107-memory-leaks-ja}
+\include{108-cpu-ja}
+\include{109-tracing-ja}
+
+%%%
+%%% Tuning the VM: not a chapter yet.
+%%%
+
+
+%% locks!
+
+%% you usually want the lmbcs to be at least a 5 times (if not more) bigger than the perc95
+
+%% the binaries will still count as binary data if you move it to ets. It is only the pointer to the binary that moves from the heap to ets. (for binaries > 64 bytes)
+
+%% Cache hits
+
+%% Kernel Polling
+
+%%
+\bookmarksetup{startatroot} % Split conclusion from previous Part
+\addtocontents{toc}{\bigskip} % Add space in ToC
+\include{201-conclusion-ja}
+
+\end{document}

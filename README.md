@@ -1,41 +1,74 @@
 # README
+[![Build Status](https://travis-ci.org/ymotongpoo/erlang-in-anger.svg?branch=japanese)](https://travis-ci.org/ymotongpoo/erlang-in-anger)
 
-This book intends to be a little guide about how to be the Erlang medic in a
-time of war. It is first and foremost a collection of tips and tricks to help
-understand where failures come from, and a dictionary of different code
-snippets and practices that helped developers debug production systems that
-were built in Erlang.
+Erlang in Angerの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
-This is the source repository for the book.
+# 最新版
+* https://ymotongpoo.github.io/erlang-in-anger/text-ja.pdf
+* https://github.com/ymotongpoo/erlang-in-anger/blob/gh-pages/text-ja.pdf
 
-## Contributing
+# Contribution
+## 雰囲気
+自分一人でやるのはしんどいのでpull-requestください。
+翻訳するときはオリジナルのものをコメントアウトする形でやっていきます。
+詳しくは `NNN-foobar-ja.tex` で翻訳済みになっているファイルを参照してください。
 
-Please read CONTRIBUTING. This book has been written under a specific
-creative-commons license, with a joint copyright between Heroku
-(https://www.heroku.com/) and the author (Fred Hebert), agreed upon as
-part of his work functions.
+## 手順
+**注意** メインブランチは `japanese` です。 `master` はupstreamの追従用です。
 
-The copyright situation isn't simple enough for the author to handle all
-implications and subtleties, and while this repository is open source and under
-a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
-license, *it cannot be considered as Free as in Freedom*.
+1. 参加する旨を @ymotongpoo に言う (Collaboratorsに追加します)
+2. [割り振り表](https://docs.google.com/spreadsheets/d/1jsGGbftXZmtHGe8J7nKy-xAsFErWUpHksGEn2Oolwvw/edit?usp=sharing)の「担当」のカラムで自分がやりたいところに記名する。(節単位で担当するのが望ましい。)
+3. featureブランチ(`japanese` 以外に適当にブランチ)を切ってそこで作業する。(自分のアカウントにフォークしてから作業してもらっても構いません)
+4. 担当部分が終わったら `japanese` ブランチにmerge。心配ならpull-requestを出してください。(みんなでレビューしましょう)
+5. 以下2-4の繰り返し。
 
-## Build
+また、pull-requestを出してCIに通った場合は次のリポジトリにPDFがアップロードされます。
 
-I Have TeXShop from MacTeX and I just press the 'Typeset' button when editing
-`text.tex`
+- https://github.com/y-yu/erlang-in-anger-pr
 
-You can find a PDF copy at http://www.erlang-in-anger.com.
+## レビュー
+訳がおかしいなと思ったら適宜Issueを立ててください。(TODO: Issueテンプレートの作成)
 
-## Roadmap
+# Build
+TeX Liveをとりあえずインストールしてビルド。オリジナルはpdfLaTeXを使って生成しています。
+Latexmkを使ってビルドできるようになっているので各々次のようにビルドします。
 
-- Update libraries links where appropriate
-- Support alternative formats (HTML, epub, mobi)
-- Document standalone build instructions that do not rely on MacTeX / TexShop
+```console
+$ make english   # -> text.pdf: original English version
+$ make japanese  # -> text-ja.pdf: Japanese translation version
+```
 
-## Changelog
+また、Docker環境がある場合は次のコマンドでコンパイルすることもできます。
 
-### 1.3.0
+```console
+$ docker-compose up
+```
 
-- Updated chapters 1 and 2 to refer to rebar3 instead of rebar, and to include
-  content relative to hex and packages
+ビルドに成功すると、`text-ja.pdf` が作成されているはずです。
+
+## ビルド対象の追加
+
+どの tex ファイルを読み込むかは `text-ja.tex` ファイルの `\include` 行で指定します。例えば 109-tracing-ja.tex を追加する場合、下記のように記載します。
+
+```
+\include{109-tracing-ja}
+```
+
+
+# 進捗
+- [x] 000: Copyright
+- [x] 001: Introduction
+- [x] 101: How to Dive into a Code Base
+- [x] 102: Building Open Source Erlang Software
+- [ ] 103: Planning for Overload
+- [ ] 104: Connecting to Remote Nodes
+- [ ] 105: Runtime Metrics
+- [ ] 106: Reading Crash Dumps
+- [ ] 107: Memory Leaks
+- [ ] 108: CPU and Scheduler Hogs
+- [x] 109: Tracing
+- [x] 201: Conclusion
+
+
+# Tips
+* ダッシュ(―)は `---` (ハイフン3つ)とすると表示が崩れない

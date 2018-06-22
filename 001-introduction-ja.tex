@@ -1,0 +1,80 @@
+%\chapter*{Introduction}
+\chapter*{はじめに}
+\markboth{\MakeUppercase{Introduction}}{}
+%\addcontentsline{toc}{chapter}{Introduction}
+\addcontentsline{toc}{chapter}{はじめに}
+\label{chap:introduction}
+
+%\section*{On Running Software}
+\section*{ソフトウェアを実行するにあたって}
+%\addcontentsline{toc}{section}{On Running Software}
+\label{sec:on-running-software}
+
+%There's something rather unique in Erlang in how it approaches failure compared to most other programming languages. There's this common way of thinking where the language, programming environment, and methodology do everything possible to prevent errors. Something going wrong at run-time is something that needs to be prevented, and if it cannot be prevented, then it's out of scope for whatever solution people have been thinking about.
+
+他のプログラミング言語と比較して、Erlangには障害が起きた場合の対処方法がかなり独特な部分があります。
+他のプログラミング言語には、その言語自体や開発環境、開発手法といったものがエラーを防ぐためにできる限りのことをしてくれる、という共通の考え方があります。
+実行時に何かがおかしくなるということは予防する必要があるもので、予防できなかった場合には、人々が考えてきたあらゆる解決策の範囲を超えてしまいます。
+
+%The program is written once, and after that, it's off to production, whatever may happen there. If there are errors, new versions will need to be shipped.
+プログラムは一度書かれると、本番環境に投入され、そこではあらゆることが発生するでしょう。
+エラーがあったら、新しいバージョンを投入する必要がでてきます。
+
+%Erlang, on the other hand, takes the approach that failures will happen no matter what, whether they're developer-, operator-, or hardware-related. It is rarely practical or even possible to get rid of all errors in a program or a system.\footnote{life-critical systems are usually excluded from this category} If you can deal with some errors rather than preventing them at all cost, then most undefined behaviours of a program can go in that "deal with it" approach.
+一方で、Erlangでは障害というものは、それが開発者によるもの、運用者によるもの、あるいはハードウェアによるもの、それらのどれであろうとも起きるものである、という考え方に沿っています。
+プログラムやシステム内のすべてのエラーを取り除くというのは非実用的かつ不可能に近いものです。\footnote{生命に関わるシステムは通常この議論の対象外です。}
+エラーをあらゆるコストを払って予防するのではなく、エラーにうまく対処できれば、プログラムのたいていの予期せぬ動作もその「なんとかする」手法でうまく対応できるでしょう。
+
+%This is where the "Let it Crash"\footnote{Erlang people now seem to favour "let it fail", given it makes people far less nervous.} idea comes from: Because you can now deal with failure, and because the cost of weeding out all of the complex bugs from a system before it hits production is often prohibitive, programmers should only deal with the errors they know how to handle, and leave the rest for another process (a supervisor) or the virtual machine to deal with.
+これが「Let it Crash」\footnote{Erlang界隈の人々は、最近は不安がらせないようにということで「Let it Fail」のほうを好んで使うようです。}という考え方の元になっています。
+この考えを元にすると障害にうまく対処出来ること、かつシステム内のすべての複雑なバグが本番環境で発生する前に取り除くコストが極めて高いことから、プログラマーは対応方法がわかっているエラーだけ対処すべきで、それ以外は他のプロセス(やスーパーバイザー)や仮想マシンに任せるべきです。
+
+%Given that most bugs are transient\footnote{131 out of 132 bugs are transient bugs (they're non-deterministic and go away when you look at them, and trying again may solve the problem entirely), according to Jim Gray in \href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}}, simply restarting processes back to a state known to be stable when encountering an error can be a surprisingly good strategy.
+たいていのバグが一時的なものであると仮定する\footnote{Jim Grayの\href{http://www.hpl.hp.com/techreports/tandem/TR-85.7.html}{Why Do Computers Stop and What Can Be Done About It?}によれば、132個中131このバグが一時的なもの(非決定的で調査するときにはなくなっていて、再実行することで問題が解決するもの)です。}と、エラーに遭遇したときに単純にプロセスを再起動して安定して動いていた状態に戻すというのは、驚くほど良い戦略になりえます。
+
+%Erlang is a programming environment where the approach taken is equivalent to the human body's immune system, whereas most other languages only care about hygiene to make sure no germ enters the body. Both forms appear extremely important to me. Almost every environment offers varying degrees of hygiene. Nearly no other environment offers the immune system where errors at run time can be dealt with and seen as survivable.
+Erlangというのは人体の免疫システムと同様の手法が取られているプログラミング環境です。一方で、他のたいていの言語は体内に病原菌が一切入らないようにするような衛生についてだけを考えています。どちらも私にとって極めて重要なプログラミング環境ものです。ほぼすべての環境でそれぞれに衛生状況が異なります。実行時のエラーがうまく対処されて、そのまま生き残れるような治癒の仕組みを持っているプログラミング環境はErlangの他にほとんどありません。
+
+%Because the system doesn't collapse the first time something bad touches it, Erlang/OTP also allows you to be a doctor. You can go in the system, pry it open right there in production, carefully observe everything inside as it runs, and even try to fix it interactively. To continue with the analogy, Erlang allows you to perform extensive tests to diagnose the problem and various degrees of surgery (even very invasive surgery), without the patients needing to sit down or interrupt their daily activities.
+Erlangではシステムになにか悪いことが起きてもすぐにはシステムが落ちないので、Erlang/OTPではあなたが医者のようにシステムを診察する術も提供してくれます。
+システムの内部に入って、本番環境のその場でシステム内部を確認してまわって、実行中に内部をすべて注意深く観察して、ときには対話的に問題を直すことすらできるようになっています。
+このアナロジーを使い続けると、Erlangは、患者に診察所に来てもらったり、患者の日々の生活を止めることなく、問題を検出するための広範囲に及ぶ検査を実行したり、様々な種類の手術(非常に侵襲性の高い手術でさえも)できるようにしてくれています。
+
+%This book intends to be a little guide about how to be the Erlang medic in a time of war. It is first and foremost a collection of tips and tricks to help understand where failures come from, and a dictionary of different code snippets and practices that helped developers debug production systems that were built in Erlang.
+本書は戦時においてErlang衛生兵になるためのちょっとしたガイドになるよう書かれました。本書は障害の発生原因を理解する上で役立つ秘訣や裏ワザを集めた初めての書籍であり、またErlangで作られた本番システムを開発者がデバッグするときに役立った様々なコードスニペットや実戦経験をあつめた辞書でもあります。
+
+%\section*{Who is this for?}
+\section*{対象読者}
+%\addcontentsline{toc}{section}{Who is this for?}
+\label{sec:who-is-this-for}
+
+%This book is not for beginners. There is a gap left between most tutorials, books, training sessions, and actually being able to operate, diagnose, and debug running systems once they've made it to production. There's a fumbling phase implicit to a programmer's learning of a new language and environment where they just have to figure how to get out of the guidelines and step into the real world, with the community that goes with it.
+本書は初心者向けではありません。たいていのチュートリアルや参考書、トレーニング講習などから実際に本番環境でシステムを走らせてそれを運用し、検査し、デバッグできるようになるまでには隔たりがあります。
+プログラマーが新しい言語や環境を学ぶ中で一般的なガイドラインから逸脱して、コミュニティの多くの人々が同様に取り組んでいる実世界の問題へと踏み出すまでには、明文化されていない手探りの期間が存在します。
+
+%This book assumes that the reader is proficient in basic Erlang and the OTP framework. Erlang/OTP features are explained as I see fit — usually when I consider them tricky — and it is expected that a reader who feels confused by usual Erlang/OTP material will have an idea of where to look for explanations if necessary\footnote{I do recommend visiting \href{http://learnyousomeerlang.com}{Learn You Some Erlang} or the regular \href{http://www.erlang.org/erldoc}{Erlang Documentation} if a free resource is required}.
+本書は、読者はErlangとOTPフレームワークの基礎には熟達していることを想定しています。
+Erlang/OTPの機能は---通常私がややこしいと思ったときには---私が適していると思うように説明しています。通常のErlang/OTPの資料を読んで混乱してしまった読者には、必要に応じて何を参照すべきか説明があります。\footnote{無料の資料が必要であれば\href{http://learnyousomeerlang.com}{Learn You Some Erlang}や通常の\href{http://www.erlang.org/erldoc}{Erlangドキュメント}をおすすめします。}\footnote{訳注:日本語資料としては、\href{https://www.ymotongpoo.com/works/lyse-ja/}{Learn you some Erlang for great good!日本語訳}とその\href{http://shop.ohmsha.co.jp/shopdetail/000000003873/}{書籍版}をおすすめします。}
+
+%What is not necessarily assumed is that the reader knows how to debug Erlang software, dive into an existing code base, diagnose issues, or has an idea of the best practices about deploying Erlang in a production environment\footnote{Running Erlang in a screen or tmux session is \emph{not} a deployment strategy.}.
+本書を読むにあたり前提知識として必ずしも想定していないものは、Erlang製ソフトウェアのデバッグ方法、既存のコードベースの読み進め方、あるいは本番環境へのErlang製プログラムのデプロイのベストプラクティス\footnote{Erlangをscreenやtmuxのセッションで実行する、というのはデプロイ戦略では\emph{ありません}}などです。
+
+%\section*{How To Read This Book}
+\section*{本書の読み進め方}
+%\addcontentsline{toc}{section}{How To Read This Book}
+\label{sec:how-to-read-this-book}
+
+%This book is divided in two parts.
+本書は二部構成です。
+
+%Part \ref{part:writing-applications} focuses on how to write applications. It includes how to dive into a code base (Chapter \ref{chap:how-to-dive-into-a-code-base}), general tips on writing open source Erlang software (Chapter \ref{chap:building-open-source-erlang-software}), and how to plan for overload in your system design (Chapter \ref{chap:overload}).
+第\ref{part:writing-applications}部ではアプリケーションの書き方に焦点を当てます。
+この部ではコードベースへの飛び込み方(第\ref{chap:how-to-dive-into-a-code-base}章)、オープンソースのErlang製ソフトウェアを書く上での一般的な秘訣(第\ref{chap:building-open-source-erlang-software}章)、そしてシステム設計における過負荷への計画の仕方(第\ref{chap:overload}章)を説明します。
+
+%Part \ref{part:diagnosing-applictions} focuses on being an Erlang medic and concerns existing, living systems. It contains instructions on how to connect to a running node (Chapter \ref{chap:connecting}), and the basic runtime metrics available (Chapter \ref{chap:runtime-metrics}). It also explains how to perform a system autopsy using a crash dump (Chapter \ref{chap:crash-dumps}), how to identify and fix memory leaks (Chapter \ref{chap:memory-leaks}), and how to find runaway CPU usage (Chapter \ref{chap:cpu-hogs}). The final chapter contains instructions on how to trace Erlang function calls in production using \otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} — a library used to make the text lighter, and with generally production-safe functions.} to understand issues before they bring the system down (Chapter \ref{chap:tracing}).
+第\ref{part:diagnosing-applictions}部ではErlang衛生兵になって、既存の動作しているシステムに取り組みます。
+この部では実行中のノードへの接続方法の解説(第\ref{chap:connecting}章)、取得できる基本的な実行時のメトリクス(第\ref{chap:runtime-metrics}章)を説明します。またクラッシュダンプを使ったシステムの検死方法(第\ref{chap:crash-dumps}章)、メモリリークの検出方法と修正方法(第\ref{chap:memory-leaks}章)、そして暴走したCPU使用率の検出方法(第\ref{chap:cpu-hogs}章)を説明します。最終章では問題がシステムを落としてしまう前に理解するために、本番環境でのErlangの関数呼び出しを\otpapp{recon}\footnote{\href{http://ferd.github.io/recon/}{http://ferd.github.io/recon/} --- 本書を薄くするために使われるライブラリで、一般的に本番環境で使っても安心なものです}を使ってトレースする方法を説明します。(第\ref{chap:tracing}章)
+
+%Each chapter is followed up by a few optional exercises in the form of questions or hands-on things to try if you feel like making sure you understood everything, or if you want to push things further.
+各章のあとにはすべてを理解したか確認したりより深く理解したい方向けに、いくつか補足的に質問やハンズオン形式の演習問題が付いてきます。
+

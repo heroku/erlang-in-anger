@@ -1,0 +1,429 @@
+\chapter{Memory Leaks}
+\label{chap:memory-leaks}
+
+There are truckloads of ways for an Erlang node to bleed memory. They go from extremely simple to astonishingly hard to figure out (fortunately, the latter type is also rarer), and it's possible you'll never encounter any problem with them.
+
+You will find out about memory leaks in two ways:
+
+\begin{enumerate*}
+	\item A crash dump (see Chapter \ref{chap:crash-dumps});
+	\item By finding a worrisome trend in the data you are monitoring. 
+\end{enumerate*}
+
+This chapter will mostly focus on the latter kind of leak, because they're easier to investigate and see grow in real time. We will focus on finding what is growing on the node and common remediation options, handling binary leaks (they're a special case), and detecting memory fragmentation. 
+\section{Common Sources of Leaks}
+
+Whenever someone calls for help saying "oh no, my nodes are crashing", the first step is always to ask for data. Interesting questions to ask and pieces of data to consider are:
+
+\begin{itemize*}
+	\item Do you have a crash dump and is it complaining about memory specifically? If not, the issue may be unrelated. If so, go dig into it, it's full of data.
+	\item Are the crashes cyclical? How predictable are they? What else tends to happen at around the same time and could it be related?
+	\item Do crashes coincide with peaks in load on your systems, or do they seem to happen at more or less any time? Crashes that happen especially \emph{during} peak times are often due to bad overload management (see Chapter \ref{chap:overload}). Crashes that happen at any time, even when load goes down following a peak are more likely to be actual memory issues.
+\end{itemize*}
+
+If all of this seems to point towards a memory leak, install one of the metrics libraries mentioned in Chapter \ref{chap:runtime-metrics} and/or \otpapp{recon} and get ready to dive in.\footnote{See Chapter \ref{chap:connecting} if you need help to connect to a running node}
+
+The first thing to look at in any of these cases is trends. Check for all types of memory using \expression{erlang:memory()} or some variant of it you have in a library or metrics system. Check for the following points:
+
+\begin{itemize*}
+	\item Is any type of memory growing faster than others?
+	\item Is there any type of memory that's taking the majority of the space available?
+	\item Is there any type of memory that never seems to go down, and always up (other than atoms)?
+\end{itemize*}
+
+Many options are available depending on the type of memory that's growing.
+
+\subsection{Atom}
+
+\emph{Don't use dynamic atoms!} Atoms go in a global table and are cached forever. Look for places where you call \function{erlang:binary\_to\_term/1} and \function{erlang:list\_to\_atom/1}, and consider switching to safer variants (\expression{erlang:binary\_to\_term(Bin, [safe])} and\newline \function{erlang:list\_to\_existing\_atom/1}).
+
+If you use the \otpapp{xmerl} library that ships with Erlang, consider open source alternatives\footnote{I don't dislike \href{https://github.com/paulgray/exml}{exml} or \href{https://github.com/willemdj/erlsom}{erlsom}} or figuring the way to add your own SAX parser that can be safe\footnote{See Ulf Wiger at \href{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}{http://erlang.org/pipermail/erlang-questions/2013-July/074901.html}}. 
+
+If you do none of this, consider what you do to interact with the node. One specific case that bit me in production was that some of our common tools used random names to connect to nodes remotely, or generated nodes with random names that connected to each other from a central server.\footnote{This is a common approach to figuring out how to connect nodes together: have one or two central nodes with fixed names, and have every other one log to them. Connections will then propagate automatically.} Erlang node names are converted to atoms, so just having this was enough to slowly but surely exhaust space on atom tables. Make sure you generate them from a fixed set, or slowly enough that it won't be a problem in the long run.
+
+\subsection{Binary}
+
+See Section \ref{sec:binaries}.
+
+\subsection{Code}
+
+The code on an Erlang node is loaded in memory in its own area, and sits there until it is garbage collected. Only two copies of a module can coexist at one time, so looking for very large modules should be easy-ish.
+
+If none of them stand out, look for code compiled with HiPE\footnote{\href{http://www.erlang.org/doc/man/HiPE\_app.html}{http://www.erlang.org/doc/man/HiPE\_app.html}}. HiPE code, unlike regular BEAM code, is native code and cannot be garbage collected from the VM when new versions are loaded. Memory can accumulate, usually very slowly, if many or large modules are native-compiled and loaded at run time.
+
+Alternatively, you may look for weird modules you didn't load yourself on the node and panic if someone got access to your system!
+
+\subsection{ETS}
+
+ETS tables are never garbage collected, and will maintain their memory usage as long as records will be left undeleted in a table. Only removing records manually (or deleting the table) will reclaim memory.
+
+In the rare cases you're actually leaking ETS data, call the undocumented \function{ets:i()} function in the shell. It will print out information regarding number of entries (\expression{size}) and how much memory they take (\expression{mem}). Figure out if anything is bad.
+
+It's entirely possible all the data there is legit, and you're facing the difficult problem of needing to shard your data set and distribute it over many nodes. This is out of scope for this book, so best of luck to you. You can look into compression of your tables if you need to buy time, however.\footnote{See the \href{http://www.erlang.org/doc/man/ets.html\#new-2}{\expression{compressed} option for \function{ets:new/2}}}
+
+\subsection{Processes}
+
+There are a lot of different ways in which process memory can grow. Most interesting cases will be related to a few common cases: process leaks (as in, you're leaking processes), specific processes leaking their memory, and so on. It's possible there's more than one cause, so multiple metrics are worth investigating. Note that the process count itself is skipped and has been covered before.
+
+\subsubsection{Links and Monitors}
+
+Is the global process count indicative of a leak? If so, you may need to investigate unlinked processes, or peek inside supervisors' children lists to see what may be weird-looking.
+
+Finding unlinked (and unmonitored) processes is easy to do with a few basic commands:
+
+\begin{VerbatimEshell}
+1> [P || P <- processes(),
+         [{_,Ls},{_,Ms}] <- [process_info(P, [links,monitors])],
+         []==Ls, []==Ms].
+\end{VerbatimEshell}
+
+This will return a list of processes with neither. For supervisors, just fetching \newline \expression{supervisor:count\_children(SupervisorPidOrName)} and seeing what looks normal can be a good pointer.
+
+
+\subsubsection{Memory Used}
+
+The per-process memory model is briefly described in Subsection \ref{subsec:memory-process-level}, but generally speaking, you can find which individual processes use the most memory by looking for their \term{memory} attribute. You can look things up either as absolute terms or as a sliding window.
+
+For memory leaks, unless you're in a predictable fast increase, absolute values are usually those worth digging into first:
+
+\begin{VerbatimEshell}
+1> recon:proc_count(memory, 3).
+[{<0.175.0>,325276504,
+  [myapp_stats,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.169.0>,73521608,
+  [myapp_giant_sup,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.72.0>,4193496,
+  [gproc,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]}]
+\end{VerbatimEshell}
+
+Attributes that may be interesting to check other than \term{memory} may be any other fields in Subsection \ref{subsec:digging-procs}, including \term{message\_queue\_len}, but \term{memory} will usually encompass all other types.
+
+\subsubsection{Garbage Collections}
+\label{subsubsec:leak-gc}
+
+It is very well possible that a process uses lots of memory, but only for short periods of time. For long-lived nodes with a large overhead for operations, this is usually not a problem, but whenever memory starts being scarce, such spiky behaviour might be something you want to get rid of.
+
+Monitoring all garbage collections in real-time from the shell would be costly. Instead, setting up Erlang's system monitor\footnote{\href{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}{http://www.erlang.org/doc/man/erlang.html\#system\_monitor-2}} might be the best way to go at it.
+
+Erlang's system monitor will allow you to track information such as long garbage collection periods and large process heaps, among other things. A monitor can temporarily be set up as follows:
+
+\begin{VerbatimEshell}
+1> erlang:system_monitor().
+undefined
+2> erlang:system_monitor(self(), [{long_gc, 500}]).
+undefined
+3> flush().
+Shell got {monitor,<4683.31798.0>,long_gc,
+                   [{timeout,515},
+                    {old_heap_block_size,0},
+                    {heap_block_size,75113},
+                    {mbuf_size,0},
+                    {stack_size,19},
+                    {old_heap_size,0},
+                    {heap_size,33878}]}
+5> erlang:system_monitor(undefined).
+{<0.26706.4961>,[{long_gc,500}]}
+6> erlang:system_monitor().
+undefined
+\end{VerbatimEshell}
+
+The first command checks that nothing (or nobody else) is using a system monitor yet — you don't want to take this away from an existing application or coworker.
+
+The second command will be notified every time a garbage collection takes over 500 milliseconds. The result is flushed in the third command. Feel free to also check for \expression{\{large\_heap, NumWords\}} if you want to monitor such sizes.
+Be careful to start with large values at first if you're unsure. You don't want to flood your process' mailbox with a bunch of heaps that are 1-word large or more, for example.
+
+Command 5 unsets the system monitor (exiting or killing the monitor process also frees it up), and command 6 validates that everything worked.
+
+You can then find out if such monitoring messages tend to coincide with the memory increases that seem to result in leaks or overuses, and try to catch culprits before things are too bad. Quickly reacting and digging into the process (possibly with \function{recon:info/1}) may help find out what's wrong with the application.
+
+\subsection{Nothing in Particular}
+
+If nothing seems to stand out in the preceding material, binary leaks (Section \ref{sec:binaries}) and memory fragmentation (Section \ref{sec:memory-fragmentation}) may be the culprits. If nothing there fits either, it's possible a C driver, NIF, or even the VM itself is leaking. Of course, a possible scenario is that load on the node and memory usage were proportional, and nothing specifically ended up being leaky or modified. The system just needs more resources or nodes.
+
+\section{Binaries}
+\label{sec:binaries}
+
+Erlang's binaries are of two main types: ProcBins and Refc binaries\footnote{\href{http://www.erlang.org/doc/efficiency\_guide/binaryhandling.html\#id65798}{http://www.erlang.org/doc/efficiency\_guide/binaryhandling.html\#id65798}}. Binaries up to 64 bytes are allocated directly on the process's heap, and their entire life cycle is spent in there. Binaries bigger than that get allocated in a global heap for binaries only, and each process to use one holds a local reference to it in its local heap. These binaries are reference-counted, and the deallocation will occur only once all references are garbage-collected from all processes that pointed to a specific binary.
+
+In 99\% of the cases, this mechanism works entirely fine. In some cases, however, the process will either:
+
+\begin{enumerate*}
+	\item do too little work to warrant allocations and garbage collection;
+         \item eventually grow a large stack or heap with various data structures, collect them, then get to work with a lot of refc binaries. Filling the heap again with binaries (even though a virtual heap is used to account for the refc binaries' real size) may take a lot of time, giving long delays between garbage collections.
+\end{enumerate*}
+
+\subsection{Detecting Leaks}
+
+Detecting leaks for reference-counted binaries is easy enough: take a measure of all of each process' list of binary references (using the \expression{binary} attribute), force a global garbage collection, take another snapshot, and calculate the difference.
+
+This can be done directly with \function{recon:bin\_leak(Max)} and looking at the node's total memory before and after the call:
+
+\begin{VerbatimEshell}
+1> recon:bin_leak(5).
+[{<0.4612.0>,-5580,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.17479.0>,-3724,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.31798.0>,-3648,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.31797.0>,-3266,
+  [{current_function,{gen,do_call,4}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.22711.1>,-2532,
+  [{current_function,{gen_fsm,loop,7}},
+   {initial_call,{proc_lib,init_p,5}}]}]
+\end{VerbatimEshell}
+
+This will show how many individual binaries were held and then freed by each process as a delta. The value \expression{-5580} means there were 5580 fewer refc binaries after the call than before.
+
+It is normal to have a given amount of them stored at any point in time, and not all numbers are a sign that something is bad. If you see the memory used by the VM go down drastically after running this call, you may have had a lot of idling refc binaries.
+
+Similarly, if you instead see some processes hold impressively large numbers of them\footnote{We've seen some processes hold hundreds of thousands of them during leak investigations at Heroku!}, that might be a good sign you have a problem.
+
+You can further validate the top consumers in total binary memory by using the special \expression{binary\_memory} attribute supported in \otpapp{recon}:
+
+\begin{VerbatimEshell}
+1> recon:proc_count(binary_memory, 3).
+[{<0.169.0>,77301349,
+  [app_sup,
+   {current_function,{gen_server,loop,6}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.21928.1>,9733935,
+  [{current_function,{erlang,hibernate,3}},
+   {initial_call,{proc_lib,init_p,5}}]},
+ {<0.12386.1172>,7208179,
+  [{current_function,{erlang,hibernate,3}},
+   {initial_call,{proc_lib,init_p,5}}]}]
+\end{VerbatimEshell}
+
+This will return the \var{N} top processes sorted by the amount of memory the refc binaries reference to hold, and can help point to specific processes that hold a few large binaries, instead of their raw amount. You may want to try running this function \emph{before} \function{recon:bin\_leak/1}, given the latter garbage collects the entire node first.
+
+\subsection{Fixing Leaks}
+
+Once you've established you've got a binary memory leak using \function{recon:bin\_leak(Max)}, it should be simple enough to look at the top processes and see what they are and what kind of work they do.
+
+Generally, refc binaries memory leaks can be solved in a few different ways, depending on the source:
+
+\begin{itemize*}
+	\item call garbage collection manually at given intervals (icky, but somewhat efficient);
+	\item stop using binaries (often not desirable);
+	\item use \function{binary:copy/1-2}\footnote{\href{http://www.erlang.org/doc/man/binary.html\#copy-1}{http://www.erlang.org/doc/man/binary.html\#copy-1}} if keeping only a small fragment (usually less than 64 bytes) of a larger binary;\footnote{It might be worth copying even a larger fragment of a refc binary. For example, copying 10 megabytes off a 2 gigabytes binary should be worth the short-term overhead if it allows the 2 gigabytes binary to be garbage-collected while keeping the smaller fragment longer.}
+	\item move work that involves larger binaries to temporary one-off processes that will die when they're done (a lesser form of manual GC!);
+	\item or add hibernation calls when appropriate (possibly the cleanest solution for inactive processes).
+\end{itemize*}
+
+The first two options are frankly not agreeable and should not be attempted before all else failed. The last three options are usually the best ones to be used.
+
+\subsubsection{Routing Binaries}
+
+There's a specific solution for a specific use case some Erlang users have reported. The problematic use case is usually having a middleman process routing binaries from one process to another one. That middleman process will therefore acquire a reference to every binary passing through it and risks being a common major source of refc binaries leaks.
+
+The solution to this pattern is to have the router process return the pid to route to and let the original caller move the binary around. This will make it so that only processes that do \emph{need} to touch the binaries will do so.
+
+A fix for this can be implemented transparently in the router's API functions, without any visible change required by the callers.
+
+\section{Memory Fragmentation}
+\label{sec:memory-fragmentation}
+
+Memory fragmentation issues are intimately related to Erlang's memory model, as described in Section \ref{subsec:erlang-memory-model}. It is by far one of the trickiest issues of running long-lived Erlang nodes (often when individual node uptime reaches many months), and will show up relatively rarely.
+
+The general symptoms of memory fragmentation are large amounts of memory being allocated during peak load, and that memory not going away after the fact. The damning factor will be that the node will internally report much lower usage (through \function{erlang:memory()}) than what is reported by the operating system.
+
+\subsection{Finding Fragmentation}
+
+The \module{recon\_alloc} module was developed specifically to detect and help point towards the resolution of such issues.
+
+Given how rare this type of issue has been so far over the community (or happened without the developers knowing what it was), only broad steps to detect things are defined. They're all vague and require the operator's judgement.
+
+\subsubsection{Check Allocated Memory}
+
+Calling \function{recon\_alloc:memory/1} will report various memory metrics with more flexibility than \function{erlang:memory/0}. Here are the possibly relevant arguments:
+
+\begin{enumerate}
+	\item call \expression{recon\_alloc:memory(usage)}. This will return a value between 0 and 1 representing a percentage of memory that is being actively used by Erlang terms versus the memory that the Erlang VM has obtained from the OS for such purposes. If the usage is close to 100\%, you likely do not have memory fragmentation issues. You're just using a lot of it.
+	\item check if \expression{recon\_alloc:memory(allocated)} matches what the OS reports.\footnote{You can call \expression{recon\_alloc:set\_unit(Type)} to set the values reported by \module{recon\_alloc} in bytes, kilobytes, megabytes, or gigabytes} It should match it fairly closely if the problem is really about fragmentation or a memory leak from Erlang terms.
+\end{enumerate}
+
+That should confirm if memory seems to be fragmented or not.
+
+\subsubsection{Find the Guilty Allocator}
+
+Call \expression{recon\_alloc:memory(allocated\_types)} to see which type of util allocator (see Section \ref{subsec:erlang-memory-model}) is allocating the most memory. See if one looks like an obvious culprit when you compare the results with \expression{erlang:memory()}.
+
+Try \expression{recon\_alloc:fragmentation(current)}. The resulting data dump will show different allocators on the node with various usage ratios.\footnote{More information is available at \href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}}
+
+If you see very low ratios, check if they differ when calling \expression{recon\_alloc:fragmentation(max)}, which should show what the usage patterns were like under your max memory load.
+
+If there is a big difference, you are likely having issues with memory fragmentation for a few specific allocator types following usage spikes.
+
+\subsection{Erlang's Memory Model}
+\label{subsec:erlang-memory-model}
+
+\subsubsection{The Global Level}
+
+To understand where memory goes, one must first understand the many allocators being used. Erlang's memory model, for the entire virtual machine, is hierarchical. As shown in Figure \ref{fig:allocators},  there are two main allocators, and a bunch of sub-allocators (numbered 1-9). The sub-allocators are the specific allocators used directly by Erlang code and the VM for most data types:\footnote{The complete list of where each data type lives can be found in \href{https://github.com/erlang/otp/blob/maint/erts/emulator/beam/erl\_alloc.types}{erts/emulator/beam/erl\_alloc.types}}
+
+
+\begin{figure}
+  \includegraphics{memory-allocs.pdf}%
+  \caption{Erlang's Memory allocators and their hierarchy. Not shown is the special \emph{super carrier}, optionally allowing to pre-allocate (and limit) all memory available to the Erlang VM since R16B03.}%
+   \label{fig:allocators}
+\end{figure}
+
+\begin{enumerate*}
+    \item \term{temp\_alloc}: does temporary allocations for short use cases (such as data living within a single C function call).
+    \item \term{eheap\_alloc}: heap data, used for things such as the Erlang processes' heaps.
+    \item \term{binary\_alloc}: the allocator used for reference counted binaries (what their 'global heap' is). Reference counted binaries stored in an ETS table remain in this allocator.
+    \item \term{ets\_alloc}: ETS tables store their data in an isolated part of memory that isn't garbage collected, but allocated and deallocated as long as terms are being stored in tables.
+    \item \term{driver\_alloc}: used to store driver data in particular, which doesn't keep drivers that generate Erlang terms from using other allocators. The driver data allocated here contains locks/mutexes, options, Erlang ports, etc.
+    \item \term{sl\_alloc}: short-lived memory blocks will be stored there, and include items such as some of the VM's scheduling information or small buffers used for some data types' handling.
+    \item \term{ll\_alloc}: long-lived allocations will be in there. Examples include Erlang code itself and the atom table, which stay there.
+    \item \term{fix\_alloc}: allocator used for frequently used fixed-size blocks of memory. One example of data used there is the internal processes' C struct, used internally by the VM.
+    \item \term{std\_alloc}: catch-all allocator for whatever didn't fit the previous categories. The process registry for named process is there.
+\end{enumerate*}
+
+By default, there will be one instance of each allocator per scheduler (and you should have one scheduler per core), plus one instance to be used by linked-in drivers using async threads. This ends up giving you a structure a bit like in Figure \ref{fig:allocators}, but split it in \var{N} parts at each leaf.
+
+Each of these sub-allocators will request memory from \term{mseg\_alloc} and \term{sys\_alloc} depending on the use case, and in two possible ways. The first way is to act as a multiblock carrier (\term{mbcs}), which will fetch chunks of memory that will be used for many Erlang terms at once. For each \term{mbc}, the VM will set aside a given amount of memory (about 8MB by default in our case, which can be configured by tweaking VM options), and each term allocated will be free to go look into the many multiblock carriers to find some decent space in which to reside.
+
+Whenever the item to be allocated is greater than the single block carrier threshold (\term{sbct})\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}{http://erlang.org/doc/man/erts\_alloc.html\#M\_sbct}}, the allocator switches this allocation into a single block carrier (\term{sbcs}). A single block carrier will request memory directly from \term{mseg\_alloc} for the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} entries, and then switch over to \term{sys\_alloc} and store the term there until it's deallocated.
+
+So looking at something such as the binary allocator, we may end up with something similar to Figure \ref{fig:allocation-1-normal}
+
+\begin{figure}
+  \includegraphics{allocation-1-normal.pdf}%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-1-normal}
+\end{figure}
+\FloatBarrier
+
+Whenever a multiblock carrier (or the first \term{mmsbc}\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}{http://erlang.org/doc/man/erts\_alloc.html\#M\_mmsbc}} single block carriers) can be reclaimed, \term{mseg\_alloc} will try to keep it in memory for a while so that the next allocation spike that hits your VM can use pre-allocated memory rather than needing to ask the system for more each time.
+
+You then need to know the different memory allocation strategies of the Erlang virtual machine:
+
+\begin{enumerate*}
+    \item Best fit (\term{bf})
+    \item Address order best fit (\term{aobf})
+    \item Address order first fit (\term{aoff})
+    \item Address order first fit carrier best fit (\term{aoffcbf})
+    \item Address order first fit carrier address order best fit (\term{aoffcaobf})
+    \item Good fit (\term{gf})
+    \item A fit (\term{af})
+\end{enumerate*}
+
+Each of these strategies can be configured individually for each \term{alloc\_util} allocator\footnote{\href{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}{http://erlang.org/doc/man/erts\_alloc.html\#M\_as}}
+
+\begin{figure}
+  \includegraphics[max height=7cm]{allocation-strategy-1.pdf}%
+  \centering%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-1}
+\end{figure}
+\FloatBarrier
+
+For \emph{best fit} (\term{bf}), the VM builds a balanced binary tree of all the free blocks' sizes, and will try to find the smallest one that will accommodate the piece of data and allocate it there. In Figure \ref{fig:allocation-strategy-1}, having a piece of data that requires three blocks would likely end in area 3.
+
+\emph{Address order best fit} (\term{aobf}) will work similarly, but the tree instead is based on the addresses of the blocks. So the VM will look for the smallest block available that can accommodate the data, but if many of the same size exist, it will favor picking one that has a lower address. If I have a piece of data that requires three blocks, I'll still likely end up in area 3, but if I need two blocks, this strategy will favor the first \term{mbcs} in Figure \ref{fig:allocation-strategy-1} with area 1 (instead of area 5). This could make the VM have a tendency to favor the same carriers for many allocations.
+
+\emph{Address order first fit} (\term{aoff}) will favor the address order for its search, and as soon as a block fits, \term{aoff} uses it. Where \term{aobf} and bf would both have picked area 3 to allocate four blocks in Figure \ref{fig:allocation-strategy-1}, this one will get area 2 as a first priority given its address is lowest. In Figure \ref{fig:allocation-strategy-2}, if we were to allocate four blocks, we'd favor block 1 to block 3 because its address is lower, whereas \term{bf} would have picked either 3 or 4, and \term{aobf} would have picked 3.
+
+\begin{figure}
+  \includegraphics[max height=7cm]{allocation-strategy-2.pdf}%
+  \centering%
+  \caption{Example memory allocated in a specific sub-allocator}%
+   \label{fig:allocation-strategy-2}
+\end{figure}
+\FloatBarrier
+
+\emph{Address order first fit carrier best fit} (\term{aoffcbf}) is a strategy that will first favor a carrier that can accommodate the size and then look for the best fit within that one. So if we were to allocate two blocks in Figure \ref{fig:allocation-strategy-2}, \term{bf} and \term{aobf} would both favor block 5, \term{aoff} would pick block 1. \term{aoffcbf} would pick area 2, because the first \term{mbcs} can accommodate it fine, and area 2 fits it better than area 1.
+
+\emph{Address order first fit carrier address order best fit} (\term{aoffcaobf}) will be similar to \term{aoffcbf}, but if multiple areas within a carrier have the same size, it will favor the one with the smallest address between the two rather than leaving it unspecified.
+
+\emph{Good fit} (\term{gf}) is a different kind of allocator; it will try to work like best fit (\term{bf}), but will only search for a limited amount of time. If it doesn't find a perfect fit there and then, it will pick the best one encountered so far. The value is configurable through the \term{mbsd}\footnote{\href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_mbsd}} VM argument.
+
+\emph{A fit} (\term{af}), finally, is an allocator behaviour for temporary data that looks for a single existing memory block, and if the data can fit, \term{af} uses it. If the data can't fit, \term{af} allocates a new one.
+
+Each of these strategies can be applied individually to every kind of allocator, so that the heap allocator and the binary allocator do not necessarily share the same strategy.
+
+Finally, starting with Erlang version 17.0, each \term{alloc\_util} allocator on each scheduler has what is called a \emph{\term{mbcs} pool}. The \term{mbcs} pool is a feature used to fight against memory fragmentation on the VM. When an allocator gets to have one of its multiblock carriers become mostly empty,\footnote{The threshold is configurable through \href{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}{http://www.erlang.org/doc/man/erts\_alloc.html\#M\_acul}} the carrier becomes \emph{abandoned}. 
+
+This abandoned carrier will stop being used for new allocations, until new multiblock carriers start being required. When this happens, the carrier will be fetched from the \term{mbcs} pool. This can be done across multiple \term{alloc\_util} allocators of the same type across schedulers. This allows the VM to cache mostly-empty carriers without forcing deallocation of their memory.\footnote{In cases this consumes too much memory, the feature can be disabled with the options \term{+MBacul 0}.} It also enables the migration of carriers across schedulers when they contain little data, according to their needs.
+
+\subsubsection{The Process Level}
+\label{subsec:memory-process-level}
+
+On a smaller scale, for each Erlang process, the layout still is a bit different. It basically has this piece of memory that can be imagined as one box:
+
+\begin{VerbatimText}
+[                  ]
+\end{VerbatimText}
+
+On one end you have the heap, and on the other, you have the stack:
+
+\begin{VerbatimText}
+[heap |     | stack]
+\end{VerbatimText}
+
+In practice there's more data (you have an old heap and a new heap, for generational GC, and also a virtual binary heap, to account for the space of reference-counted binaries on a specific sub-allocator not used by the process — \term{binary\_alloc} vs. \term{eheap\_alloc}):
+
+\begin{VerbatimText}
+[heap   ||    stack]
+\end{VerbatimText}
+
+The space is allocated more and more up until either the stack or the heap can't fit in anymore. This triggers a minor GC. The minor GC moves the data that can be kept into the old heap. It then collects the rest, and may end up reallocating more space.
+
+After a given number of minor GCs and/or reallocations, a full-sweep GC is performed, which inspects both the new and old heaps, frees up more space, and so on. When a process dies, both the stack and heap are taken out at once. reference-counted binaries are decreased, and if the counter is at 0, they vanish.
+
+When that happens, over 80\% of the time, the only thing that happens is that the memory is marked as available in the sub-allocator and can be taken back by new processes or other ones that may need to be resized. Only after having this memory unused — and the multiblock carrier unused also — is it returned to \term{mseg\_alloc} or \term{sys\_alloc}, which may or may not keep it for a while longer.
+
+\subsection{Fixing Memory Fragmentation with a Different Allocation Strategy}
+
+Tweaking your VM's options for memory allocation may help.
+
+You will likely need to have a good understanding of what your type of memory load and usage is, and be ready to do a lot of in-depth testing. The \module{recon\_alloc} module contains a few helper functions to provide guidance, and the module's documentation\footnote{\href{http://ferd.github.io/recon/recon\_alloc.html}{http://ferd.github.io/recon/recon\_alloc.html}} should be read at this point.
+
+You will need to figure out what the average data size is, the frequency of allocation and deallocation, whether the data fits in \term{mbcs} or \term{sbcs},  and you will then need to try playing with a bunch of the options mentioned in \module{recon\_alloc}, try the different strategies, deploy them, and see if things improve or if they impact times negatively.
+
+This is a very long process for which there is no shortcut, and if issues happen only every few months per node, you may be in for the long haul. 
+
+
+\section{Exercises}
+
+\subsection*{Review Questions}
+
+\begin{enumerate}
+	\item Name some of the common sources of leaks in Erlang programs.
+	\item What are the two main types of binaries in Erlang?
+	\item What could be to blame if no specific data type seems to be the source of a leak?
+	\item If you find the node died with a process having a lot of memory, what could you do to find out which one it was?
+	\item How could code itself cause a leak?
+	\item How can you find out if garbage collections are taking too long to run?
+\end{enumerate}
+
+\subsection*{Open-ended Questions}
+
+\begin{enumerate}
+	\item  How could you verify if a leak is caused by forgetting to kill processes, or by processes using too much memory on their own?
+	\item A process opens a 150MB log file in binary mode to go extract a piece of information from it, and then stores that information in an ETS table. After figuring out you have a binary memory leak, what should be done to minimize binary memory usage on the node?
+	\item What could you use to find out if ETS tables are growing too fast?
+	\item What steps should you go through to find out that a node is likely suffering from fragmentation? How could you disprove the idea that is could be due to a NIF or driver leaking memory?
+	\item How could you find out if a process with a large mailbox (from reading \term{message\_queue\_len}) seems to be leaking data from there, or never handling new messages?
+	\item A process with a large memory footprint seems to be rarely running garbage collections. What could explain this?
+	\item When should you alter the allocation strategies on your nodes? Should you prefer to tweak this, or the way you wrote code?
+\end{enumerate}
+
+\subsection*{Hands-On}
+
+\begin{enumerate}
+	\item Using any system you know or have to maintain in Erlang (including toy systems), can you figure out if there are any binary memory leaks on there?
+\end{enumerate}
+

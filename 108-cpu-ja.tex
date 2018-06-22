@@ -1,0 +1,114 @@
+\chapter{CPU and Scheduler Hogs}
+\label{chap:cpu-hogs}
+
+While memory leaks tend to absolutely kill your system, CPU exhaustion tends to act like a bottleneck and limits the maximal work you can get out of a node. Erlang developers will have a tendency to scale horizontally when they face such issues. It is often an easy enough job to scale out the more basic pieces of code out there. Only centralized global state (process registries, ETS tables, and so on) usually need to be modified.\footnote{Usually this takes the form of sharding or finding a state-replication scheme that's suitable, and little more. It's still a decent piece of work, but nothing compared to finding out most of your program's semantics aren't applicable to distributed systems given Erlang usually forces your hand there in the first place.} Still, if you want to optimize locally before scaling out at first, you need to be able to find your CPU and scheduler hogs.
+
+It is generally difficult to properly analyze the CPU usage of an Erlang node to pin problems to a specific piece of code. With everything concurrent and in a virtual machine, there is no guarantee you will find out if a specific process, driver, your own Erlang code, NIFs you may have installed, or some third-party library is eating up all your processing power.
+
+The existing approaches are often limited to profiling and reduction-counting if it's in your code, and to monitoring the scheduler's work if it might be anywhere else (but also your code).
+
+\section{Profiling and Reduction Counts}
+\label{sec:cpu-profiling}
+
+To pin issues to specific pieces of Erlang code, as mentioned earlier, there are two main approaches. One will be to do the old standard profiling routine, likely using one of the following applications:\footnote{All of these profilers work using Erlang tracing functionality with almost no restraint. They will have an impact on the run-time performance of the application, and shouldn't be used in production.}
+
+\begin{itemize*}
+	\item \otpapp{eprof},\footnote{\href{http://www.erlang.org/doc/man/eprof.html}{http://www.erlang.org/doc/man/eprof.html}} the oldest Erlang profiler around. It will give general percentage values and will mostly report in terms of time taken.
+	\item \otpapp{fprof},\footnote{\href{http://www.erlang.org/doc/man/fprof.html}{http://www.erlang.org/doc/man/fprof.html}} a more powerful replacement of eprof. It will support full concurrency and generate in-depth reports. In fact, the reports are so deep that they are usually considered opaque and hard to read. 
+	\item \otpapp{eflame},\footnote{\href{https://github.com/proger/eflame}{https://github.com/proger/eflame}} the newest kid on the block. It generates flame graphs to show deep call sequences and hot-spots in usage on a given piece of code. It allows one to quickly find issues with a single look at the final result.
+\end{itemize*}
+
+It will be left to the reader to thoroughly read each of these application's documentation. The other approach will be to run \function{recon:proc\_window/3} as introduced in Subsection \ref{subsec:digging-procs}:
+
+\begin{VerbatimEshell}
+1> recon:proc_window(reductions, 3, 500).
+[{<0.46.0>,51728,
+  [{current_function,{queue,in,2}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.49.0>,5728,
+  [{current_function,{dict,new,0}},
+   {initial_call,{erlang,apply,2}}]},
+ {<0.43.0>,650,
+  [{current_function,{timer,sleep,1}},
+   {initial_call,{erlang,apply,2}}]}]
+\end{VerbatimEshell}
+
+The reduction count has a direct link to function calls in Erlang, and a high count is usually the synonym of a high amount of CPU usage. 
+
+What's interesting with this function is to try it while a system is already rather busy,\footnote{See Subsection \ref{subsec:global-cpu}} with a relatively short interval. Repeat it many times, and you should hopefully see a pattern emerge where the same processes (or the same \emph{kind} of processes) tend to always come up on top.
+
+Using the code locations\footnote{Call \expression{recon:info(PidTerm, location)} or \expression{process\_info(Pid, current\_stacktrace)} to get this information.} and current functions being run, you should be able to identify what kind of code hogs all your schedulers.
+
+\section{System Monitors}
+\label{sec:cpu-system-monitors}
+
+If nothing seems to stand out through either profiling or checking reduction counts, it's possible some of your work ends up being done by NIFs, garbage collections, and so on. These kinds of work may not always increment their reductions count correctly, so they won't show up with the previous methods, only through long run times.
+
+To find about such cases, the best way around is to use \function{erlang:system\_monitor/2}, and look for \term{long\_gc} and \term{long\_schedule}. The former will show whenever garbage collection ends up doing a lot of work (it takes time!), and the latter will likely catch issues with busy processes, either through NIFs or some other means, that end up making them hard to de-schedule.\footnote{Long garbage collections count towards scheduling time. It is very possible that a lot of your long schedules will be tied to garbage collections depending on your system.}
+
+We've seen how to set such a system monitor In Garbage Collection in \ref{subsubsec:leak-gc}, but here's a different pattern\footnote{If you're on 17.0 or newer versions, the shell functions can be made recursive far more simply by using their named form, but to have the widest compatibility possible with older versions of Erlang, I've let them as is.} I've used before to catch long-running items:
+
+\begin{VerbatimEshell}
+1> F = fun(F) ->
+    receive
+        {monitor, Pid, long_schedule, Info} ->
+            io:format("monitor=long_schedule pid=~p info=~p~n", [Pid, Info]);
+        {monitor, Pid, long_gc, Info} -> 
+            io:format("monitor=long_gc pid=~p info=~p~n", [Pid, Info])
+    end,
+    F(F)
+end.
+2> Setup = fun(Delay) -> fun() -> 
+     register(temp_sys_monitor, self()),
+     erlang:system_monitor(self(), [{long_schedule, Delay}, {long_gc, Delay}]),
+     F(F)
+end end.
+3> spawn_link(Setup(1000)).
+<0.1293.0>
+monitor=long_schedule pid=<0.54.0> info=[{timeout,1102},
+                                         {in,{some_module,some_function,3}},
+                                         {out,{some_module,some_function,3}}]
+\end{VerbatimEshell}
+
+Be sure to set the \term{long\_schedule} and \term{long\_gc} values to large-ish values that might be reasonable to you. In this example, they're set to 1000 milliseconds. You can either kill the monitor by calling \expression{exit(whereis(temp\_sys\_monitor), kill)} (which will in turn kill the shell because it's linked), or just disconnect from the node (which will kill the process because it's linked to the shell.)
+
+This kind of code and monitoring can be moved to its own module where it reports to a long-term logging storage, and can be used as a canary for performance degradation or overload detection.
+
+\subsection{Suspended Ports}
+\label{subsec:port-system-monitors}
+
+An interesting part of system monitors that didn't fit anywhere but may have to do with scheduling is regarding ports. When a process sends too many message to a port and the port's internal queue gets full, the Erlang schedulers will forcibly de-schedule the sender until space is freed. This may end up surprising a few users who didn't expect that implicit back-pressure from the VM.
+
+This kind of event can be monitored by passing in the atom \term{busy\_port} to the system monitor. Specifically for clustered nodes, the atom \term{busy\_dist\_port} can be used to find when a local process gets de-scheduled when contacting a process on a remote node whose inter-node communication was handled by a busy port.
+
+If you find out you're having problems with these, try replacing your sending functions where in critical paths with \function{erlang:port\_command(Port, Data, [nosuspend])} for ports, and \function{erlang:send(Pid, Msg, [nosuspend])} for messages to distributed processes. They will then tell you when the message could not be sent and you would therefore have been descheduled.
+
+
+%\section{Exercises}
+\section{演習}
+
+%\subsection*{Review Questions}
+\subsection*{復習問題}
+
+\begin{enumerate}
+	%\item What are the two main approaches to pin issues about CPU usages?
+	\item CPU 利用率に関する問題を特定するための主なアプローチ２つとは何ですか？
+	%\item Name some of the profiling tools available. What approaches are preferable for production use? Why?
+	\item プロファイル用のツールの名前をいくつか挙げてください。本番環境で使用する場合、どの方法が好ましいですか？ またそれはなぜですか？
+	%\item Why can long scheduling monitors be useful to find CPU or scheduler over-consumption?
+	\item ロングスケジュールモニターが、CPU やスケジューラの使いすぎを見つけるのに便利なのはなぜですか？
+
+\end{enumerate}
+
+%\subsection*{Open-ended Questions}
+\subsection*{自由回答}
+
+\begin{enumerate}
+	%\item If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
+  \item ほとんど仕事をしない(リダクションカウンタを増やさない)プロセスが長期間スケジューリングされているのを見つけた場合、そのプロセスもしくは実行しているコードについて何が考えられますか？
+
+	%\item Can you set up a system monitor and then trigger it with regular Erlang code? Can you use it to find out for how long processes seem to be scheduled on average? You may need to manually start random processes from the shell that are more aggressive in their work than those provided by the existing system.
+	\item あなたはシステムモニターを設定して、通常の Erlang コードでそれを起動できますか？ プロセスが平均しておよそどれぐらいの長さスケジューリングされているかを見つけるために、システムモニターを利用できますか？ 既存のシステムにすでにあるものよりもより適切にそれを行えるようなプロセスを、シェルから手動で手当たり次第に起動する必要があるかもしれません。
+
+\end{enumerate}
+
