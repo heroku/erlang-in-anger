@@ -84,21 +84,31 @@ This kind of event can be monitored by passing in the atom \term{busy\_port} to 
 If you find out you're having problems with these, try replacing your sending functions where in critical paths with \function{erlang:port\_command(Port, Data, [nosuspend])} for ports, and \function{erlang:send(Pid, Msg, [nosuspend])} for messages to distributed processes. They will then tell you when the message could not be sent and you would therefore have been descheduled.
 
 
-\section{Exercises}
+%\section{Exercises}
+\section{演習}
 
-\subsection*{Review Questions}
+%\subsection*{Review Questions}
+\subsection*{復習問題}
 
 \begin{enumerate}
-	\item What are the two main approaches to pin issues about CPU usages?
-	\item Name some of the profiling tools available. What approaches are preferable for production use? Why?
-	\item Why can long scheduling monitors be useful to find CPU or scheduler over-consumption?
+	%\item What are the two main approaches to pin issues about CPU usages?
+	\item CPU 利用率に関する問題を特定するための主なアプローチ２つとは何ですか？
+	%\item Name some of the profiling tools available. What approaches are preferable for production use? Why?
+	\item プロファイル用のツールの名前をいくつか挙げてください。本番環境で使用する場合、どの方法が好ましいですか？ またそれはなぜですか？
+	%\item Why can long scheduling monitors be useful to find CPU or scheduler over-consumption?
+	\item ロングスケジュールモニターが、CPU やスケジューラの使いすぎを見つけるのに便利なのはなぜですか？
 
 \end{enumerate}
 
-\subsection*{Open-ended Questions}
+%\subsection*{Open-ended Questions}
+\subsection*{自由回答}
 
 \begin{enumerate}
-	\item If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
-	\item Can you set up a system monitor and then trigger it with regular Erlang code? Can you use it to find out for how long processes seem to be scheduled on average? You may need to manually start random processes from the shell that are more aggressive in their work than those provided by the existing system.
+	%\item If you find that a process doing very little work with reductions ends up being scheduled for long periods of time, what can you guess about it or the code it runs?
+  \item ほとんど仕事をしない(リダクションカウンタを増やさない)プロセスが長期間スケジューリングされているのを見つけた場合、そのプロセスもしくは実行しているコードについて何が考えられますか？
+
+	%\item Can you set up a system monitor and then trigger it with regular Erlang code? Can you use it to find out for how long processes seem to be scheduled on average? You may need to manually start random processes from the shell that are more aggressive in their work than those provided by the existing system.
+	\item あなたはシステムモニターを設定して、通常の Erlang コードでそれを起動できますか？ プロセスが平均しておよそどれぐらいの長さスケジューリングされているかを見つけるために、システムモニターを利用できますか？ 既存のシステムにすでにあるものよりもより適切にそれを行えるようなプロセスを、シェルから手動で手当たり次第に起動する必要があるかもしれません。
+
 \end{enumerate}
 
