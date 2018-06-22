@@ -114,20 +114,26 @@ MESSAGE QUEUE LENGTH: CURRENT FUNCTION
 
 This one will run over the crash dump and output all of the functions scheduled to run for processes with at least 10000 messages in their mailbox. In the case of this run, the script showed that the entire node was locking up waiting on IO for \function{io:format/2} calls, for example.
 
-\section{Too Many (or too few) Processes}
+%\section{Too Many (or too few) Processes}
+\section{非常に多い（もしくは非常に少ない）プロセス}
 
-The process count is mostly useful when you know your node's usual average count\footnote{See subsection \ref{subsec:global-procs} for details}, in order to figure if it's abnormal or not.
+%The process count is mostly useful when you know your node's usual average count\footnote{See subsection \ref{subsec:global-procs} for details}, in order to figure if it's abnormal or not.
+正常かどうかを判別するためにプロセス数を数えることは、ノードの通常時のプロセス数を把握している場合にはとても有用です\footnote{詳細は \ref{subsec:global-procs} を参照のこと}。
 
-A count that is higher than normal may reveal a specific leak or overload, depending on applications.
+%A count that is higher than normal may reveal a specific leak or overload, depending on applications.
+アプリケーションによりますが、通常よりも多い場合には何かがリークしているか、過負荷かもしれません。
 
-If the process count is extremely low compared to usual, see if the node terminated with a slogan like:
+%If the process count is extremely low compared to usual, see if the node terminated with a slogan like:
+プロセス数が通常時と比較して極めて少ない場合、ノードが下記のような出力をして(プロセスを)終了していないかを見てください。
 
 \begin{Verbatim}
 Kernel pid terminated (application_controller)
   ({application_terminated, <AppName>, shutdown})
 \end{Verbatim}
 
-In such a case, the issue is that a specific application (\expression{<AppName>}) has reached its maximal restart frequency within its supervisors, and that prompted the node to shut down. Error logs that led to the cascading failure should be combed over to figure things out.
+%In such a case, the issue is that a specific application (\expression{<AppName>}) has reached its maximal restart frequency within its supervisors, and that prompted the node to shut down. Error logs that led to the cascading failure should be combed over to figure things out.
+このような場合、そのアプリケーション(\expression{AppName})がスーパバイザ内で再起動制限に引っかかったため、ノードがシャットダウンを行ったことが原因です。一連の問題の原因を詳しく調べるにはエラーログが役に立ちます。
+
 
 \section{Too Many Ports}
 
