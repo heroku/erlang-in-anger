@@ -16,7 +16,7 @@ Erlangノードはクラッシュすると、クラッシュダンプを出力�
 \label{sec:crashdump-general-view}
 
 %Reading the crash dump will be useful to figure out possible reasons for a node to die \emph{a posteriori}. One way to get a quick look at things is to use recon's \app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}} and run it on a crash dump:
-クラッシュダンプを読むことは\emph{事後}にノードが死んだ可能性のある理由を理解するのに役立つことがあります。それらを素早く見るために1つreconの\app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}}を使う方法があり、それをクラッシュダンプに対して実行します。
+クラッシュダンプを読むことは\emph{事後に}ノードが死んだ可能性のある理由を理解するのに役立つことがあります。それらを素早く見るためにreconの\app{erl\_crashdump\_analyzer.sh}\footnote{\href{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}{https://github.com/ferd/recon/blob/master/script/erl\_crashdump\_analyzer.sh}}を使う方法があり、それをクラッシュダンプに対して実行します。
 
 %% Show debugging here with output
 \begin{VerbatimRaw}
@@ -89,7 +89,7 @@ Process States when crashing (sum):
 \end{VerbatimRaw}
 
 %This data dump won't point out a problem directly to your face, but will be a good clue as to where to look. For example, the node here ran out of memory and had 11079 Mb out of 15 Gb used (I know this because that's the max instance size we were using!) This can be a symptom of:
-このデータダンプはあなたの直面する問題を直接指摘してはくれませんが、どこを見れば良いのかの良い手がかりとなります。例えば、ここではこのノードはメモリ不足となりましたが、15GBあるうちの11079MBを使用していました(我々が使っていた最大のインスタンスサイズだったので私はこれを覚えています!)。これは以下のような症状を示しています。
+このデータダンプはあなたの目の前にある問題を直接指摘してはくれませんが、どこを見れば良いのかの良い手がかりとなります。例えば、ここではこのノードはメモリ不足となりましたが、15GBあるうちの11079MBを使用していました(我々が使っていた最大のインスタンスサイズだったので私はこれを覚えています!)。これは以下の事柄に対するひとつの症状となり得ます。
 
 \begin{itemize*}
 %	\item memory fragmentation;
@@ -97,7 +97,7 @@ Process States when crashing (sum):
 %	\item memory leaks in C code or drivers;
 	\item Cコードまたはドライバーのメモリリーク;
 %	\item lots of memory that got to be garbage-collected before generating the crash dump\footnote{Notably here is reference-counted binary memory, which sits in a global heap, but ends up being garbage-collected before generating the crash dump. The binary memory can therefore be underreported. See Chapter \ref{chap:memory-leaks} for more details}.
-	\item クラッシュダンプを生成する前にガベージコレクトされなければならない大量のメモリ\footnote{特にここでは参照カウンタされたバイナリメモリです。これはグローバルのヒープ領域に格納されるますが、クラッシュダンプを生成する前にガベージコレクトされ消えます。従ってそのバイナリメモリはレポートされません。より詳しくは\ref{chap:memory-leaks}を参照}.
+	\item クラッシュダンプを生成する前にガベージコレクトされてしまった大量のメモリ\footnote{特にここでは参照カウンタされたバイナリメモリです。これはグローバルのヒープ領域に格納されるますが、クラッシュダンプを生成する前にガベージコレクトされ消えます。従ってそのバイナリメモリは過小にレポートされます。より詳しくは\ref{chap:memory-leaks}を参照}.
 \end{itemize*}
 
 %More generally, look for anything surprising for memory there. Correlate it with the number of processes and the size of mailboxes. One may explain the other. 
