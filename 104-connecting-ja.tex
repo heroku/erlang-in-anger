@@ -188,18 +188,26 @@ Attaching to /tmp/erl_pipe (^D to exit)
 %Closing stdio (with \command{\^{}D}) will disconnect from the shell while leaving it running.
 標準入出力を閉じる(コマンドは\command{\^{}D})ことで、シェルを実行させたまま切断ができます。
 
+%\section{Exercises}
+\section{演習}
 
-\section{Exercises}
-
-\subsection*{Review Questions}
+%\subsection*{Review Questions}
+\subsection*{復習問題}
 
 \begin{enumerate}
-	\item What are the 4 ways to connect to a remote node?
-	\item Can you connect to a node that wasn't given a name?
-	\item What's the command to go into the Job Control Mode (JCL)?
-	\item Which method(s) of connecting to a remote shell should you avoid for a system that outputs a lot of data to standard output?
-	\item What instances of remote connections shouldn't be disconnected using \command{\^{}G}?
-	\item What command(s) should never be used to disconnect from a session?
-	\item Can all of the methods mentioned support having multiple users connected onto the same Erlang node without issue?
+%	\item What are the 4 ways to connect to a remote node?
+	\item リモートノードに接続する４つの方法はなんですか？
+%	\item Can you connect to a node that wasn't given a name?
+	\item 名前のないノードに接続することはできますか？
+% \item What's the command to go into the Job Control Mode (JCL)?
+  \item ジョブ制御モードに入るコマンドはなんですか？
+% \item Which method(s) of connecting to a remote shell should you avoid for a system that outputs a lot of data to standard output?
+  \item 標準出力に多くのデータを吐き出すシステムの場合、リモートシェルの接続方法で避けるべき方法はなんですか？
+% \item What instances of remote connections shouldn't be disconnected using \command{\^{}G}?
+  \item リモート接続をした際に、\command{\^{}G} で切断してはいけない場合とはどんな時ですか？
+% \item What command(s) should never be used to disconnect from a session?
+  \item セッションを切断するときに決して行ってはいけないコマンドはなんですか？
+% \item Can all of the methods mentioned support having multiple users connected onto the same Erlang node without issue?
+  \item この章で説明した方法はすべて、複数ユーザーが同じErlangノードに問題なく接続できるような方法でしょうか？
 \end{enumerate}
 
