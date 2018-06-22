@@ -19,8 +19,7 @@ if [[ "${TRAVIS_OS_NAME}" == "linux" && "${TRAVIS_BRANCH}" == "japanese" && "${T
   git push git@github.com:ymotongpoo/erlang-in-anger.git gh-pages:gh-pages
 elif [[ "${TRAVIS_PULL_REQUEST}" != "false" ]]; then
   echo -e "Host github.com\n\tStrictHostKeyChecking no\nIdentityFile ~/.ssh/deploy.key\n" >> ~/.ssh/config
-  openssl aes-256-cbc -k "$SERVER_KEY_PR" -in ./travis/deploy_key_pr.enc -d -a -out deploy.key
-  cp deploy.key ~/.ssh/
+  cp ./travis/deploy_key_pr ~/.ssh/deploy.key
   chmod 600 ~/.ssh/deploy.key
   git config --global user.email "yyu@mental.poker"
   git config --global user.name "Yuu Yoshimura"
