@@ -4,6 +4,7 @@
 Erlang in Angerの翻訳用レポジトリです。オリジナルのREADMEは[こちら](./README.en.md)を参照してください。
 
 # 最新版
+* https://ymotongpoo.github.io/erlang-in-anger/text-ja.pdf
 * https://github.com/ymotongpoo/erlang-in-anger/blob/gh-pages/text-ja.pdf
 
 # Contribution
